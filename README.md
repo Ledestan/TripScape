@@ -38,6 +38,7 @@ python run.py
 - 访问 **[http://127.0.0.1:5000](http://127.0.0.1:5000)**
 
 > 首次运行需要确保 `data/landmark.db`、`models/*.pkl`、`models/bge-small-zh/` 已就绪。
+> 数据库缺失时，先运行 `python scripts/init_db.py` 从 SQL 重建；
 > 模型文件缺失时，先运行 `python scripts/train.py` 训练地标识别模型；
 > 向量模型缺失时，需从 HuggingFace 下载 `bge-small-zh` 到 `models/` 目录。
 
@@ -69,7 +70,6 @@ TripScape/
 │  └─ templates/                    # 网页模板
 │     ├─ index.html                 # 首页
 │     └─ app.html                   # 功能主页
-├─ cache/                           # 特征缓存（X_train.npy、X_val.npy）
 ├─ data/                            # 数据集与数据库
 │  ├─ landmark.db                   # SQLite 数据库
 │  ├─ spots.csv                     # 地标经纬度坐标
@@ -83,7 +83,13 @@ TripScape/
 │  ├─ lr_model.pkl                  # 逻辑回归分类器（训练产物）
 │  └─ bge-small-zh/                 # 中文向量模型（RAG 用，需单独下载）
 ├─ scripts/                         # 独立脚本
-│  └─ train.py                      # 地标识别模型训练脚本
+│  ├─ init_db.py                    # 数据库初始化脚本
+│  ├─ train.py                      # 地标识别模型训练脚本
+│  └─ db/                           # 数据库初始化 SQL
+│     ├─ init_sqlite.sql            # 建表与索引
+│     ├─ heritage_items.sql         # 地标基础数据
+│     └─ knowledge_base.sql         # 知识库问答数据
+├─ cache/                           # 特征缓存（X_train.npy、X_val.npy）
 ├─ .gitignore                       # git 推送忽略文件
 ├─ LICENSE                          # Apache-2.0 原文
 ├─ README.md                        # 项目说明
@@ -101,10 +107,10 @@ TripScape/
 | `app/services/`  | 业务逻辑层（识别、问答）               |
 | `app/static/`    | 前端资源                               |
 | `app/templates/` | 前端模板                               |
-| `cache/`         | 特征缓存                               |
 | `data/`          | 数据集与数据库                         |
 | `models/`        | 模型文件                               |
-| `scripts/`       | 独立脚本（模型训练），不参与 Web 运行   |
+| `scripts/`       | 独立脚本（数据库初始化、模型训练）     |
+| `cache/`         | 特征缓存（训练产物）                   |
 
 ### 模块依赖关系
 
@@ -121,6 +127,10 @@ run.py
        │                                     └─ app.core.db
        └─ app.routes.footprint    →  app.core.config（读 spots.csv）
 
+scripts/init_db.py
+  ├─ app.core.config
+  └─ scripts/db/*.sql
+
 scripts/train.py
   ├─ app.core.config
   └─ app.services.image_recognizer.FeatureExtractor
@@ -132,15 +142,17 @@ scripts/train.py
 ## 运行方式
 
 ```bash
-# 启动 Web 服务
-python run.py
+# 初始化数据库（首次运行前执行一次）
+python scripts/init_db.py
+python scripts/init_db.py --force-rebuild   # 删掉旧库重建
 
 # 训练地标识别模型（从项目根目录执行）
 python scripts/train.py
-
-# 可选参数
 python scripts/train.py --force-rebuild
 python scripts/train.py --n-clusters 128 --pca-components 256
+
+# 启动 Web 服务
+python run.py
 
 # 识别单张图片（以模块方式运行）
 python -m app.services.image_recognizer test.jpg

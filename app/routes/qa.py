@@ -6,8 +6,10 @@ POST /api/chat
     返回 JSON：{"answer": "...", "source": "rag"}
 """
 
+import sys
 import traceback
 
+sys.dont_write_bytecode = True
 from flask import Blueprint, current_app, jsonify, request
 
 from app.services import QASystem

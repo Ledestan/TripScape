@@ -8,6 +8,7 @@
 
 import sys
 import warnings
+from pathlib import Path
 
 from flask import Flask, jsonify
 
@@ -22,7 +23,13 @@ def create_app():
     返回：
         Flask
     """
-    app = Flask(__name__)
+    base = Path(__file__).resolve().parent
+
+    app = Flask(
+        __name__,
+        static_folder=str(base / "static"),
+        template_folder=str(base / "templates"),
+    )
 
     # 注册蓝图
     from app.routes.footprint import footprint_bp

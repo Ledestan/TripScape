@@ -6,8 +6,10 @@ POST /api/recognize
     返回：识别结果 JSON
 """
 
+import sys
 import traceback
 
+sys.dont_write_bytecode = True
 from flask import Blueprint, current_app, jsonify, request
 
 from app.services import ImageRecognizer

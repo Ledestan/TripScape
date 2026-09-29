@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>行旅识景 · 地标打卡</title>
+    <style>
+        /* ===== 全局重置 ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            overflow: hidden;
+            background-color: #9bb7d7;
+            font-family: 'PingFang SC', 'Segoe UI', 'Noto Sans', sans-serif;
+            height: 100vh;
+        }
+
+        /* ===== 左上角 Logo ===== */
+        .logo {
+            position: absolute;
+            top: 20px;
+            left: 24px;
+            z-index: 30;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #2e4950;
+            pointer-events: none;
+            user-select: none;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(8px);
+            padding: 8px 16px;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .logo .icon { font-size: 32px; line-height: 1; }
+        .logo .brand {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        .logo .brand small {
+            font-size: 13px;
+            font-weight: 400;
+            color: #4a6a78;
+            letter-spacing: 1px;
+            margin-left: 4px;
+        }
+
+        /* ===== 左下角提示 ===== */
+        .footer-tip {
+            position: absolute;
+            bottom: 32px;
+            left: 32px;
+            z-index: 20;
+            color: #2e4950;
+            background: rgba(255,255,255,0.5);
+            backdrop-filter: blur(4px);
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-size: 13px;
+            border: 1px solid rgba(255,255,255,0.3);
+            pointer-events: none;
+        }
+        .footer-tip .highlight { color: #4a6a78; font-weight: 600; }
+
+        /* ===== 浮动聊天窗口 ===== */
+        .chat-float {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 60;
+            width: 380px;
+            max-width: calc(100vw - 48px);
+            max-height: 70vh;
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(24px);
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.4);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+            display: flex;
+            flex-direction: column;
+            transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+            overflow: hidden;
+            pointer-events: auto;
+        }
+        .chat-float.minimized {
+            width: 56px;
+            height: 56px;
+            border-radius: 40px;
+            cursor: pointer;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            background: rgba(255,255,255,0.85);
+        }
+        .chat-float.minimized .chat-header .title-text,
+        .chat-float.minimized .chat-header .minimize-btn,
+        .chat-float.minimized .chat-body,
+        .chat-float.minimized .chat-input-area { display: none; }
+        .chat-float.minimized .chat-header {
+            padding: 0;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: none;
+        }
+        .chat-float.minimized .chat-header .icon-badge { display: flex; font-size: 28px; }
+
+        .chat-header {
+            flex-shrink: 0;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            user-select: none;
+        }
+        .chat-header .title-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2a3a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .chat-header .title-text .sub { font-size: 12px; font-weight: 400; color: #6a7a8e; }
+        .chat-header .icon-badge { display: none; }
+        .chat-header .minimize-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            color: #6a7a8e;
+            padding: 2px 6px;
+            border-radius: 6px;
+            transition: background 0.2s;
+            line-height: 1;
+        }
+        .chat-header .minimize-btn:hover { background: rgba(0,0,0,0.06); color: #1f2a3a; }
+
+        .chat-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 18px 8px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 400px;
+            min-height: 180px;
+            scroll-behavior: smooth;
+        }
+        .chat-body::-webkit-scrollbar { width: 4px; }
+        .chat-body::-webkit-scrollbar-thumb { background: #d0d7e3; border-radius: 10px; }
+
+        .message {
+            max-width: 92%;
+            padding: 10px 16px;
+            border-radius: 16px;
+            line-height: 1.6;
+            font-size: 14px;
+            word-break: break-word;
+            animation: fadeInUp 0.25s ease;
+        }
+        .message.user {
+            align-self: flex-end;
+            background: #0066ff;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .message.bot {
+            align-self: flex-start;
+            background: white;
+            color: #1f2a3a;
+            border: 1px solid #e9edf4;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .message .confidence-wrap {
+            margin-top: 8px;
+            background: #f0f2f5;
+            border-radius: 8px;
+            height: 6px;
+            width: 100%;
+            overflow: hidden;
+        }
+        .message .confidence-fill {
+            height: 100%;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #ffb347, #0066ff);
+            transition: width 0.6s ease;
+        }
+        .message .confidence-label {
+            font-size: 12px;
+            color: #4a5a6e;
+            margin-top: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .welcome-placeholder {
+            text-align: center;
+            color: #8a9aae;
+            padding: 40px 10px;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        .welcome-placeholder h2 {
+            font-size: 22px;
+            font-weight: 500;
+            color: #1f2a3a;
+            margin-bottom: 4px;
+        }
+
+        .chat-input-area {
+            flex-shrink: 0;
+            padding: 12px 16px 16px 16px;
+            border-top: 1px solid rgba(0,0,0,0.04);
+        }
+        .input-wrapper {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            background: white;
+            border: 1px solid #dce1ea;
+            border-radius: 14px;
+            padding: 6px 10px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+        .input-wrapper:focus-within {
+            border-color: #0066ff;
+            box-shadow: 0 4px 16px rgba(0,102,255,0.12);
+        }
+        .input-wrapper textarea {
+            flex: 1;
+            border: none;
+            outline: none;
+            resize: none;
+            font-size: 14px;
+            line-height: 1.5;
+            padding: 4px 2px;
+            max-height: 80px;
+            font-family: inherit;
+            background: transparent;
+            color: #1f2a3a;
+        }
+        .input-wrapper textarea::placeholder { color: #aab6c8; }
+        .input-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .input-actions button,
+        .input-actions label {
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #6a7a8e;
+            transition: background 0.2s, color 0.2s;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        .input-actions label:hover { background: #f0f2f5; color: #1f2a3a; }
+        .input-actions button.send-btn {
+            background: #0066ff;
+            color: white;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        .input-actions button.send-btn:hover { background: #0052cc; }
+        .input-actions button.send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .file-attach-badge {
+            display: none;
+            font-size: 12px;
+            background: #eef2f7;
+            padding: 2px 10px 2px 8px;
+            border-radius: 30px;
+            align-items: center;
+            gap: 4px;
+            color: #1f2a3a;
+            margin-right: 2px;
+            white-space: nowrap;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .file-attach-badge.show { display: inline-flex; }
+        .file-attach-badge .remove-file {
+            cursor: pointer;
+            font-size: 14px;
+            color: #8a9aae;
+        }
+        .file-attach-badge .remove-file:hover { color: #e74c3c; }
+        #fileUpload { display: none; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== 景点卡片弹出层 ===== */
+        #cardOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            background: rgba(0,0,0,0.15);
+            backdrop-filter: blur(2px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+        }
+        #cardOverlay.show { display: flex; }
+
+        #spotCard {
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(20px);
+            border-radius: 28px;
+            padding: 32px 40px 28px 40px;
+            min-width: 260px;
+            max-width: 340px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.25);
+            border: 1px solid rgba(255,255,255,0.3);
+            text-align: center;
+            animation: cardPop 0.35s cubic-bezier(0.34,1.56,0.64,1);
+            pointer-events: auto;
+            position: relative;
+        }
+        @keyframes cardPop {
+            from { transform: scale(0.85); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        #spotCard .spot-icon { font-size: 36px; margin-bottom: 4px; }
+        #spotCard .spot-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2a3a;
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+        #spotCard .spot-status {
+            font-size: 15px;
+            color: #4a5a6e;
+            margin-bottom: 16px;
+            padding: 4px 0;
+        }
+        #spotCard .spot-status.checked { color: #ff8c00; font-weight: 500; }
+        #spotCard .spot-status.unchecked { color: #6a7a8e; }
+
+        #spotCard .check-btn {
+            border: none;
+            border-radius: 60px;
+            padding: 12px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-family: inherit;
+            background: #0066ff;
+            color: white;
+            box-shadow: 0 4px 16px rgba(0,102,255,0.3);
+            width: 100%;
+        }
+        #spotCard .check-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,102,255,0.4);
+        }
+        #spotCard .check-btn:active { transform: scale(0.96); }
+        #spotCard .check-btn.checked {
+            background: #ff8c00;
+            box-shadow: 0 4px 16px rgba(255,140,0,0.3);
+        }
+        #spotCard .check-btn.checked:hover {
+            box-shadow: 0 8px 24px rgba(255,140,0,0.4);
+        }
+
+        #spotCard .close-card-btn {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 22px;
+            color: #8a9aae;
+            cursor: pointer;
+            transition: color 0.2s;
+            line-height: 1;
+        }
+        #spotCard .close-card-btn:hover { color: #1f2a3a; }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 600px) {
+            .logo .brand { font-size: 18px; }
+            .logo .brand small { font-size: 11px; }
+            .logo .icon { font-size: 26px; }
+            .chat-float {
+                bottom: 16px;
+                right: 16px;
+                width: calc(100vw - 32px);
+                max-height: 65vh;
+                border-radius: 20px;
+            }
+            .chat-float.minimized { width: 52px; height: 52px; border-radius: 36px; }
+            .chat-float.minimized .chat-header { height: 52px; }
+            .chat-float.minimized .chat-header .icon-badge { font-size: 24px; }
+            .chat-header .title-text { font-size: 14px; }
+            .chat-body { max-height: 300px; min-height: 120px; padding: 12px 14px 6px 14px; }
+            .message { font-size: 13px; padding: 8px 12px; }
+            .input-wrapper textarea { font-size: 13px; }
+            .footer-tip { display: none; }
+            #spotCard { min-width: 200px; padding: 24px 28px 20px 28px; margin: 0 16px; }
+            #spotCard .spot-name { font-size: 20px; }
+            #spotCard .check-btn { padding: 10px 28px; font-size: 14px; }
+        }
+        @media (max-width: 400px) {
+            .logo .brand { font-size: 15px; }
+            .logo .brand small { font-size: 10px; }
+            .logo .icon { font-size: 22px; }
+            .logo { top: 14px; left: 16px; gap: 6px; }
+            .chat-float { bottom: 12px; right: 12px; width: calc(100vw - 24px); border-radius: 16px; }
+            .chat-float.minimized { width: 48px; height: 48px; border-radius: 32px; }
+            .chat-float.minimized .chat-header { height: 48px; }
+            .chat-float.minimized .chat-header .icon-badge { font-size: 22px; }
+            #spotCard { min-width: 160px; padding: 20px 20px 16px 20px; }
+            #spotCard .spot-name { font-size: 18px; }
+            #spotCard .check-btn { padding: 8px 20px; font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== 左上角 Logo ===== -->
+    <div class="logo">
+        <span class="icon">🌍</span>
+        <span class="brand">行旅识景 <small>· 地标打卡</small></span>
+    </div>
+
+    <!-- ===== 左下角提示 ===== -->
+    <div class="footer-tip">
+        🖱 按住旋转 · 滚轮缩放 · <span class="highlight">点击光点打卡</span> · 单击空白取消聚焦
+    </div>
+
+    <!-- ===== 景点卡片弹出层 ===== -->
+    <div id="cardOverlay">
+        <div id="spotCard">
+            <button class="close-card-btn" id="closeCardBtn">✕</button>
+            <div class="spot-icon">📍</div>
+            <div class="spot-name" id="cardSpotName">景点名称</div>
+            <div class="spot-status unchecked" id="cardSpotStatus">未打卡</div>
+            <button class="check-btn" id="cardCheckBtn">打卡</button>
+        </div>
+    </div>
+
+    <!-- ===== 浮动聊天窗口 ===== -->
+    <div class="chat-float" id="chatFloat">
+        <div class="chat-header" id="chatHeader">
+            <span class="title-text">💬 行旅识景 <span class="sub">· 地标打卡</span></span>
+            <button class="minimize-btn" id="minimizeBtn" title="最小化">−</button>
+            <span class="icon-badge">💬</span>
+        </div>
+        <div class="chat-body" id="messageFlow">
+            <div class="welcome-placeholder" id="welcomePlaceholder">
+                <h2>🌍 行旅识景</h2>
+                <p>点击发光地标打卡 · 留下你的足迹</p>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <div class="input-wrapper" id="inputWrapper">
+                <textarea id="textInput" rows="1" placeholder="输入问题或拖拽图片…"></textarea>
+                <div class="input-actions">
+                    <span class="file-attach-badge" id="fileBadge">
+                        <span id="fileName">image.jpg</span>
+                        <span class="remove-file" id="removeFileBtn">×</span>
+                    </span>
+                    <label for="fileUpload" title="上传图片识别">🖼️</label>
+                    <input type="file" id="fileUpload" accept="image/png,image/jpeg,image/jpg" />
+                    <button class="send-btn" id="sendBtn">发送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         Three.js 场景
+         ============================================================ -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        // ===== 导入 =====
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+        // ===== 场景、相机、渲染器 =====
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color('#9bb7d7');
+        const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0.5, 18);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 0.8;
+        document.body.appendChild(renderer.domElement);
+
+        // ===== CSS2D 渲染器（用于点击区域） =====
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        labelRenderer.domElement.style.left = '0px';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+
+        // ===== 轨道控制器 =====
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.1;
+        controls.minDistance = 4;
+        controls.maxDistance = 25;
+        controls.enablePan = true;
+        controls.target.set(0, 0, 0);
+
+        controls.addEventListener('start', () => {
+            window.targetCamPos = null;
+            window.targetLookAt = null;
+        });
+
+        // ===== 灯光 =====
+        scene.add(new THREE.AmbientLight('#FFFFFF', 0.5));
+        const mainLight = new THREE.DirectionalLight('#FFFFFF', 1.8);
+        mainLight.position.set(10, 20, 10);
+        scene.add(mainLight);
+        scene.add(new THREE.DirectionalLight('#FFFFFF', 0.3).position.set(-10, -5, -10));
+        scene.add(new THREE.DirectionalLight('#FFFFFF', 0.5).position.set(0, -10, 0));
+
+        // ===== 地球 =====
+        const textureLoader = new THREE.TextureLoader();
+        const earthMat = new THREE.MeshBasicMaterial({ color: 0x335577 });
+        const globe = new THREE.Mesh(new THREE.SphereGeometry(5, 80, 80), earthMat);
+        scene.add(globe);
+        textureLoader.load(
+            'static/earth.png',
+            (tex) => {
+                tex.colorSpace = THREE.SRGBColorSpace;
+                earthMat.map = tex;
+                earthMat.color.setHex(0xffffff);
+                earthMat.needsUpdate = true;
+            },
+            undefined,
+            () => console.warn('⚠️ earth.png 加载失败，使用备用颜色')
+        );
+
+        // ===== 坐标转换工具 =====
+        function latLonToPos(lat, lon, radius = 5.08) {
+            const phi = (90 - lat) * Math.PI / 180;
+            const theta = (lon + 180) * Math.PI / 180;
+            return new THREE.Vector3(
+                -radius * Math.sin(phi) * Math.cos(theta),
+                radius * Math.cos(phi),
+                radius * Math.sin(phi) * Math.sin(theta)
+            );
+        }
+
+        // ===== 生成纹理（核心圆点 + 光晕） =====
+        function createCoreTexture() {
+            const size = 64;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            const half = size / 2;
+            const gradient = ctx.createRadialGradient(half, half, 0, half, half, half);
+            gradient.addColorStop(0.0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.2, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.5, 'rgba(255,255,255,0.85)');
+            gradient.addColorStop(1.0, 'rgba(255,255,255,0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.needsUpdate = true;
+            return tex;
+        }
+        function createGlowTexture() {
+            const size = 128;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            const half = size / 2;
+            const gradient = ctx.createRadialGradient(half, half, 0, half, half, half);
+            gradient.addColorStop(0.0, 'rgba(255,255,255,0.5)');
+            gradient.addColorStop(0.3, 'rgba(255,255,255,0.3)');
+            gradient.addColorStop(0.7, 'rgba(255,255,255,0.1)');
+            gradient.addColorStop(1.0, 'rgba(255,255,255,0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.needsUpdate = true;
+            return tex;
+        }
+        const coreTexture = createCoreTexture();
+        const glowTexture = createGlowTexture();
+
+        // ===== 地标系统 =====
+        const markerGroup = new THREE.Group();
+        scene.add(markerGroup);
+        const spotObjects = [];
+
+        function clearMarkers() {
+            while (markerGroup.children.length) {
+                const child = markerGroup.children[0];
+                if (child.isCSS2DObject) {
+                    child.removeFromParent();
+                } else {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) child.material.dispose();
+                    markerGroup.remove(child);
+                }
+            }
+            spotObjects.length = 0;
+        }
+
+        function createSpotMarker(name, lat, lon, index) {
+            const pos = latLonToPos(lat, lon, 5.08);
+            const group = new THREE.Group();
+            group.position.copy(pos);
+
+            // 光晕 Sprite
+            const glowMat = new THREE.SpriteMaterial({
+                map: glowTexture,
+                color: 0x3498db,
+                transparent: true,
+                opacity: 0.35,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending,
+            });
+            const glowSprite = new THREE.Sprite(glowMat);
+            glowSprite.scale.set(0.7, 0.7, 1);
+            group.add(glowSprite);
+
+            // 核心圆点 Sprite
+            const coreMat = new THREE.SpriteMaterial({
+                map: coreTexture,
+                color: 0x3498db,
+                transparent: true,
+                depthWrite: false,
+            });
+            const coreSprite = new THREE.Sprite(coreMat);
+            coreSprite.scale.set(0.2, 0.2, 1);
+            group.add(coreSprite);
+
+            markerGroup.add(group);
+
+            // 存储数据
+            const spotData = {
+                name, lat, lon, index,
+                group,
+                coreSprite, coreMat,
+                glowSprite, glowMat,
+                isChecked: false,
+                phase: Math.random() * Math.PI * 2,
+            };
+            spotObjects.push(spotData);
+
+            // CSS2D 点击区域
+            const hitDiv = document.createElement('div');
+            hitDiv.style.width = '32px';
+            hitDiv.style.height = '32px';
+            hitDiv.style.position = 'absolute';
+            hitDiv.style.background = 'transparent';
+            hitDiv.style.cursor = 'pointer';
+            hitDiv.style.pointerEvents = 'auto';
+            hitDiv.style.borderRadius = '50%';
+            hitDiv.dataset.index = String(index);
+
+            hitDiv.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showSpotCard(index);
+            });
+            hitDiv.addEventListener('mouseenter', () => {
+                hitDiv.style.background = 'rgba(255,255,255,0.05)';
+            });
+            hitDiv.addEventListener('mouseleave', () => {
+                hitDiv.style.background = 'transparent';
+            });
+
+            const hitLabel = new CSS2DObject(hitDiv);
+            hitLabel.position.copy(pos);
+            markerGroup.add(hitLabel);
+        }
+
+        function renderMarkers(data) {
+            clearMarkers();
+            data.forEach((item, idx) => {
+                if (item.name && typeof item.lat === 'number' && typeof item.lon === 'number') {
+                    createSpotMarker(item.name, item.lat, item.lon, idx);
+                }
+            });
+        }
+
+        // ===== 加载 CSV =====
+        async function loadCSV() {
+            try {
+                const response = await fetch('static/spots.csv');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const text = await response.text();
+                const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+                if (lines.length < 2) throw new Error('CSV 至少需要标题行 + 一行数据');
+
+                const header = lines[0].split(',').map(s => s.trim());
+                const nameIdx = header.indexOf('name');
+                const latIdx = header.indexOf('lat');
+                const lonIdx = header.indexOf('lon');
+                if (nameIdx === -1 || latIdx === -1 || lonIdx === -1) {
+                    throw new Error('CSV 必须包含 "name","lat","lon" 列');
+                }
+
+                const spots = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const cols = lines[i].split(',').map(s => s.trim());
+                    if (cols.length < 3) continue;
+                    const name = cols[nameIdx];
+                    const lat = parseFloat(cols[latIdx]);
+                    const lon = parseFloat(cols[lonIdx]);
+                    if (name && !isNaN(lat) && !isNaN(lon)) {
+                        spots.push({ name, lat, lon });
+                    }
+                }
+                if (spots.length === 0) throw new Error('未解析到有效数据');
+                renderMarkers(spots);
+            } catch (err) {
+                console.error('加载 CSV 失败:', err);
+                addMessage(`❌ 加载 spots.csv 失败：${err.message}`, 'bot');
+            }
+        }
+        loadCSV();
+
+        // ===== 卡片交互 =====
+        const cardOverlay = document.getElementById('cardOverlay');
+        const cardSpotName = document.getElementById('cardSpotName');
+        const cardSpotStatus = document.getElementById('cardSpotStatus');
+        const cardCheckBtn = document.getElementById('cardCheckBtn');
+        const closeCardBtn = document.getElementById('closeCardBtn');
+        let currentSpotIndex = -1;
+
+        function showSpotCard(index) {
+            const spot = spotObjects[index];
+            if (!spot) return;
+            currentSpotIndex = index;
+            cardSpotName.textContent = spot.name;
+            updateCardUI(spot.isChecked);
+            cardOverlay.classList.add('show');
+            controls.autoRotate = false;
+        }
+
+        function updateCardUI(isChecked) {
+            if (isChecked) {
+                cardSpotStatus.textContent = '✅ 已打卡';
+                cardSpotStatus.className = 'spot-status checked';
+                cardCheckBtn.textContent = '取消打卡';
+                cardCheckBtn.className = 'check-btn checked';
+            } else {
+                cardSpotStatus.textContent = '📍 未打卡';
+                cardSpotStatus.className = 'spot-status unchecked';
+                cardCheckBtn.textContent = '打卡';
+                cardCheckBtn.className = 'check-btn';
+            }
+        }
+
+        function closeCard() {
+            cardOverlay.classList.remove('show');
+            currentSpotIndex = -1;
+            if (!window.targetCamPos) controls.autoRotate = true;
+        }
+
+        function toggleCheck() {
+            if (currentSpotIndex < 0 || currentSpotIndex >= spotObjects.length) return;
+            const spot = spotObjects[currentSpotIndex];
+            spot.isChecked = !spot.isChecked;
+            const color = spot.isChecked ? 0xff8c00 : 0x3498db;
+            spot.coreMat.color.setHex(color);
+            spot.glowMat.color.setHex(color);
+            updateCardUI(spot.isChecked);
+            const msg = spot.isChecked ?
+                `📍 ${spot.name} ✅ 打卡成功！` :
+                `📍 ${spot.name} ↩️ 已取消打卡`;
+            addMessage(msg, 'bot');
+        }
+
+        cardCheckBtn.addEventListener('click', toggleCheck);
+        closeCardBtn.addEventListener('click', closeCard);
+        cardOverlay.addEventListener('click', (e) => {
+            if (e.target === cardOverlay) closeCard();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeCard();
+        });
+
+        // ===== 粒子系统 =====
+        const particleCount = 1200;
+        const pGeo = new THREE.BufferGeometry();
+        const pPos = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount; i++) {
+            const r = 6 + Math.random() * 15;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random() * 2) - 1);
+            pPos[i*3] = r * Math.sin(phi) * Math.cos(theta);
+            pPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+            pPos[i*3+2] = r * Math.cos(phi);
+        }
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        const pMat = new THREE.PointsMaterial({
+            color: 0xFCE2B4,
+            size: 0.1,
+            transparent: true,
+            opacity: 0.5,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true,
+        });
+        const particles = new THREE.Points(pGeo, pMat);
+        scene.add(particles);
+
+        // ===== 点击聚焦 =====
+        let activeMarker = null;
+        function createFocusMarker(position) {
+            if (activeMarker) { scene.remove(activeMarker); activeMarker = null; }
+            const group = new THREE.Group();
+            const height = 0.8;
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([
+                position.clone().add(new THREE.Vector3(0, 0.1, 0)),
+                position.clone().add(new THREE.Vector3(0, height, 0))
+            ]);
+            const lineMat = new THREE.LineBasicMaterial({
+                color: 0xFFD700,
+                transparent: true,
+                opacity: 0.8
+            });
+            const line = new THREE.Line(lineGeo, lineMat);
+            group.add(line);
+            const dotGeo = new THREE.SphereGeometry(0.08, 8, 8);
+            const dotMat = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
+            const dot = new THREE.Mesh(dotGeo, dotMat);
+            dot.position.copy(position.clone().add(new THREE.Vector3(0, height, 0)));
+            group.add(dot);
+            const ringGeo = new THREE.RingGeometry(0.15, 0.3, 24);
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: 0xFFD700,
+                transparent: true,
+                opacity: 0.5,
+                side: THREE.DoubleSide
+            });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.position.copy(position);
+            ring.lookAt(0, 0, 0);
+            group.add(ring);
+            scene.add(group);
+            activeMarker = group;
+        }
+
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+        let isDragging = false;
+        renderer.domElement.addEventListener('pointerdown', () => { isDragging = false; });
+        renderer.domElement.addEventListener('pointermove', () => { isDragging = true; });
+        renderer.domElement.addEventListener('pointerup', () => {
+            setTimeout(() => { isDragging = false; }, 50);
+        });
+
+        // ===== 点击事件 =====
+        renderer.domElement.addEventListener('click', (event) => {
+            if (event.target !== renderer.domElement || isDragging) return;
+            if (cardOverlay.classList.contains('show')) return;
+
+            const rect = renderer.domElement.getBoundingClientRect();
+            pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(pointer, camera);
+            const intersects = raycaster.intersectObject(globe);
+
+            if (intersects.length > 0) {
+                // ---- 点击地球：聚焦并锁定 ----
+                const hitPoint = intersects[0].point;
+                controls.autoRotate = false;
+                const direction = hitPoint.clone().normalize();
+                const newCamPos = hitPoint.clone().add(direction.multiplyScalar(4.2));
+                window.targetCamPos = newCamPos;
+                window.targetLookAt = new THREE.Vector3(0, 0, 0);
+                const markerPos = hitPoint.clone().normalize().multiplyScalar(5.02);
+                createFocusMarker(markerPos);
+            } else {
+                // ---- 点击空白：解锁并恢复 ----
+                controls.autoRotate = true;
+                controls.enableRotate = true;
+                controls.enablePan = true;
+                controls.enableZoom = true;
+                if (activeMarker) {
+                    scene.remove(activeMarker);
+                    activeMarker = null;
+                }
+                window.targetCamPos = null;
+                window.targetLookAt = null;
+            }
+        });
+
+        // ===== 窗口自适应 =====
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // ===== 动画循环 =====
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = performance.now() / 1000;
+
+            // 呼吸动画
+            spotObjects.forEach((spot) => {
+                const phase = spot.phase;
+                const breatheScale = 0.65 + 0.2 * Math.sin(time * 1.2 + phase);
+                spot.glowSprite.scale.set(breatheScale, breatheScale, 1);
+                const breatheOpacity = 0.2 + 0.2 * Math.sin(time * 1.2 + phase + 0.5);
+                spot.glowMat.opacity = Math.max(0.1, breatheOpacity);
+                const coreScale = 0.18 + 0.04 * Math.sin(time * 1.8 + phase * 1.3);
+                spot.coreSprite.scale.set(coreScale, coreScale, 1);
+            });
+
+            // 聚焦动画
+            if (window.targetCamPos && window.targetLookAt) {
+                camera.position.lerp(window.targetCamPos, 0.08);
+                controls.target.lerp(window.targetLookAt, 0.08);
+                if (camera.position.distanceTo(window.targetCamPos) < 0.01) {
+                    camera.position.copy(window.targetCamPos);
+                    controls.target.copy(window.targetLookAt);
+                    window.targetCamPos = null;
+                    window.targetLookAt = null;
+                }
+            }
+
+            controls.update();
+            particles.rotation.y += 0.00015;
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        animate();
+
+        // ===== 聊天功能 =====
+        const messageFlow = document.getElementById('messageFlow');
+        const welcomePlaceholder = document.getElementById('welcomePlaceholder');
+        const textInput = document.getElementById('textInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const fileUpload = document.getElementById('fileUpload');
+        const fileBadge = document.getElementById('fileBadge');
+        const fileName = document.getElementById('fileName');
+        const removeFileBtn = document.getElementById('removeFileBtn');
+        let selectedFile = null;
+
+        function addMessage(content, type, extra) {
+            if (welcomePlaceholder) welcomePlaceholder.style.display = 'none';
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+            if (type === 'bot' && extra && extra.confidence !== undefined) {
+                const percent = Math.round(extra.confidence * 100);
+                div.innerHTML = `
+                    ${content.replace(/\n/g, '<br>')}
+                    <div class="confidence-wrap">
+                        <div class="confidence-fill" style="width:${Math.min(percent, 100)}%"></div>
+                    </div>
+                    <div class="confidence-label">
+                        <span>识别可信度</span>
+                        <span>${percent}%</span>
+                    </div>
+                `;
+            } else {
+                div.innerHTML = content.replace(/\n/g, '<br>');
+            }
+            messageFlow.appendChild(div);
+            messageFlow.scrollTop = messageFlow.scrollHeight;
+        }
+
+        function callChatAPI(question) {
+            return fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question })
+            })
+            .then(res => res.json())
+            .then(data => ({ answer: data.answer || '未收到有效回答' }))
+            .catch(() => ({ answer: '网络请求失败，请检查后端服务是否运行。' }));
+        }
+
+        function callRecognizeAPI(file) {
+            const formData = new FormData();
+            formData.append('image', file);
+            return fetch('/api/recognize', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        return { success: true, name: data.name, confidence: data.confidence };
+                    }
+                    return { success: false, message: data.message || '识别失败' };
+                })
+                .catch(() => ({ success: false, message: '网络请求失败，请检查后端服务。' }));
+        }
+
+        async function handleSend() {
+            const text = textInput.value.trim();
+            const file = selectedFile;
+            if (!text && !file) return;
+
+            let display = '';
+            if (text) display += text;
+            if (file) display += display ? ` [图片 ${file.name}]` : `[图片] ${file.name}`;
+            addMessage(display, 'user');
+
+            textInput.value = '';
+            textInput.style.height = 'auto';
+            clearSelectedFile();
+            sendBtn.disabled = true;
+
+            try {
+                let reply = '', extra = {};
+                if (file) {
+                    const result = await callRecognizeAPI(file);
+                    if (result.success) {
+                        reply = `✅ 识别成功：${result.name}`;
+                        extra.confidence = result.confidence;
+                    } else {
+                        reply = `❌ 识别失败：${result.message || '请重试。'}`;
+                    }
+                } else if (text) {
+                    const result = await callChatAPI(text);
+                    reply = result.answer;
+                }
+                addMessage(reply, 'bot', extra);
+            } catch (err) {
+                addMessage(`请求出错：${err.message || '请检查网络连接'}`, 'bot');
+            } finally {
+                sendBtn.disabled = false;
+                textInput.focus();
+            }
+        }
+
+        function clearSelectedFile() {
+            selectedFile = null;
+            fileUpload.value = '';
+            fileBadge.classList.remove('show');
+            fileName.textContent = '';
+        }
+
+        sendBtn.addEventListener('click', handleSend);
+        textInput.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                handleSend();
+            }
+            setTimeout(() => {
+                textInput.style.height = 'auto';
+                textInput.style.height = textInput.scrollHeight + 'px';
+            }, 0);
+        });
+
+        fileUpload.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                if (!file.type.startsWith('image/')) {
+                    alert('请上传图片文件（JPG / PNG）');
+                    fileUpload.value = '';
+                    return;
+                }
+                selectedFile = file;
+                fileName.textContent = file.name.length > 20 ? file.name.slice(0, 18) + '…' : file.name;
+                fileBadge.classList.add('show');
+                textInput.focus();
+            }
+        });
+
+        removeFileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            clearSelectedFile();
+            textInput.focus();
+        });
+
+        const inputWrapper = document.getElementById('inputWrapper');
+        ['dragenter', 'dragover'].forEach(evt => {
+            inputWrapper.addEventListener(evt, (e) => {
+                e.preventDefault();
+                inputWrapper.style.borderColor = '#0066ff';
+                inputWrapper.style.boxShadow = '0 4px 20px rgba(0,102,255,0.2)';
+            });
+        });
+        ['dragleave', 'drop'].forEach(evt => {
+            inputWrapper.addEventListener(evt, (e) => {
+                e.preventDefault();
+                inputWrapper.style.borderColor = '#dce1ea';
+                inputWrapper.style.boxShadow = '0 2px 8px rgba(0,0,0,0.03)';
+            });
+        });
+        inputWrapper.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                selectedFile = files[0];
+                fileName.textContent = files[0].name.length > 20 ? files[0].name.slice(0, 18) + '…' : files[0].name;
+                fileBadge.classList.add('show');
+                const dt = new DataTransfer();
+                dt.items.add(files[0]);
+                fileUpload.files = dt.files;
+                textInput.focus();
+            } else {
+                alert('请拖拽图片文件');
+            }
+        });
+
+        // ===== 浮动窗口最小化 =====
+        const chatFloat = document.getElementById('chatFloat');
+        const minimizeBtn = document.getElementById('minimizeBtn');
+        let isMinimized = false;
+        minimizeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isMinimized = !isMinimized;
+            chatFloat.classList.toggle('minimized', isMinimized);
+            minimizeBtn.textContent = isMinimized ? '+' : '−';
+            if (isMinimized) {
+                chatFloat.style.width = '56px';
+                chatFloat.style.height = '56px';
+                chatFloat.style.borderRadius = '40px';
+            } else {
+                chatFloat.style.width = '';
+                chatFloat.style.height = '';
+                chatFloat.style.borderRadius = '';
+                setTimeout(() => textInput.focus(), 100);
+            }
+        });
+        chatFloat.addEventListener('click', (e) => {
+            if (isMinimized && (e.target === chatFloat || e.target.closest('.chat-header'))) {
+                minimizeBtn.click();
+            }
+        });
+
+        setTimeout(() => textInput.focus(), 200);
+        console.log('行旅识景 · 地标打卡 已启动');
+    </script>
+</body>
+</html>

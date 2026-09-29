@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>行旅识景</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif;
+            background: linear-gradient(135deg, #f5f9ff 0%, #e6edf5 100%);
+        }
+
+        /* 3D画布容器 — 作为背景层，清晰显示 */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.9;
+            filter: blur(1px) brightness(1.1);
+        }
+
+        /* 前景内容层 — 无遮罩，完全通透 */
+        .container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+            padding: 20px;
+            background: transparent;
+        }
+        .container h1 {
+            font-size: 72px;
+            color: #ffffff;
+            font-weight: 700;
+            letter-spacing: 6px;
+            text-shadow: 0 2px 20px rgba(255,255,255,0.5);
+            animation: fadeInDown 1s ease-out;
+        }
+        .container p {
+            font-size: 20px;
+            color: #ffffff;
+            margin-bottom: 48px;
+            letter-spacing: 2px;
+            animation: fadeInUp 1s ease-out 0.2s both;
+            text-shadow: 0 1px 8px rgba(255,255,255,0.3);
+        }
+        .btn {
+            display: inline-block;
+            padding: 16px 56px;
+            background: #0066ff;
+            color: #fff;
+            font-size: 22px;
+            font-weight: 500;
+            border-radius: 40px;
+            text-decoration: none;
+            box-shadow: 0 4px 24px rgba(0, 102, 255, 0.35);
+            transition: background 0.3s, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s;
+            animation: fadeInUp 1s ease-out 0.4s both;
+            letter-spacing: 1px;
+        }
+        .btn:hover {
+            background: #0052cc;
+            transform: scale(1.05);
+            box-shadow: 0 8px 40px rgba(0, 102, 255, 0.5);
+        }
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1;
+            color: rgba(0, 0, 0, 0.2);
+            font-size: 13px;
+            letter-spacing: 3px;
+            font-weight: 300;
+            animation: fadeInUp 1s ease-out 0.6s both;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .container h1 { font-size: 42px; letter-spacing: 4px; }
+            .container p { font-size: 16px; margin-bottom: 32px; }
+            .btn { padding: 14px 40px; font-size: 18px; }
+            #bg-canvas { opacity: 0.7; filter: blur(2px) brightness(1.0); }
+        }
+        @media (max-width: 480px) {
+            .container h1 { font-size: 32px; letter-spacing: 2px; }
+            .container p { font-size: 14px; margin-bottom: 28px; }
+            .btn { padding: 12px 32px; font-size: 16px; }
+            #bg-canvas { opacity: 0.6; filter: blur(2px) brightness(0.95); }
+            .footer { font-size: 11px; bottom: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="bg-canvas"></div>
+
+    <div class="container">
+        <h1>行旅识景</h1>
+        <p>世界著名地标智能识别 · 轻量AI交互平台</p>
+        <a href="/app" class="btn">进入</a>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        const container = document.getElementById('bg-canvas');
+
+        const scene = new THREE.Scene();
+        scene.background = null;
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0.3, 14);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        container.appendChild(renderer.domElement);
+
+        // 灯光（保持原有冷色）
+        scene.add(new THREE.AmbientLight('#aaccff', 0.5));
+        const mainLight = new THREE.DirectionalLight('#e8f4ff', 1.6);
+        mainLight.position.set(10, 20, 10);
+        scene.add(mainLight);
+        const backLight = new THREE.DirectionalLight('#4488cc', 0.8);
+        backLight.position.set(-10, -5, -10);
+        scene.add(backLight);
+        const fillLight = new THREE.DirectionalLight('#6688aa', 0.4);
+        fillLight.position.set(0, -10, 0);
+        scene.add(fillLight);
+
+        // 地球
+        const textureLoader = new THREE.TextureLoader();
+        const EARTH_MAP_URL = 'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg';
+        const earthMaterial = new THREE.MeshStandardMaterial({
+            map: textureLoader.load(EARTH_MAP_URL),
+            roughness: 0.4,
+            metalness: 0.05,
+            emissive: new THREE.Color('#224466'),
+            emissiveIntensity: 0.08,
+            transparent: true,
+            opacity: 0.92,
+        });
+        const globe = new THREE.Mesh(new THREE.SphereGeometry(4, 80, 80), earthMaterial);
+        scene.add(globe);
+
+        // 光晕
+        const glowGeo = new THREE.SphereGeometry(4.25, 64, 64);
+        const glowMat = new THREE.MeshBasicMaterial({ color: 0x4488ff, transparent: true, opacity: 0.06, side: THREE.BackSide });
+        const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+        scene.add(glowMesh);
+
+        const glowGeo2 = new THREE.SphereGeometry(4.6, 48, 48);
+        const glowMat2 = new THREE.MeshBasicMaterial({ color: 0x88bbff, transparent: true, opacity: 0.03, side: THREE.BackSide });
+        const glowMesh2 = new THREE.Mesh(glowGeo2, glowMat2);
+        scene.add(glowMesh2);
+
+        // 星空
+        const starsCount = 1200;
+        const starsGeo = new THREE.BufferGeometry();
+        const starsPos = new Float32Array(starsCount * 3);
+        for (let i = 0; i < starsCount * 3; i += 3) {
+            const r = 18 + Math.random() * 62;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random() * 2) - 1);
+            starsPos[i] = r * Math.sin(phi) * Math.cos(theta);
+            starsPos[i+1] = r * Math.sin(phi) * Math.sin(theta);
+            starsPos[i+2] = r * Math.cos(phi);
+        }
+        starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
+        const starsMat = new THREE.PointsMaterial({ color: 0x88bbff, size: 0.1, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, sizeAttenuation: true });
+        const stars = new THREE.Points(starsGeo, starsMat);
+        scene.add(stars);
+
+        const bigCount = 80;
+        const bigGeo = new THREE.BufferGeometry();
+        const bigPos = new Float32Array(bigCount * 3);
+        for (let i = 0; i < bigCount * 3; i += 3) {
+            const r = 20 + Math.random() * 60;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random() * 2) - 1);
+            bigPos[i] = r * Math.sin(phi) * Math.cos(theta);
+            bigPos[i+1] = r * Math.sin(phi) * Math.sin(theta);
+            bigPos[i+2] = r * Math.cos(phi);
+        }
+        bigGeo.setAttribute('position', new THREE.BufferAttribute(bigPos, 3));
+        const bigMat = new THREE.PointsMaterial({ color: 0xccddff, size: 0.25, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, sizeAttenuation: true });
+        const bigStars = new THREE.Points(bigGeo, bigMat);
+        scene.add(bigStars);
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            globe.rotation.y += 0.0025;
+            glowMesh.rotation.y += 0.0018;
+            glowMesh2.rotation.y += 0.0012;
+            stars.rotation.y += 0.00015;
+            stars.rotation.x += 0.00005;
+            bigStars.rotation.y += 0.0001;
+            bigStars.rotation.x += 0.00003;
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>

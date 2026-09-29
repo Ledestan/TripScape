@@ -35,7 +35,6 @@ import sys
 import tempfile
 import time
 import warnings
-from pathlib import Path
 
 sys.dont_write_bytecode = True
 

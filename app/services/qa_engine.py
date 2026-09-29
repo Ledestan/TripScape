@@ -36,7 +36,6 @@ import sqlite3
 import sys
 import traceback
 from collections import Counter
-from pathlib import Path
 
 sys.dont_write_bytecode = True
 

@@ -15,7 +15,6 @@ import sys
 sys.dont_write_bytecode = True
 
 import sqlite3
-from pathlib import Path
 
 from app.core.config import DB_PATH
 

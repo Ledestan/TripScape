@@ -50,8 +50,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
-from app.core.config import CACHE_DIR, DATA_DIR, MODELS_DIR
+from app.core.config import DATA_DIR, MODELS_DIR
 from app.services.image_recognizer import FeatureExtractor
+
+CACHE_DIR = Path(__file__).resolve().parent.parent / "cache"
 
 warnings.filterwarnings("ignore", category=InconsistentVersionWarning)
 
@@ -553,24 +555,24 @@ class LandmarkTrainer:
         if self.force_rebuild:
             self._clean_artifacts()
 
-        # 1. 数据加载
+        # 数据加载
         print("========== 数据加载 ==========")
         print("训练集数据加载：")
         train_paths, train_names = DataLoader(self.train_dir).load()
         print("\n验证集数据加载：")
         val_paths, val_names = DataLoader(self.valid_dir).load()
 
-        # 2. 标签编码
+        # 标签编码
         encoder, train_labels, val_labels = LabelEncoderManager().load_or_train(
             train_names, val_names, self.paths["encoder"]
         )
 
-        # 3. VLAD 码本
+        # VLAD 码本
         kmeans = VLADCodebookTrainer(n_clusters=self.n_clusters).load_or_train(
             train_paths, self.paths["kmeans"]
         )
 
-        # 4. 特征提取
+        # 特征提取
         extractor = FeatureExtractor(kmeans)
         pipeline = FeaturePipeline(extractor, self.cache_dir)
 
@@ -591,7 +593,7 @@ class LandmarkTrainer:
         y_train = np.array(train_labels)
         y_val = np.array(val_labels)
 
-        # 5. HOG PCA 降维
+        # HOG PCA 降维
         print("\n========== HOG 特征降维 (PCA) ==========")
         vlad_dim = extractor.vlad_dim
         hog_dim = extractor.extract_spm_hog(sample_img).shape[0]
@@ -607,7 +609,7 @@ class LandmarkTrainer:
 
         print(f"HOG 降维后维度: {hog_pca_train.shape[1]}")
 
-        # 6. 拼接：[VLAD, PCA-HOG, 轮廓, 颜色矩, GLCM]
+        # 拼接：[VLAD, PCA-HOG, 轮廓, 颜色矩, GLCM]
         profile_start = hog_end
         profile_end = profile_start + extractor.profile_segments
         color_start = profile_end
@@ -637,17 +639,17 @@ class LandmarkTrainer:
         )
         print(f"最终特征向量总维度: {X_train.shape[1]}")
 
-        # 7. 标准化
+        # 标准化
         _, X_train_scaled, X_val_scaled = ScalerManager().load_or_train(
             X_train, X_val, self.paths["scaler"]
         )
 
-        # 8. 训练分类器
+        # 训练分类器
         model = ClassifierTrainer().load_or_train(
             X_train_scaled, y_train, self.paths["classifier"]
         )
 
-        # 9. 验证集评估
+        # 验证集评估
         print("\n========== 验证集预测 ==========")
         t_start = time.time()
         y_pred = model.predict(X_val_scaled)

@@ -27,6 +27,8 @@ __pycache__/
 # ========== TripScape ==========
 # 特征数组缓存
 cache/
+# 数据库
+data/landmark.db
 # 训练集
 data/train/
 # 验证集

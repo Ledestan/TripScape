@@ -171,7 +171,7 @@
 
         // 地球
         const textureLoader = new THREE.TextureLoader();
-        const EARTH_MAP_URL = 'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg';
+        const EARTH_MAP_URL = "{{ url_for('static', filename='images/earth.png') }}";
         const earthMaterial = new THREE.MeshStandardMaterial({
             map: textureLoader.load(EARTH_MAP_URL),
             roughness: 0.4,

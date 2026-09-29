@@ -28,8 +28,14 @@ __pycache__/
 # 特征数组缓存
 cache/
 # 训练集
-data/train
+data/train/
 # 验证集
-data/valid
-# 模型  
+data/valid/
+# 模型
 models/
+
+# ========== PyInstaller 打包产物 ==========
+# 打包缓存
+build/
+# 发布成品
+dist/

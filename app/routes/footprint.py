@@ -7,6 +7,9 @@ POST /api/footprint/  新增打卡（占位）
 """
 
 import csv
+import sys
+
+sys.dont_write_bytecode = True
 
 from flask import Blueprint, jsonify
 

@@ -1,0 +1,193 @@
+services:
+  # ============ Web（Django + Gunicorn） ============
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    command: >
+      sh -c "cd /app/backend &&
+             python manage.py migrate --noinput &&
+             (python manage.py init_tripscape || true) &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000
+             --workers 4 --threads 4 --timeout 300
+             --access-logfile - --error-logfile -"
+    volumes:
+      - ./backend:/app/backend
+      - ./scripts:/app/scripts
+      - runtime_data:/app/runtime
+      - models_data:/app/models
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - MYSQL_HOST=mysql
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - MEILI_HOST=http://meilisearch:7700
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_PUBLIC_URL=http://localhost:9000
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging: &default_logging
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ============ Celery Worker（识别/图片处理/通知/审核/导出） ============
+  celery:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    command: sh -c "cd /app/backend && celery -A config worker --loglevel=info --concurrency=2"
+    volumes:
+      - ./backend:/app/backend
+      - ./scripts:/app/scripts
+      - runtime_data:/app/runtime
+      - models_data:/app/models
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - MYSQL_HOST=mysql
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - MEILI_HOST=http://meilisearch:7700
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_PUBLIC_URL=http://localhost:9000
+    depends_on:
+      - web
+    restart: unless-stopped
+    logging: *default_logging
+
+  # ============ Celery Beat（定时清理 / 看板刷新） ============
+  celery-beat:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    command: sh -c "cd /app/backend && celery -A config beat --loglevel=info"
+    volumes:
+      - ./backend:/app/backend
+      - ./scripts:/app/scripts
+      - runtime_data:/app/runtime
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - MYSQL_HOST=mysql
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    depends_on:
+      - web
+    restart: unless-stopped
+    logging: *default_logging
+
+  # ============ MySQL ============
+  mysql:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=Root@123456
+      - MYSQL_DATABASE=tripscape
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+      --slow-query-log=1 --long_query_time=1 --slow-query-log-file=/var/lib/mysql/slow.log
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./runtime/backups:/backup
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pRoot@123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: *default_logging
+
+  # ============ Redis ============
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    logging: *default_logging
+
+  # ============ Meilisearch（全局搜索） ============
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    environment:
+      - MEILI_MASTER_KEY=tripscape_meili_key
+      - MEILI_NO_ANALYTICS=true
+    volumes:
+      - meili_data:/meili_data
+    ports:
+      - "7700:7700"
+    restart: unless-stopped
+    logging: *default_logging
+
+  # ============ MinIO（对象存储） ============
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    restart: unless-stopped
+    logging: *default_logging
+
+  # ============ Nginx（反向代理 + SPA 静态资源） ============
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - runtime_data:/app/runtime:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+    restart: unless-stopped
+    logging: *default_logging
+
+  backup:
+    image: alpine:3.19
+    command: >
+      sh -c "apk add --no-cache mysql-client curl tzdata >/dev/null &&
+             cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime &&
+             while true; do
+               TS=$$(date +%Y%m%d_%H%M%S);
+               mysqldump -h mysql -uroot -pRoot@123456 tripscape | gzip > /backup/mysql_$$TS.sql.gz;
+               find /backup -name '*.gz' -mtime +7 -delete;
+               find /backup -name '*.json' -mtime +7 -delete;
+               echo \"[$$(date)] backup done\";
+               sleep 86400;
+             done"
+    volumes:
+      - ./runtime/backups:/backup
+    depends_on:
+      - mysql
+    restart: unless-stopped
+    logging: *default_logging
+
+volumes:
+  mysql_data:
+  redis_data:
+  meili_data:
+  minio_data:
+  runtime_data:
+  models_data:

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#9bb7d7" />
+    <meta name="description" content="行旅识景 · 世界著名地标智能识别平台" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>行旅识景 · TripScape</title>
+    <script>
+      // 首屏暗色模式（避免闪烁）：读裸字符串 key
+      (function () {
+        var t = localStorage.getItem("tripscape-theme-plain");
+        if (
+          t === "dark" ||
+          (!t && window.matchMedia("(prefers-color-scheme: dark)").matches)
+        ) {
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
+    <style>
+      .boot-loading {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 26px;
+        background: #04070f;
+        color: #fff;
+        z-index: 9999;
+        font-family: system-ui, -apple-system, "PingFang SC", sans-serif;
+        overflow: hidden;
+      }
+      .boot-loading .stars {
+        position: absolute;
+        inset: 0;
+        background: url("/stars.jpg") cover no-repeat top right;
+        background-size: cover;
+        background-position: top right;
+        opacity: 0.7;
+      }
+      .boot-loading .arc {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 46%;
+        background: url("/earth-arc.jpg") no-repeat bottom center;
+        background-size: 1280px auto;
+        -webkit-mask-image: linear-gradient(to top, black 55%, transparent 100%);
+        mask-image: linear-gradient(to top, black 55%, transparent 100%);
+      }
+      .boot-loading .orbit {
+        position: relative;
+        width: 84px;
+        height: 84px;
+      }
+      .boot-loading .globe {
+        position: absolute;
+        inset: 10px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 32% 30%, #9fd0ff 0%, #3f7cc2 52%, #16345e 100%);
+        box-shadow: 0 0 60px rgba(90, 150, 230, 0.4), inset -8px -10px 24px rgba(0, 0, 0, 0.45);
+        animation: pulse 2.2s ease-in-out infinite;
+      }
+      .boot-loading .ring {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 2px solid transparent;
+        border-top-color: rgba(140, 200, 255, 0.9);
+        border-right-color: rgba(140, 200, 255, 0.25);
+        animation: spin 1.4s linear infinite;
+      }
+      .boot-loading .ring.r2 {
+        inset: -8px;
+        border-top-color: rgba(255, 210, 122, 0.55);
+        border-right-color: transparent;
+        animation-duration: 2.6s;
+        animation-direction: reverse;
+      }
+      .boot-loading .bar {
+        width: 180px;
+        height: 3px;
+        border-radius: 99px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.12);
+      }
+      .boot-loading .bar i {
+        display: block;
+        height: 100%;
+        width: 40%;
+        border-radius: 99px;
+        background: linear-gradient(90deg, #7cc0ff, #bfe3ff);
+        animation: slide 1.3s ease-in-out infinite;
+      }
+      .boot-loading .tip {
+        font-size: 13px;
+        font-weight: 300;
+        letter-spacing: 8px;
+        color: rgba(255, 255, 255, 0.78);
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.06); }
+      }
+      @keyframes slide {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(350%); }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 启动动画放在 #root 之外：React 挂载会清空 #root，不会波及此节点 -->
+    <div class="boot-loading" id="boot-screen">
+      <div class="stars"></div>
+      <div class="arc"></div>
+      <div class="orbit">
+        <div class="ring"></div>
+        <div class="ring r2"></div>
+        <div class="globe"></div>
+      </div>
+      <div class="bar"><i></i></div>
+      <div class="tip">行旅识景</div>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

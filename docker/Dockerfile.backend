@@ -1,0 +1,32 @@
+# ============ 构建阶段 ============
+FROM python:3.11-slim AS base
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+# 系统依赖（opencv / mysqlclient）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential default-libmysqlclient-dev pkg-config \
+    libgl1 libglib2.0-0 libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Python 依赖
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt \
+    -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 应用代码（backend/ 为 Django 工程根，scripts/db 为 legacy 数据源）
+COPY backend ./backend
+COPY scripts ./scripts
+
+# backend/manage.py 从仓库根找 data/models/runtime，容器内以 /app 为根
+ENV PYTHONPATH=/app/backend:/app
+RUN mkdir -p runtime/uploads runtime/cache runtime/logs runtime/tmp runtime/backups
+
+EXPOSE 8000
+
+WORKDIR /app/backend
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4"]

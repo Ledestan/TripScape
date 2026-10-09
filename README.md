@@ -1,344 +1,303 @@
-# TripScape（行旅识景：世界著名地标智能识别）
+# 行旅识景 TripScape
 
-集地标图像识别、智能问答、足迹打卡图鉴于一体的交互平台，用户上传照片即可识别地标并获取百科信息，输入问题可获得 RAG 检索问答，打卡地标在地球上可视化旅行足迹。
+上传照片识别世界地标、RAG 智能问答、旅行手账与足迹图鉴的一站式应用。
+识别结果返回百科图片与介绍；问答带会话上下文（低置信度会明确回答"不知道"）；
+手账保存后自动生成足迹，公开手账可生成免登录分享链接。
 
----
+主页是一颗全屏 3D 地球（react-three-fiber 渲染，不转动地球、由相机环绕）：
 
-## 目录
+- **地球交互**——远看时地标按区域聚合成带国旗与计数的气泡，拉近自动散开成光点；
+  悬停显示名称，点击飞过去并打开详情浮窗；搜索命中时目标高亮、其余变暗。
+- **四角浮层**——左上：Logo 与灵动岛搜索框（地标/用户/手账三类，结果满 5 条出现"显示更多"进入全局搜索浮窗）；
+  右上：昼夜切换与登录/头像菜单（个人主页、设置、管理后台）；
+  左下：智能问答与通知中心（消息条，未读时拉长为预览条）；
+  右下：Google-Earth 风格控件排（重置 / 方向角即纬度视角 / 分体式缩放 / 全屏）。
+- **全部功能浮窗化**——登录注册、地标详情（评论/手账双 Tab）、手账编辑与查看、
+  个人主页（足迹/手账/评论/收藏/徽章五 Tab）、他人公开主页、全局搜索、举报、
+  管理后台（七个 Tab）均为叠加式小浮窗，无页面跳转。
+- **视觉**——日间明亮 / 夜间深空蓝渐变 + 星空启动页；细边框 + 分层阴影表达层次；
+  夜间图标与文字纯白。
 
-- [功能特性](#功能特性)
-- [快速开始](#快速开始)
-- [文件架构](#文件架构)
-- [运行方式](#运行方式)
-- [API 说明](#api-说明)
-- [数据集](#数据集)
-- [支持库](#支持库)
-- [作者与许可证](#作者与许可证)
+## 技术栈
 
----
-
-## 功能特性
-
-- **地标识别**：上传图片，基于 SIFT-VLAD + HOG + 轮廓 + 颜色矩 + GLCM 多特征融合，配合多尺度贝叶斯滑动窗口分类，返回地标名称与置信度。
-- **智能问答**：基于本地知识库的 RAG 检索问答，向量检索 + BM25 混合策略，支持复合问题自动拆分与合并。
-- **足迹打卡**：在渲染的地球上点击地标光点打卡，支持聚焦、取消打卡、可视化旅行足迹。
-
----
+| 层 | 技术 |
+| --- | --- |
+| 后端 | Django 5.2 + Django Ninja（`/api/docs` 自动文档） |
+| 数据库 | MySQL 8（Django ORM + migrations） |
+| 异步 | Celery + Redis + Beat（识别 / 通知 / 审核 / 导出 / 清理） |
+| 识别 | DINOv2（全局特征）+ FAISS（向量检索），实测 93.9%，全本地零 API |
+| 问答 | 地标文章（每地标一篇 markdown）分块 + bge-small-zh 向量 + BM25 双路检索 + RRF 融合 + 意图定向抽取 |
+| 检索 | rank-bm25 混合；Meilisearch（全局搜索，可降级为 ORM） |
+| 存储 | MinIO（可回退本地 `runtime/uploads/`） |
+| 前端 | React 18 + Vite + TypeScript，Tailwind CSS + shadcn/ui 组件，Zustand 状态，TanStack Query，ECharts 图表，Sonner 提示，react-three-fiber 三维地球，PWA + 暗色模式 |
+| 部署 | Docker Compose + Nginx + Gunicorn |
+| 测试 | pytest-django（后端）/ Vitest（前端单元）/ Playwright（端到端） |
 
 ## 快速开始
 
 ```bash
-# 安装依赖
-pip install -r requirements.txt
+pip install -r requirements.txt          # 后端依赖
+copy .env.example .env                   # 环境配置（Windows）；macOS/Linux 用 cp
+python scripts/reset_all.py              # 一键初始化：runtime + MySQL + 种子 + 识别/问答双索引
+python backend/manage.py runserver       # http://127.0.0.1:8000
 
-# 启动服务
-python run.py
+cd frontend                              # 前端（新终端）
+pnpm install
+pnpm build                               # 构建后由 Django 提供 SPA；开发用 pnpm dev
 ```
 
-- 访问 **[http://127.0.0.1:5000](http://127.0.0.1:5000)**
+> **提示**：首次运行 reset_all 会下载 DINOv2 权重（84MB，走 hf-mirror 镜像），
+> 之后缓存在用户目录不再下载；索引构建约 1 分钟。
 
-> 首次运行需要确保 `data/landmark.db`、`models/*.pkl`、`models/bge-small-zh/` 已就绪。
-> 数据库缺失时，先运行 `python scripts/init_db.py` 从 SQL 重建；
-> 模型文件缺失时，先运行 `python scripts/train.py` 训练地标识别模型；
-> 向量模型缺失时，需从 HuggingFace 下载 `bge-small-zh` 到 `models/` 目录。
+一键重测：`python scripts/reset_all.py --with-frontend --with-tests`
+（重置数据库 + 构建前端 + 跑后端测试）。
 
----
+桌面应用（免命令行）：`python desktop.py`（pywebview 窗口内嵌 Django 服务）。
 
-## 文件架构
+### 种子账号
+
+| 账号 | 密码 | 角色 |
+| --- | --- | --- |
+| admin | admin123456 | 管理员（审核中心 / 地标管理 / 账号管理 / 举报处理 / 审计日志） |
+| demo | demo123456 | 普通用户（演示用，含示例足迹与手账可自行创建） |
+
+管理员功能全部在地球页右上角头像菜单的"管理后台"浮窗内，无独立后台页面。
+
+## 目录结构（完整，无缩写）
 
 ```text
 TripScape/
-├─ app/                             # 应用源码包
-│  ├─ __init__.py                   # 应用工厂
-│  ├─ core/                         # 核心配置与基础设施
-│  │  ├─ __init__.py
-│  │  ├─ config.py                  # 全局路径常量
-│  │  └─ db.py                      # SQLite 访问层
-│  ├─ routes/                       # Flask 路由层
-│  │  ├─ __init__.py
-│  │  ├─ main.py                    # 页面路由
-│  │  ├─ qa.py                      # 问答 API
-│  │  ├─ recognition.py             # 识别 API
-│  │  └─ footprint.py               # 足迹 API
-│  ├─ services/                     # 业务逻辑层
-│  │  ├─ __init__.py                # 对外导出
-│  │  ├─ image_recognizer.py        # 地标识别
-│  │  └─ qa_engine.py               # RAG 问答
-│  ├─ static/                       # 前端静态资源
-│  │  └─ images/
-│  │      └─ earth.png              # 地球贴图
-│  └─ templates/                    # 网页模板
-│     ├─ index.html                 # 首页
-│     └─ app.html                   # 功能主页
-├─ data/                            # 数据集与数据库
-│  ├─ landmark.db                   # SQLite 数据库
-│  ├─ spots.csv                     # 地标经纬度坐标
-│  ├─ train/                        # 训练集
-│  └─ valid/                        # 验证集
-├─ models/                          # 模型文件
-│  ├─ label_encoder.pkl             # 标签编码器（训练产物）
-│  ├─ kmeans_vlad.pkl               # VLAD 码本（训练产物）
-│  ├─ pca_hog.pkl                   # HOG PCA 降维模型（训练产物）
-│  ├─ scaler.pkl                    # 特征标准化器（训练产物）
-│  ├─ lr_model.pkl                  # 逻辑回归分类器（训练产物）
-│  └─ bge-small-zh/                 # 中文向量模型（RAG 用，需单独下载）
-├─ scripts/                         # 独立脚本
-│  ├─ init_db.py                    # 数据库初始化脚本
-│  ├─ train.py                      # 地标识别模型训练脚本
-│  └─ db/                           # 数据库初始化 SQL
-│     ├─ init_sqlite.sql            # 建表与索引
-│     ├─ heritage_items.sql         # 地标基础数据
-│     └─ knowledge_base.sql         # 知识库问答数据
-├─ cache/                           # 特征缓存（X_train.npy、X_val.npy）
-├─ .gitignore                       # git 推送忽略文件
-├─ LICENSE                          # Apache-2.0 原文
-├─ README.md                        # 项目说明
-├─ requirements.txt                 # 依赖清单
-└─ run.py                           # 启动入口
+├─ backend/                              # Django 后端工程
+│  ├─ manage.py                          # 管理入口（runserver / makemigrations / init_tripscape）
+│  ├─ config/                            # 工程配置包
+│  │  ├─ settings/                       # base.py 公共 / dev.py 开发 / prod.py 生产
+│  │  ├─ urls.py                         # 根路由（SPA、API、静态）
+│  │  ├─ asgi.py / wsgi.py               # 部署入口
+│  │  └─ celery.py                       # Celery 实例与定时任务装载
+│  ├─ apps/                              # 业务应用（应用名 apps.<name>）
+│  │  ├─ accounts/                       # 用户、注册登录、昵称签名、隐私开关、封禁/禁言字段
+│  │  ├─ landmarks/                      # 地标、知识库、识别记录、收藏、问答上下文
+│  │  ├─ comments/                       # 评论、评论举报（含点赞模型 models_like.py）
+│  │  ├─ journals/                       # 手账（含二次编辑快照 pending_edit）、足迹、分享
+│  │  ├─ badges/                         # 徽章定义与用户徽章
+│  │  ├─ notifications/                  # 站内通知（回复/审核/徽章/点赞/账号）
+│  │  ├─ shares/                         # 公开分享链接
+│  │  ├─ routes/                         # 旅行路线与途经点
+│  │  ├─ search/                         # Meilisearch 索引配置
+│  │  ├─ dashboard/                      # 运营看板聚合
+│  │  ├─ exports/                        # GeoJSON / CSV 导出
+│  │  ├─ admin_panel/                    # 审计日志 + 敏感词（应用 label 为 audit）
+│  │  └─ core/                           # 认证鉴权、限流、中间件、初始化命令 init_tripscape
+│  ├─ services/                          # 跨应用业务服务层
+│  │  ├─ user_service.py                 # 注册/登录/个人主页聚合
+│  │  ├─ recognition_service.py          # 图片识别（top-3 + 低置信度候选）
+│  │  ├─ qa_service.py                   # RAG 问答（向量 + bm25 混合）
+│  │  ├─ journal_service.py              # 手账创建/编辑（二次审核快照）/审核动作
+│  │  ├─ comment_service.py              # 评论与敏感词检查
+│  │  ├─ footprint_service.py            # 足迹聚合与重建（保留隐藏状态）
+│  │  ├─ notification_service.py         # 通知发送
+│  │  ├─ badge_service.py                # 徽章判定
+│  │  ├─ search_service.py               # 全局搜索（Meilisearch 降级 ORM）
+│  │  ├─ stats_service.py                # 看板统计
+│  │  ├─ export_service.py               # 数据导出
+│  │  ├─ file_service.py                 # 上传（MinIO / 本地回退）
+│  │  ├─ share_service.py                # 分享链接
+│  │  ├─ audit_service.py                # 审计日志
+│  │  └─ vector_store.py                 # Qdrant 向量库封装
+│  ├─ tasks/                             # Celery 异步任务
+│  │  ├─ recognition_tasks.py            # 异步识别
+│  │  ├─ maintenance_tasks.py            # 回收站清理、临时文件清理
+│  │  └─ maintenance_tasks_dashboard.py  # 看板定时聚合
+│  ├─ api/                               # Django Ninja 路由（每域一个文件）
+│  │  ├─ __init__.py                     # NinjaAPI 聚合与挂载
+│  │  ├─ auth.py                         # 注册/登录/个人主页/公开主页/隐私开关
+│  │  ├─ landmarks.py / routes.py        # 地标与路线
+│  │  ├─ comments.py / likes.py          # 评论（含举报）/ 点赞
+│  │  ├─ journals.py / shares.py         # 手账 / 分享
+│  │  ├─ footprints.py / badges.py       # 足迹（含单点隐藏）/ 徽章
+│  │  ├─ notifications.py                # 通知
+│  │  ├─ search.py / qa.py / recognition.py
+│  │  ├─ dashboard.py / exports.py       # 看板 / 导出
+│  │  ├─ admin.py                        # 管理后台（审核/举报/账号/审计/回收站）
+│  │  └─ admin_landmarks.py              # 地标管理（路由挂 admin router）
+│  └─ runtime/                           # 后端运行日志（正式 runtime 在仓库根）
+├─ frontend/                             # React 前端工程
+│  ├─ index.html                         # SPA 入口（含星空启动动画）
+│  ├─ public/                            # earth.png 贴图、stars.jpg、manifest、landmarks/ 百科图
+│  ├─ src/
+│  │  ├─ main.tsx / App.tsx              # 入口与路由（全部功能浮窗化，旧网页路由重定向回地球）
+│  │  ├─ api/                            # axios 客户端
+│  │  ├─ components/                     # FloatingWindow 浮窗容器、LoadingScreen、ui/ 基础组件
+│  │  ├─ features/                       # 按业务域组织
+│  │  │  ├─ globe/                       # Globe.tsx 三维地球、GlobeControls 控件排、ElasticLandmarkCard 预览卡
+│  │  │  ├─ qa/                          # MessageBar 消息条（问答 + 通知双 Tab）
+│  │  │  ├─ search/                      # DynamicIslandSearch 灵动岛、SearchWindow 全局搜索浮窗
+│  │  │  ├─ profile/                     # UserProfileWindow 他人公开主页（五 Tab）
+│  │  │  ├─ comments/                    # ReportDialog 举报浮窗
+│  │  │  └─ admin/                       # AdminPanelWindow 管理后台（七 Tab 大浮窗）
+│  │  ├─ layouts/                        # FloatingDock 右上按钮组、LoginWindow、ProfileWindow、
+│  │  │  │                               # JournalViewWindow（含点赞）、SettingsWindow
+│  │  ├─ pages/                          # GlobeApp 主页、LandmarkDetail 详情、JournalEditWindow 编辑、Share 分享页
+│  │  ├─ hooks/ stores/ styles/ types/ utils/
+│  ├─ tests/frontend/                    # Vitest 单元测试
+│  ├─ e2e/                               # Playwright 端到端
+│  └─ vite.config.ts / tailwind.config.js / tsconfig.json / package.json
+├─ runtime/                              # 运行时目录（uploads / cache / logs / tmp / backups）
+├─ data/                                 # 识别数据集 train/ 与 valid/
+├─ models/                               # bge-small-zh 向量模型（legacy 的 pkl 见下）
+├─ scripts/
+│  ├─ reset_all.py                       # 一键重置重测（runtime + MySQL + 种子 + 双索引，可选前端与测试）
+│  ├─ register_landmarks.py              # 识别索引构建（注册图 → DINOv2 → FAISS，幂等）
+│  ├─ select_registration_images.py      # 从训练集正向筛选高质量注册图（门槛+评分+pHash 去重）
+│  ├─ clean_dataset.py                   # 训练集低质量图片清洗（模糊/低分辨率/过暗过曝，隔离式）
+│  ├─ build_qa_index.py                  # 问答索引构建（文章分块 → 向量 + BM25，幂等）
+│  ├─ build_articles.py                  # 地标文章库维护（补缺骨架，人工充实内容）
+│  ├─ normalize_articles.py              # 文章规范化（繁转简 + wikitext 残留清理）
+│  ├─ squash_migrations.py               # 把各应用迁移历史压扁为单个初始迁移
+│  └─ db/                                # 全部种子数据（新增数据只改文件、不改代码）
+│     ├─ seed_landmarks.sql              #   地标（26 个：名称/地区/国家/经纬度/百科）
+│     ├─ seed_badges.sql                 #   徽章（10 枚成就定义）
+│     ├─ seed_sensitive_words.sql        #   敏感词基线（运行期可在后台增删）
+│     ├─ register_images.json            #   识别注册图清单（指纹缓存，可手工增删）
+│     └─ articles/                       #   地标文章库（每地标一篇章节式 markdown）
+├─ runtime/index/                        # 索引产物（reset_all 自动重建）
+│  ├─ landmarks.faiss/.meta.json/.manifest.json      # 识别索引三件套
+│  └─ qa_chunks.json/qa_vectors.npy/qa_manifest.json # 问答索引三件套
+├─ models/*.pkl                          # legacy 识别引擎权重（VLAD+逻辑回归回退用）
+├─ tests/backend/                        # pytest-django 后端测试
+├─ docker/                               # Dockerfile.backend / Dockerfile.frontend、nginx.conf、mysql/my.cnf
+├─ desktop.py                            # 桌面应用入口（pywebview）
+├─ docker-compose.yml                    # Web/Celery/Beat/MySQL/Redis/Qdrant/Meilisearch/MinIO/Nginx/备份
+├─ .env.example / .gitignore / LICENSE / requirements.txt / pytest.ini
+└─ README.md
 ```
 
-### 各目录职责
+## API 概览
 
-| 目录               | 职责                                   |
-| ------------------ | -------------------------------------- |
-| `app/`           | Web 应用源码包                         |
-| `app/core/`      | 配置与基础设施（路径常量、数据库访问） |
-| `app/routes/`    | 路由层，只做参数校验与转发             |
-| `app/services/`  | 业务逻辑层（识别、问答）               |
-| `app/static/`    | 前端资源                               |
-| `app/templates/` | 前端模板                               |
-| `data/`          | 数据集与数据库                         |
-| `models/`        | 模型文件                               |
-| `scripts/`       | 独立脚本（数据库初始化、模型训练）     |
-| `cache/`         | 特征缓存（训练产物）                   |
+文档自动生成：`/api/docs`。认证：`Authorization: Bearer <token>`。
 
-### 模块依赖关系
+| 方法 | 路径 | 说明 | 权限 |
+| --- | --- | --- | --- |
+| POST | /api/auth/register · /api/auth/login · /api/auth/profile(PUT) | 注册 / 登录 / 改资料 | 匿名/登录 |
+| GET | /api/auth/{id}/public | 用户公开主页（按隐私开关过滤） | 匿名 |
+| PUT | /api/auth/privacy | 隐私开关（足迹/手账/评论/收藏/徽章） | 登录 |
+| GET/POST | /api/admin/review/* | 审核中心（评论/手账，含风险预检） | 管理员 |
+| CRUD | /api/admin/landmarks | 地标管理（增删改/上下架） | 管理员 |
+| POST | /api/admin/users/{id}/account | 封禁/禁言/限制登录（可设时长） | 管理员 |
+| GET/POST | /api/admin/reports · /{id}/handle | 举报处理（下架/仅标记/驳回/重开） | 管理员 |
+| GET | /api/admin/audit-logs(/export) | 审计日志（筛选/导出 CSV） | 管理员 |
+| GET/POST | /api/admin/trash(/restore/purge) | 回收站（软删除恢复/清理） | 管理员 |
+| POST | /api/qa/chat | 问答（上下文 + 低置信度不知道） | 匿名 |
+| POST | /api/recognition/recognize | 图片识别（top-3 + 候选） | 登录 |
+| GET | /api/landmarks/spots · /{id} | 地球光点 / 详情（百科） | 匿名 |
+| CRUD | /api/comments · /journals · /likes | 评论 / 手账（二次编辑审核）/ 点赞 | 登录 |
+| POST | /api/journals/{id}/share + GET /api/shares/{token} | 分享链接 / 免登录查看 | 作者/匿名 |
+| GET/POST | /api/footprints/mine · /{id}/visibility | 足迹 / 单点隐藏 | 登录 |
+| GET | /api/search/ | 全局搜索（地标/用户/手账） | 匿名 |
+| GET | /api/dashboard/stats | 运营看板 | 管理员 |
+| GET | /healthz · /readyz | 存活 / 就绪探针 | 匿名 |
 
-```text
-run.py
-  └─ app.create_app()
-       ├─ app.routes.main         →  templates/
-       ├─ app.routes.qa           →  app.services.QASystem
-       │                                └─ app.services.qa_engine
-       │                                     └─ app.core.config
-       ├─ app.routes.recognition  →  app.services.ImageRecognizer
-       │                                └─ app.services.image_recognizer
-       │                                     ├─ app.core.config
-       │                                     └─ app.core.db
-       └─ app.routes.footprint    →  app.core.config（读 spots.csv）
+## 权限矩阵
 
-scripts/init_db.py
-  ├─ app.core.config
-  └─ scripts/db/*.sql
+| 功能 | 匿名 | 登录用户 | 管理员 |
+| --- | :-: | :-: | :-: |
+| 浏览 / 问答 / 识别 / 搜索 / 分享查看 / 公开主页 | ✓ | ✓ | ✓ |
+| 评论 / 手账 / 收藏 / 点赞 / 导出自己的数据 | – | ✓ | ✓ |
+| 审核中心（隐藏/恢复/通过/驳回，删除进回收站） | – | – | ✓ |
+| 地标管理 / 账号管理 / 举报处理 / 审计日志 | – | – | ✓ |
 
-scripts/train.py
-  ├─ app.core.config
-  └─ app.services.image_recognizer.FeatureExtractor
-       （训练与推理共用同一套特征管线，避免漂移）
-```
-
----
-
-## 运行方式
+## Docker 部署
 
 ```bash
-# 初始化数据库（首次运行前执行一次）
-python scripts/init_db.py
-python scripts/init_db.py --force-rebuild   # 删掉旧库重建
-
-# 训练地标识别模型（从项目根目录执行）
-python scripts/train.py
-python scripts/train.py --force-rebuild
-python scripts/train.py --n-clusters 128 --pca-components 256
-
-# 启动 Web 服务
-python run.py
-
-# 识别单张图片（以模块方式运行）
-python -m app.services.image_recognizer test.jpg
-python -m app.services.image_recognizer test.jpg 5
-python -m app.services.image_recognizer test.jpg --no-bayes
-
-# 命令行问答
-python -m app.services.qa_engine "埃菲尔铁塔有多高？"
-python -m app.services.qa_engine "天坛用途和门票" --top-k 5
+docker compose up -d --build
+docker compose exec web sh -c "cd /app/backend && python manage.py init_tripscape"
+# 应用 http://localhost   文档 http://localhost/api/docs
 ```
 
----
+编排服务：Web、Celery、Celery Beat、MySQL（慢查询日志 + my.cnf）、Redis、
+Qdrant、Meilisearch、MinIO、Nginx、每日备份（MySQL dump + Qdrant 快照，保留 7 天）。
 
-## API 说明
+## 注释与文档规范
 
-### POST /api/chat
+全项目注释、docstring 与文档的书写风格统一按
+[.github/COMMENT_STYLE.md](.github/COMMENT_STYLE.md) 执行
+（中文技术表达、文件头项目卡片、分节结构、「参数：/返回：」docstring、
+风险边界提示、操作手册式文档）。
 
-问答接口。
+## 测试
 
-**请求**：JSON
-
-```json
-{"question": "埃菲尔铁塔有多高？"}
+```bash
+pytest                                  # 后端（tests/backend）
+cd frontend && npx vitest run           # 前端单元（tests/frontend）
+cd frontend && npx playwright test      # 端到端（e2e/，先启动后端并 pnpm build）
 ```
 
-**响应**：JSON
+## 运维要点
 
-```json
-{"answer": "...", "source": "rag"}
+- **日志**：`runtime/logs/tripscape.log`（RotatingFileHandler 10MB×5）+ 请求中间件（request_id / 耗时）
+- **健康检查**：`/healthz` `/readyz` + compose healthcheck
+- **定时任务**：03:00 清理 runtime/tmp 与回收站；每小时看板聚合；04:30 向量索引自检
+- **备份**：`runtime/backups/`（每日，保留 7 天）
+- **__pycache__ 根除**：虚拟环境 `site-packages/sitecustomize.py` 全局禁用字节码写入，
+  `scripts/reset_all.py` 会自愈重建该文件
+
+## 识别引擎（检索式）
+
+采用 **DINOv2 全局检索** 的以图搜图管线（`backend/services/retrieval_engine.py`）：
+
+```
+离线注册：地标注册图 → DINOv2 全局特征（384 维）→ FAISS 索引 + 元数据
+查询识别：查询图 → DINOv2 特征 → FAISS 检索 top-k 候选
+            → 按地标去重取最优 → 地标名 + 置信度
 ```
 
-**错误**：`400` 问题为空；`500` 服务器内部错误。
+- **加新地标零训练**——往 `scripts/db/register_images.json` 加注册图条目
+  （或直接放入 `data/train/<地标名>/` 重新生成清单），跑
+  `python scripts/register_landmarks.py` 重建索引即可，无需收集大量图片。
+- **实测**：26 类 / 3065 张验证集 Top-1 **93.9%**，CPU 平均 64ms/图。
+- **全本地运行，零 API 费用**——DINOv2 ViT-S/14（85 MB，torch.hub 自动下载）、
+  FAISS（纯库）。
+- **索引幂等可恢复**——注册图清单带内容指纹，未变化时直接复用旧索引；
+  `--force-rebuild` 强制重建；索引与元数据不一致时启动报错提示重建。
+- 索引不存在时识别接口返回失败与重建指引（`python scripts/register_landmarks.py`）。
 
----
+## 问答引擎（文章式 RAG）
 
-### POST /api/recognize
+以 **"每地标一篇章节式文章"** 为知识源（`backend/services/article_qa.py`）：
 
-地标图像识别接口。
+```
+离线建库：地标文章（scripts/db/articles/*.md）
+            → 按章节分块（元数据：地标 / 标题 / 章节 / Chunk ID）
+            → bge-small-zh 向量索引 + BM25 索引（同一 Chunk ID 关联）
 
-**请求**：`multipart/form-data`，字段名 `image`
-
-- 支持格式：PNG、JPG、JPEG
-- 大小限制：2MB
-
-**响应**：JSON
-
-```json
-{
-  "success": true,
-  "target_id": "eiffeltower",
-  "name": "埃菲尔铁塔",
-  "confidence": 0.87,
-  "confidence_percent": "87.0%"
-}
+在线问答：用户查询 → 主题提取（地标词典最长匹配，支持多主题比较）
+            → 意图切分（疑问词边界：多高 / 何时 / 门票…→ 章节标签）
+            → 定向检索（主题锁文章 + 意图锁章节）→ 向量 + BM25 → RRF 融合
+            → 句子级打分抽取 → 按主题聚合答案 + 来源标注
+            → 逐子项拒答（"文章未提及"）/ 整体拒答（"知识库中没有相关信息"）
 ```
 
-**错误**：`400` 未上传图片 / 格式不支持 / 超过大小限制；`500` 识别失败。
-
----
-
-### GET /api/spots
-
-返回所有地标坐标，供前端地图渲染。
-
-**响应**：JSON
-
-```json
-{
-  "success": true,
-  "data": [
-    {"name": "埃菲尔铁塔", "lat": 48.858, "lon": 2.294},
-    {"name": "长城", "lat": 40.358, "lon": 116.024}
-  ]
-}
-```
-
----
-
-### GET /api/footprint/
-
-获取用户足迹列表（占位接口）。
-
-**响应**：JSON
-
-```json
-{"success": true, "data": []}
-```
-
----
+- **文章即数据**——`scripts/build_articles.py` 从知识库聚合生成底稿，并已
+  合并中文维基百科词条内容（25/26 地标，API 抓取，仅学习研究用），
+  每地标一篇 markdown（YAML 元数据 + 概述 + 基本参数 / 历史沿革 /
+  地理位置 / 参观信息 / 百科补充章节），可手工润色扩充。
+- **复合问题**——"埃菲尔铁塔多高、什么时候建的"按疑问词边界拆分逐项作答
+  （顿号 / 问号 / 分号均识别），答不出的子项明示"文章未提及"。
+- **零幻觉**——答案全部来自原文句子抽取，来源标注为文章章节，比生成式更可靠。
+- 索引构建：`python scripts/build_qa_index.py`（文章指纹变化自动重建）；
+  索引不可用时自动回退旧问答对匹配管线。
 
 ## 数据集
 
-### 来源
+Kaggle 世界地标数据集，26 类（`data/train` `data/valid`，仅学习研究用）。
+新识别引擎只需其中**少量注册图**（每类 8 张，`register_images.json` 清单管理），
+完整数据集保留用于基准测试与旧引擎（legacy）训练。
+种子数据全部为独立 SQL 文件（新增数据只改文件、不改代码）：
+地标 `seed_landmarks.sql`、知识库 `seed_knowledge_base.sql`、
+徽章 `seed_badges.sql`、敏感词 `seed_sensitive_words.sql`，
+均由 `scripts/reset_all.py` 一键解析导入；种子账号（admin/demo）
+内置于 `init_tripscape` 命令。
 
-Kaggle 地标图像数据集
+## 许可
 
-### 结构
-
-- `data/train/` — 训练集，按地标名分目录
-- `data/valid/` — 验证集，目录结构与 `train` 一致
-
-### 类别
-
-共 26 类地标：
-
-| 目录名            | 地标中文名       |
-| ----------------- | ---------------- |
-| AbuSimbelTemples  | 阿布辛贝神庙     |
-| AngelFalls        | 安赫尔瀑布       |
-| BentPyramid       | 弯曲金字塔       |
-| BurjKhalifa       | 哈利法塔         |
-| ChichenItza       | 奇琴伊察         |
-| ChristTheRedeemer | 救世基督像       |
-| DjoserPyramid     | 左塞尔金字塔     |
-| EiffelTower       | 埃菲尔铁塔       |
-| GizaPyramids      | 吉萨金字塔群     |
-| GreatWall         | 长城             |
-| HatshepsutTemples | 哈特谢普苏特神庙 |
-| HeavenTemple      | 天坛             |
-| Huangguoshu       | 黄果树瀑布       |
-| Leifeng           | 雷峰塔           |
-| LibertyStatue     | 自由女神像       |
-| MachuPicchu       | 马丘比丘         |
-| MemnonColossi     | 门农巨像         |
-| Petra             | 佩特拉           |
-| Potala            | 布达拉宫         |
-| Qomolangma        | 珠穆朗玛峰       |
-| Ramesseum         | 拉美西姆神庙     |
-| RomanColosseum    | 罗马斗兽场       |
-| Sphinx            | 狮身人面像       |
-| Stonehenge        | 巨石阵           |
-| TajMahal          | 泰姬陵           |
-| ThreePagodas      | 崇圣寺三塔       |
-
-### 许可
-
-仅用于学习与研究，不得商用。详见原始数据集页面。
-
----
-
-## 支持库
-
-### 运行环境
-
-- Python 3.10+
-- 操作系统：Windows / macOS / Linux
-
-### Web 框架
-
-| 包名  | 用途           |
-| ----- | -------------- |
-| Flask | Web 服务与路由 |
-
-### 图像识别
-
-| 包名          | 用途                                    |
-| ------------- | --------------------------------------- |
-| opencv-python | SIFT 特征提取、图像读写                 |
-| scikit-image  | HOG、GLCM 纹理特征                      |
-| scikit-learn  | KMeans、PCA、逻辑回归、标准化、标签编码 |
-| numpy         | 数值计算                                |
-| scipy         | 矢量量化 vq                             |
-
-### 问答系统
-
-| 包名                  | 用途           |
-| --------------------- | -------------- |
-| faiss-cpu             | 向量索引与检索 |
-| sentence-transformers | 文本编码       |
-| jieba                 | 中文分词       |
-
-### 完整依赖清单
-
-见根目录 `requirements.txt`。
-
----
-
-## 作者与许可证
-
-- **作者**：Tingchu
-- **许可证**：Apache License 2.0
-- **欢迎参考与学习**：你可以自由地使用、复制、修改和分发本项目的代码，包括用于个人学习、学术研究或商业用途。使用前请阅读并遵守 Apache-2.0 许可证。
-- **使用要求**：
-  - **保留声明**：分发软件副本或衍生作品时，必须保留原始版权声明、许可声明，并附上 Apache-2.0 许可证副本。
-  - **修改声明**：如修改了源文件，需在修改后的文件中显著标明“已修改”。
-  - **专利与商标**：Apache-2.0 授予相应专利许可；但若你对本项目发起专利诉讼，相关专利许可将终止。该许可证不授予商标、商号或服务标志使用权，不得以作者或项目名义进行背书。
-  - **免责声明**：本软件按“原样”提供，不提供任何明示或暗示担保。作者及贡献者不对因使用或无法使用本软件而产生的任何索赔、损害或其他责任负责。具体以 [`LICENSE`](LICENSE) 文件为准。
-
-> 以上为便于阅读的摘要，不替代 Apache-2.0 正式条款。若摘要与 `LICENSE` 冲突，以 `LICENSE` 为准。
+Apache License 2.0，作者 Tingchu，详见 [LICENSE](LICENSE)。

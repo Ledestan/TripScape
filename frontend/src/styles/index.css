@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 98%;
+    --foreground: 220 15% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 15%;
+    --primary: 217 89% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 94%;
+    --secondary-foreground: 220 15% 15%;
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 9% 44%;
+    --accent: 217 60% 93%;
+    --accent-foreground: 217 89% 38%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 87%;
+    --input: 220 13% 87%;
+    --ring: 217 89% 52%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 100%;
+    --card: 222 18% 17%;
+    --card-foreground: 0 0% 100%;
+    --primary: 217 89% 61%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 16% 22%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 222 14% 23%;
+    --muted-foreground: 222 10% 78%;
+    --accent: 217 40% 27%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 222 14% 38%;
+    --input: 222 14% 38%;
+    --ring: 217 89% 61%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    /* 现代系统中文字体栈（离线，按可用性依次回退） */
+    --font-sans:
+      "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHe UI",
+      "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK SC", "Segoe UI",
+      system-ui, -apple-system, sans-serif;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+    letter-spacing: 0.01em;
+    font-feature-settings: "tnum" 1; /* 数字等宽：计数/角度更整齐 */
+  }
+  button,
+  input,
+  textarea,
+  select {
+    font-family: inherit;
+  }
+}
+
+/* 地球场景背景：沉浸式空间渐变（日间深蓝远空 / 夜间近黑深空），不用纯黑 */
+.globe-bg {
+  background:
+    radial-gradient(ellipse 120% 90% at 50% 40%, #3a7bc4 0%, #234f8c 40%, #16325c 72%, #0d1f3d 100%);
+}
+.dark .globe-bg {
+  background:
+    radial-gradient(ellipse 120% 90% at 50% 40%, #2a5c9e 0%, #1b4378 38%, #122b52 70%, #0a1a34 100%);
+}
+
+/* 顶部渐隐遮罩：让 UI 控件区与场景过渡自然（GE 式 vignette） */
+.globe-vignette {
+  background: linear-gradient(to bottom, rgb(0 0 0 / 0.18), transparent 18%, transparent 82%, rgb(0 0 0 / 0.22));
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/30 rounded-full;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 夜间：半透明文字/图标提亮（前景已是纯白，补偿透明度损失） */
+.dark {
+  color-scheme: dark;
+}
+.dark .text-foreground\/50,
+.dark .text-foreground\/55 {
+  color: hsl(var(--foreground) / 0.72);
+}
+.dark .text-foreground\/60 {
+  color: hsl(var(--foreground) / 0.8);
+}
+.dark .text-foreground\/70 {
+  color: hsl(var(--foreground) / 0.88);
+}
+.dark .text-muted-foreground {
+  color: hsl(var(--muted-foreground));
+}
+/* 夜间：图标描边继承文字色（按钮图标随语义色；中性按钮即纯白）。不干预 fill。 */
+.dark svg.lucide {
+  stroke: currentColor;
+}
+/* 夜间：灰色系图标强制提白（muted 图标视觉上不显灰） */
+.dark .text-muted-foreground svg.lucide,
+.dark button.text-muted-foreground > svg.lucide,
+.dark .hover\:text-foreground svg.lucide {
+  stroke: hsl(var(--foreground) / 0.9);
+}

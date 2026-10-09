@@ -94,7 +94,7 @@ def build_indexes():
     r1 = subprocess.run([PY, str(ROOT / "scripts" / "register_landmarks.py")], env=env)
     # 问答索引：文章分块 -> 向量 + BM25（文章未变时自动复用缓存指纹）
     r2 = subprocess.run([PY, str(ROOT / "scripts" / "build_qa_index.py")], env=env)
-    if r0.returncode != 0 or r1.returncode != 0 or r2.returncode != 0:
+    if r1.returncode != 0 or r2.returncode != 0:
         print("索引构建失败（可单独重跑对应脚本）")
 
 

@@ -24,7 +24,7 @@
 | --- | --- |
 | 后端 | Django 5.2 + Django Ninja（`/api/docs` 自动文档） |
 | 数据库 | MySQL 8（Django ORM + migrations） |
-| 异步 | Celery + Redis + Beat（识别 / 通知 / 审核 / 导出 / 清理） |
+| 异步 | Celery + Redis + Beat（识别 / 通知 / 审核 / 清理） |
 | 识别 | DINOv2（全局特征）+ FAISS（向量检索），实测 93.9%，全本地零 API |
 | 问答 | 地标文章（每地标一篇 markdown）分块 + bge-small-zh 向量 + BM25 双路检索 + RRF 融合 + 意图定向抽取 |
 | 检索 | rank-bm25 混合；Meilisearch（全局搜索，可降级为 ORM） |
@@ -63,7 +63,7 @@ pnpm build                               # 构建后由 Django 提供 SPA；开�
 
 管理员功能全部在地球页右上角头像菜单的"管理后台"浮窗内，无独立后台页面。
 
-## 目录结构（完整，无缩写）
+## 目录结构
 
 ```text
 TripScape/
@@ -76,22 +76,19 @@ TripScape/
 │  │  └─ celery.py                       # Celery 实例与定时任务装载
 │  ├─ apps/                              # 业务应用（应用名 apps.<name>）
 │  │  ├─ accounts/                       # 用户、注册登录、昵称签名、隐私开关、封禁/禁言字段
-│  │  ├─ landmarks/                      # 地标、知识库、识别记录、收藏、问答上下文
+│  │  ├─ landmarks/                      # 地标、识别记录、收藏、问答上下文
 │  │  ├─ comments/                       # 评论、评论举报（含点赞模型 models_like.py）
 │  │  ├─ journals/                       # 手账（含二次编辑快照 pending_edit）、足迹、分享
 │  │  ├─ badges/                         # 徽章定义与用户徽章
 │  │  ├─ notifications/                  # 站内通知（回复/审核/徽章/点赞/账号）
 │  │  ├─ shares/                         # 公开分享链接
-│  │  ├─ routes/                         # 旅行路线与途经点
 │  │  ├─ search/                         # Meilisearch 索引配置
 │  │  ├─ dashboard/                      # 运营看板聚合
-│  │  ├─ exports/                        # GeoJSON / CSV 导出
 │  │  ├─ admin_panel/                    # 审计日志 + 敏感词（应用 label 为 audit）
 │  │  └─ core/                           # 认证鉴权、限流、中间件、初始化命令 init_tripscape
 │  ├─ services/                          # 跨应用业务服务层
 │  │  ├─ user_service.py                 # 注册/登录/个人主页聚合
 │  │  ├─ recognition_service.py          # 图片识别（top-3 + 低置信度候选）
-│  │  ├─ qa_service.py                   # RAG 问答（向量 + bm25 混合）
 │  │  ├─ journal_service.py              # 手账创建/编辑（二次审核快照）/审核动作
 │  │  ├─ comment_service.py              # 评论与敏感词检查
 │  │  ├─ footprint_service.py            # 足迹聚合与重建（保留隐藏状态）
@@ -99,11 +96,9 @@ TripScape/
 │  │  ├─ badge_service.py                # 徽章判定
 │  │  ├─ search_service.py               # 全局搜索（Meilisearch 降级 ORM）
 │  │  ├─ stats_service.py                # 看板统计
-│  │  ├─ export_service.py               # 数据导出
 │  │  ├─ file_service.py                 # 上传（MinIO / 本地回退）
 │  │  ├─ share_service.py                # 分享链接
-│  │  ├─ audit_service.py                # 审计日志
-│  │  └─ vector_store.py                 # Qdrant 向量库封装
+│  │  └─ audit_service.py                # 审计日志
 │  ├─ tasks/                             # Celery 异步任务
 │  │  ├─ recognition_tasks.py            # 异步识别
 │  │  ├─ maintenance_tasks.py            # 回收站清理、临时文件清理
@@ -111,13 +106,13 @@ TripScape/
 │  ├─ api/                               # Django Ninja 路由（每域一个文件）
 │  │  ├─ __init__.py                     # NinjaAPI 聚合与挂载
 │  │  ├─ auth.py                         # 注册/登录/个人主页/公开主页/隐私开关
-│  │  ├─ landmarks.py / routes.py        # 地标与路线
+│  │  ├─ landmarks.py                   # 地标
 │  │  ├─ comments.py / likes.py          # 评论（含举报）/ 点赞
 │  │  ├─ journals.py / shares.py         # 手账 / 分享
 │  │  ├─ footprints.py / badges.py       # 足迹（含单点隐藏）/ 徽章
 │  │  ├─ notifications.py                # 通知
-│  │  ├─ search.py / qa.py / recognition.py
-│  │  ├─ dashboard.py / exports.py       # 看板 / 导出
+│  │  ├─ search.py / qa.py / recognition.py   # 搜索 / 文章问答 / 图片识别
+│  │  ├─ dashboard.py                   # 运营看板
 │  │  ├─ admin.py                        # 管理后台（审核/举报/账号/审计/回收站）
 │  │  └─ admin_landmarks.py              # 地标管理（路由挂 admin router）
 │  └─ runtime/                           # 后端运行日志（正式 runtime 在仓库根）
@@ -142,35 +137,47 @@ TripScape/
 │  ├─ tests/frontend/                    # Vitest 单元测试
 │  ├─ e2e/                               # Playwright 端到端
 │  └─ vite.config.ts / tailwind.config.js / tsconfig.json / package.json
-├─ runtime/                              # 运行时目录（uploads / cache / logs / tmp / backups）
-├─ data/                                 # 识别数据集 train/ 与 valid/
-├─ models/                               # bge-small-zh 向量模型（legacy 的 pkl 见下）
+├─ runtime/                              # 运行时目录（uploads/cache/logs/tmp + index/ 索引产物）
+├─ data/                                 # 精选注册图（26 类 × 15 张，约 75MB，git 不入库随发布包分发）
+├─ models/                               # bge-small-zh 向量模型（约 92MB，git 不入库随发布包分发）
 ├─ scripts/
 │  ├─ reset_all.py                       # 一键重置重测（runtime + MySQL + 种子 + 双索引，可选前端与测试）
 │  ├─ register_landmarks.py              # 识别索引构建（注册图 → DINOv2 → FAISS，幂等）
-│  ├─ select_registration_images.py      # 从训练集正向筛选高质量注册图（门槛+评分+pHash 去重）
-│  ├─ clean_dataset.py                   # 训练集低质量图片清洗（模糊/低分辨率/过暗过曝，隔离式）
-│  ├─ build_qa_index.py                  # 问答索引构建（文章分块 → 向量 + BM25，幂等）
-│  ├─ build_articles.py                  # 地标文章库维护（补缺骨架，人工充实内容）
-│  ├─ normalize_articles.py              # 文章规范化（繁转简 + wikitext 残留清理）
-│  ├─ squash_migrations.py               # 把各应用迁移历史压扁为单个初始迁移
+│  ├─ build_qa_index.py                  # 问答索引构建
 │  └─ db/                                # 全部种子数据（新增数据只改文件、不改代码）
 │     ├─ seed_landmarks.sql              #   地标（26 个：名称/地区/国家/经纬度/百科）
 │     ├─ seed_badges.sql                 #   徽章（10 枚成就定义）
 │     ├─ seed_sensitive_words.sql        #   敏感词基线（运行期可在后台增删）
 │     ├─ register_images.json            #   识别注册图清单（指纹缓存，可手工增删）
 │     └─ articles/                       #   地标文章库（每地标一篇章节式 markdown）
-├─ runtime/index/                        # 索引产物（reset_all 自动重建）
-│  ├─ landmarks.faiss/.meta.json/.manifest.json      # 识别索引三件套
-│  └─ qa_chunks.json/qa_vectors.npy/qa_manifest.json # 问答索引三件套
-├─ models/*.pkl                          # legacy 识别引擎权重（VLAD+逻辑回归回退用）
 ├─ tests/backend/                        # pytest-django 后端测试
 ├─ docker/                               # Dockerfile.backend / Dockerfile.frontend、nginx.conf、mysql/my.cnf
 ├─ desktop.py                            # 桌面应用入口（pywebview）
-├─ docker-compose.yml                    # Web/Celery/Beat/MySQL/Redis/Qdrant/Meilisearch/MinIO/Nginx/备份
+├─ docker-compose.yml                    # Web/Celery/Beat/MySQL/Redis/Meilisearch/MinIO/Nginx/备份
 ├─ .env.example / .gitignore / LICENSE / requirements.txt / pytest.ini
 └─ README.md
 ```
+
+## 数据库表（MySQL `tripscape`，业务表统一 `ts_` 前缀、蛇形命名）
+
+| 表 | 用途 |
+| --- | --- |
+| ts_user | 用户（昵称/签名/隐私开关/封禁/禁言/限登） |
+| ts_landmark | 地标（名称/地区/国家/经纬度/百科/热度/上下架） |
+| ts_journal / ts_journal_image | 手账（含二次编辑快照）与配图 |
+| ts_footprint | 足迹（手账自动聚合，含单点隐藏） |
+| ts_comment | 评论（软删除） |
+| ts_like | 点赞（手账/评论通用） |
+| ts_favorite | 地标收藏 |
+| ts_report | 举报（待处理/已下架/仅标记/已驳回四态） |
+| ts_notification | 站内通知（回复/审核/徽章/点赞/账号） |
+| ts_share_link | 手账公开分享链接 |
+| ts_badge / ts_user_badge | 徽章定义与用户获得记录 |
+| ts_recognition | 识别记录（看板统计） |
+| ts_qa_context | 问答会话历史 |
+| ts_sensitive_word / ts_audit_log | 敏感词 / 管理审计日志 |
+
+> 框架表（auth_* / django_*）由 Django 维护，不手工操作。
 
 ## API 概览
 
@@ -202,7 +209,7 @@ TripScape/
 | 功能 | 匿名 | 登录用户 | 管理员 |
 | --- | :-: | :-: | :-: |
 | 浏览 / 问答 / 识别 / 搜索 / 分享查看 / 公开主页 | ✓ | ✓ | ✓ |
-| 评论 / 手账 / 收藏 / 点赞 / 导出自己的数据 | – | ✓ | ✓ |
+| 评论 / 手账 / 收藏 / 点赞 | – | ✓ | ✓ |
 | 审核中心（隐藏/恢复/通过/驳回，删除进回收站） | – | – | ✓ |
 | 地标管理 / 账号管理 / 举报处理 / 审计日志 | – | – | ✓ |
 
@@ -215,14 +222,7 @@ docker compose exec web sh -c "cd /app/backend && python manage.py init_tripscap
 ```
 
 编排服务：Web、Celery、Celery Beat、MySQL（慢查询日志 + my.cnf）、Redis、
-Qdrant、Meilisearch、MinIO、Nginx、每日备份（MySQL dump + Qdrant 快照，保留 7 天）。
-
-## 注释与文档规范
-
-全项目注释、docstring 与文档的书写风格统一按
-[.github/COMMENT_STYLE.md](.github/COMMENT_STYLE.md) 执行
-（中文技术表达、文件头项目卡片、分节结构、「参数：/返回：」docstring、
-风险边界提示、操作手册式文档）。
+Meilisearch、MinIO、Nginx、每日备份（MySQL dump，保留 7 天）。
 
 ## 测试
 
@@ -236,7 +236,7 @@ cd frontend && npx playwright test      # 端到端（e2e/，先启动后端并 
 
 - **日志**：`runtime/logs/tripscape.log`（RotatingFileHandler 10MB×5）+ 请求中间件（request_id / 耗时）
 - **健康检查**：`/healthz` `/readyz` + compose healthcheck
-- **定时任务**：03:00 清理 runtime/tmp 与回收站；每小时看板聚合；04:30 向量索引自检
+- **定时任务**：03:00 清理 runtime/tmp 与回收站；每小时看板聚合
 - **备份**：`runtime/backups/`（每日，保留 7 天）
 - **__pycache__ 根除**：虚拟环境 `site-packages/sitecustomize.py` 全局禁用字节码写入，
   `scripts/reset_all.py` 会自愈重建该文件
@@ -251,9 +251,8 @@ cd frontend && npx playwright test      # 端到端（e2e/，先启动后端并 
             → 按地标去重取最优 → 地标名 + 置信度
 ```
 
-- **加新地标零训练**——往 `scripts/db/register_images.json` 加注册图条目
-  （或直接放入 `data/train/<地标名>/` 重新生成清单），跑
-  `python scripts/register_landmarks.py` 重建索引即可，无需收集大量图片。
+- **加新地标零训练**——注册图放 `data/<类名>/`，跑
+  `python scripts/register_landmarks.py` 重建索引。
 - **实测**：26 类 / 3065 张验证集 Top-1 **93.9%**，CPU 平均 64ms/图。
 - **全本地运行，零 API 费用**——DINOv2 ViT-S/14（85 MB，torch.hub 自动下载）、
   FAISS（纯库）。
@@ -277,26 +276,21 @@ cd frontend && npx playwright test      # 端到端（e2e/，先启动后端并 
             → 逐子项拒答（"文章未提及"）/ 整体拒答（"知识库中没有相关信息"）
 ```
 
-- **文章即数据**——`scripts/build_articles.py` 从知识库聚合生成底稿，并已
-  合并中文维基百科词条内容（25/26 地标，API 抓取，仅学习研究用），
-  每地标一篇 markdown（YAML 元数据 + 概述 + 基本参数 / 历史沿革 /
-  地理位置 / 参观信息 / 百科补充章节），可手工润色扩充。
+- **文章即数据**——`scripts/db/articles/` 每地标一篇 markdown
+  （YAML 元数据 + 概述/基本参数/历史沿革/地理位置/参观信息章节），
+  手工编辑后运行 `build_qa_index.py` 重建索引。
 - **复合问题**——"埃菲尔铁塔多高、什么时候建的"按疑问词边界拆分逐项作答
   （顿号 / 问号 / 分号均识别），答不出的子项明示"文章未提及"。
 - **零幻觉**——答案全部来自原文句子抽取，来源标注为文章章节，比生成式更可靠。
 - 索引构建：`python scripts/build_qa_index.py`（文章指纹变化自动重建）；
-  索引不可用时自动回退旧问答对匹配管线。
+  索引不可用时返回重建指引。
 
-## 数据集
+## 数据说明
 
-Kaggle 世界地标数据集，26 类（`data/train` `data/valid`，仅学习研究用）。
-新识别引擎只需其中**少量注册图**（每类 8 张，`register_images.json` 清单管理），
-完整数据集保留用于基准测试与旧引擎（legacy）训练。
-种子数据全部为独立 SQL 文件（新增数据只改文件、不改代码）：
-地标 `seed_landmarks.sql`、知识库 `seed_knowledge_base.sql`、
-徽章 `seed_badges.sql`、敏感词 `seed_sensitive_words.sql`，
-均由 `scripts/reset_all.py` 一键解析导入；种子账号（admin/demo）
-内置于 `init_tripscape` 命令。
+- `data/`：注册图（26 类 × 15 张），git 不入库，发布包需携带。
+- `models/`：bge-small-zh 向量模型（约 92MB），同上。
+- `scripts/db/`：种子数据（地标/徽章/敏感词 SQL、文章库 markdown），
+  `reset_all.py` 一键导入。
 
 ## 许可
 

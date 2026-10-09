@@ -157,18 +157,27 @@ class TestRetrievalEngine:
     """检索引擎装载与降级路径。"""
 
     def test_index_consistency_or_absent(self):
-        """索引存在时元数据必须对齐；不存在时 get_engine 返回 None。"""
+        """索引存在时元数据必须对齐；不存在时 get_engine 返回 None。
+
+        用模块级单例会被其它测试的库状态干扰（单例缓存了旧连接），
+        这里直接现场实例化校验文件一致性。
+        """
         if not django_setup_done:
             pytest.skip("Django 未初始化")
-        from services.retrieval_engine import get_engine
-
-        eng = get_engine()
         idx_dir = Path("runtime/index")
-        if eng is None:
-            # 不可用的合法场景：索引未构建
-            assert not (idx_dir / "landmarks.faiss").exists()
-        else:
-            assert eng.index.ntotal == len(eng.meta)
+        faiss_file = idx_dir / "landmarks.faiss"
+        if not faiss_file.exists():
+            from services.retrieval_engine import get_engine
+
+            assert get_engine() is None
+            return
+        import json
+
+        import faiss
+
+        index = faiss.read_index(str(faiss_file))
+        meta = json.loads((idx_dir / "landmarks.meta.json").read_text(encoding="utf-8"))
+        assert index.ntotal == len(meta), f"索引 {index.ntotal} 与元数据 {len(meta)} 不一致，请重跑 register_landmarks.py"
 
     def test_predict_shape(self):
         if not django_setup_done:
@@ -178,13 +187,18 @@ class TestRetrievalEngine:
         eng = get_engine()
         if eng is None:
             pytest.skip("识别索引未构建")
-        # 用一张验证集图实测
+        # 用一张精选注册图实测（data/valid 训练集已裁撤）
         from django.conf import settings
 
-        valid = Path(settings.BASE_DIR) / "data" / "valid"
-        sample = next(iter(sorted(valid.rglob("*.jpg"))), None)
+        data = Path(settings.BASE_DIR) / "data"
+        sample = next(
+            iter(
+                sorted(p for d in data.iterdir() if d.is_dir() and d.name not in ("train", "_rejected", "valid", "_pending") for p in d.glob("*.jpg"))
+            ),
+            None,
+        )
         if sample is None:
-            pytest.skip("验证集不存在")
+            pytest.skip("精选注册图不存在")
         res = eng.predict(sample.read_bytes(), top_k=3)
         assert 1 <= len(res) <= 3
         tid, conf = res[0]

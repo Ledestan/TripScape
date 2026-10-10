@@ -365,6 +365,7 @@ def _search_orm(
 
     User = get_user_model()
     items = []
+    offset = (page - 1) * page_size  # 翻页偏移（TS-10：修复每页重复第一页）
 
     def ts(dt):
         """时间戳字段提取（Meilisearch 文档用）。"""
@@ -386,7 +387,7 @@ def _search_orm(
                 name_en__icontains=query, is_active=True
             )
         qs = qs.order_by("-view_count" if sort == "hot" else "id")
-        for lm in qs[:page_size]:
+        for lm in qs[offset : offset + page_size]:
             items.append(
                 {
                     "kind": "landmark",
@@ -411,7 +412,7 @@ def _search_orm(
         qs = qs.order_by(
             "-created_at" if sort in ("time", "relevance") else "-created_at"
         )
-        for c in qs[:page_size]:
+        for c in qs[offset : offset + page_size]:
             if not in_range(c.created_at):
                 continue
             items.append(
@@ -428,7 +429,9 @@ def _search_orm(
             )
 
     if kind in ("all", "journal"):
-        qs = Journal.objects.filter(is_public=True, status="approved").select_related(
+        qs = Journal.objects.filter(
+            is_public=True, status="approved", deleted_at__isnull=True
+        ).select_related(
             "user", "landmark"
         )
         if query:
@@ -440,7 +443,7 @@ def _search_orm(
         if user_id:
             qs = qs.filter(user_id=user_id)
         qs = qs.order_by("-created_at")
-        for j in qs[:page_size]:
+        for j in qs[offset : offset + page_size]:
             if not in_range(j.created_at):
                 continue
             items.append(
@@ -464,7 +467,7 @@ def _search_orm(
             ) | User.objects.filter(
                 is_active=True, banned=False, nickname__icontains=query
             )
-        for u in qs[:page_size]:
+        for u in qs[offset : offset + page_size]:
             items.append(
                 {
                     "kind": "user",

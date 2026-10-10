@@ -12,14 +12,14 @@ GET /api/search/
 """
 
 
-from apps.core.auth import login_required
+from apps.core.auth import login_required, OptionalAuth
 from ninja import Router
 from services import search_service
 
 router = Router()
 
 
-@router.get("/", summary="全局搜索（地标/评论/手账/用户）", auth=None)
+@router.get("/", summary="全局搜索（地标/评论/手账/用户）", auth=OptionalAuth())
 def search(
     request,
     q: str = "",
@@ -32,7 +32,13 @@ def search(
     page: int = 1,
     page_size: int = 20,
 ):
-    """全局搜索：地标/用户/手账（Meilisearch 降级 ORM）。"""
+    """全局搜索：地标/用户/手账（Meilisearch 降级 ORM）。
+
+    分页参数归一化（TS-11）：page/page_size 负数或 0 统一修正，
+    不让 ORM 负索引切片炸成 500。
+    """
+    page = max(page, 1)
+    page_size = min(max(page_size, 1), 50)
     result = search_service.global_search(
         query=q,
         kind=kind,
@@ -42,7 +48,7 @@ def search(
         end_ts=end,
         sort=sort,
         page=page,
-        page_size=min(page_size, 50),
+        page_size=page_size,
     )
     return {
         "success": True,

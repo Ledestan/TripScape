@@ -19,13 +19,13 @@ __pycache__/
 .env.docker
 .env.*
 
-# ========== 运行时目录（索引/日志/上传，可重建） ==========
+# ========== 运行时目录 ==========
 runtime/
 
-# ========== 大体积数据与模型（不入库，README 说明获取） ==========
-# 精选注册图（data/<类名>/，运行必需但约 75MB，随发布包分发）
+# ========== 大体积数据与模型 ==========
+# 精选注册图
 data/
-# bge-small-zh 向量模型（约 92MB）
+# bge-small-zh 向量模型
 models/
 
 # ========== 前端 ==========
@@ -37,6 +37,10 @@ frontend/.vite/
 playwright-report/
 test-results/
 frontend/playwright/.cache/
+
+# ========== PyInstaller 产物 ==========
+build/
+dist/
 
 # ========== 系统 ==========
 Thumbs.db

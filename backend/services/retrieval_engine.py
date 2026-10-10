@@ -50,11 +50,31 @@ class DinoEmbedder:
         import torch
 
         self.torch = torch
-        self.model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14_reg")
+        self.model = self._load_dinov2()
         self.model.eval()
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = self.model.to(self.device)
         self._transform = None  # 官方预处理管线（embed 内惰性构建）
+
+    def _load_dinov2(self):
+        """加载 DINOv2 vits14_reg：打包环境用内置模型定义，回退 torch.hub。
+
+        打包发布带 models/dinov2/（官方 repo 源码 + 权重），
+        torch.hub source="local" 从该目录加载——完全离线且不依赖
+        GitHub；源码运行且本地目录不存在时回退标准 hub 下载。
+        """
+        import os
+        from pathlib import Path
+
+        local_dir = Path(__import__("django").conf.settings.BASE_DIR) / "models" / "dinov2"
+        if local_dir.exists() and (local_dir / "dinov2").is_dir():
+            # 本地完整 repo（打包形态）
+            return self.torch.hub.load(
+                str(local_dir), "dinov2_vits14_reg",
+                source="local", trust_repo=True,
+            )
+        # 源码运行：标准 hub（首次联网下载，缓存复用）
+        return self.torch.hub.load("facebookresearch/dinov2", "dinov2_vits14_reg")
 
     def embed(self, image_bytes: bytes) -> np.ndarray:
         """

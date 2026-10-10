@@ -9,7 +9,7 @@ POST /api/footprints/refresh  手动触发重算（通常不需要，手账保�
 """
 
 
-from apps.core.auth import login_required
+from apps.core.auth import login_required, OptionalAuth
 from ninja import Router
 from ninja.errors import HttpError
 from services import footprint_service
@@ -25,7 +25,7 @@ def my_footprints(request):
     return {"success": True, "data": data}
 
 
-@router.get("/public", summary="公开足迹热度（全球光点热度）", auth=None)
+@router.get("/public", summary="公开足迹热度（全球光点热度）", auth=OptionalAuth())
 def public_footprints(request):
     """公开足迹热度（全球光点渲染用）。"""
     data = footprint_service.get_public_heat()

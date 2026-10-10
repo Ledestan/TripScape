@@ -13,7 +13,7 @@ POST   /api/comments/report           举报（评论/手账，分类+说明）
 
 from apps.comments.models import Comment, CommentReport
 from apps.core import sensitive
-from apps.core.auth import is_any_admin, login_required
+from apps.core.auth import is_any_admin, login_required, OptionalAuth
 from ninja import Router, Schema
 from ninja.errors import HttpError
 from services import comment_service
@@ -38,7 +38,7 @@ class ReportIn(Schema):
 # ----------------------------------------------------------------------
 # 具体路径路由（必须在参数路由 /{comment_id} 之前注册，否则会被抢占）
 # ----------------------------------------------------------------------
-@router.get("/landmark/{landmark_id}", summary="地标评论（公开）", auth=None)
+@router.get("/landmark/{landmark_id}", summary="地标评论（公开）", auth=OptionalAuth())
 def landmark_comments(request, landmark_id: int):
     """地标下的公开评论树（一级 + 回复，过滤隐藏与软删）。"""
     qs = (
@@ -88,9 +88,39 @@ def create(request, payload: CommentIn):
 @router.post("/report", summary="举报评论或手账（分类 + 补充说明）")
 @login_required
 def report(request, payload: ReportIn):
-    """举报评论或手账：7 类分类 + 补充说明。"""
+    """举报评论或手账：7 类分类 + 补充说明。
+
+    目标存在性校验（TS-20）：不存在的对象不进举报队列；
+    重复举报同一目标幂等返回，不重复入库。
+    """
     if payload.target_type not in ("comment", "journal"):
         raise HttpError(400, "目标类型不合法")
+
+    # 目标存在且有效（软删/隐藏内容不可举报）
+    if payload.target_type == "comment":
+        from apps.comments.models import Comment
+
+        exists = Comment.objects.filter(
+            id=payload.target_id, deleted_at__isnull=True, is_hidden=False
+        ).exists()
+    else:
+        from apps.journals.models import Journal
+
+        exists = Journal.objects.filter(
+            id=payload.target_id, deleted_at__isnull=True
+        ).exists()
+    if not exists:
+        raise HttpError(404, "举报目标不存在")
+
+    # 重复举报幂等
+    if CommentReport.objects.filter(
+        reporter=request.auth,
+        target_type=payload.target_type,
+        target_id=payload.target_id,
+        status="pending",
+    ).exists():
+        return {"success": True, "message": "你已举报过该内容，管理员会尽快处理"}
+
     valid_reasons = {c[0] for c in CommentReport.REASONS}
     reason = payload.reason if payload.reason in valid_reasons else "other"
     CommentReport.objects.create(
@@ -109,10 +139,17 @@ def report(request, payload: ReportIn):
 @router.put("/{comment_id}", summary="修改自己的评论")
 @login_required
 def update(request, comment_id: int, payload: CommentIn):
-    """作者修改自己的评论（敏感词校验）。"""
-    c = Comment.objects.filter(id=comment_id, user=request.auth).first()
+    """作者修改自己的评论（敏感词校验；禁言期间同样受限，TS-13）。"""
+    c = Comment.objects.filter(
+        id=comment_id, user=request.auth, deleted_at__isnull=True
+    ).first()
     if not c:
         raise HttpError(404, "评论不存在或无权操作")
+    from apps.core.auth import is_muted
+
+    if is_muted(request.auth):
+        until = request.auth.muted_until.strftime("%Y-%m-%d %H:%M")
+        raise HttpError(403, f"你已被禁言至 {until}，暂时无法修改评论")
     content = (payload.content or "").strip()
     if not content:
         raise HttpError(400, "评论内容不能为空")

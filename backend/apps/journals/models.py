@@ -62,7 +62,18 @@ class Journal(models.Model):
     def __str__(self):
         return f"{self.user.username}·{self.title}"
 
-    def as_dict(self, with_content=False):
+    def as_dict(self, with_content=False, viewer=None):
+        """序列化手账。
+
+        参数：
+            with_content : bool，是否含正文（详情场景）
+            viewer : User 或 None，查看者身份决定待审核草稿的可见性——
+                     仅作者本人与任意管理员可见（TS-02：公开响应
+                     不得泄露 pending_edit）
+        """
+        can_see_pending = viewer is not None and (
+            viewer.id == self.user_id or getattr(viewer, "role", "") == "admin"
+        )
         data = {
             "id": self.id,
             "user": {
@@ -85,8 +96,8 @@ class Journal(models.Model):
             "visited_at": self.visited_at.isoformat() if self.visited_at else None,
             "is_public": self.is_public,
             "status": self.status,
-            "edit_pending": self.edit_pending,
-            "pending_edit": self.pending_edit if self.edit_pending else None,
+            "edit_pending": self.edit_pending if can_see_pending else False,
+            "pending_edit": self.pending_edit if (self.edit_pending and can_see_pending) else None,
             "created_at": self.created_at.isoformat(),
         }
         if with_content:

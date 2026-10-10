@@ -36,9 +36,11 @@ class LoginIn(Schema):
 
 
 class ProfileUpdateIn(Schema):
-    nickname: str = ""
-    avatar: str = ""
-    bio: str = ""
+    # 部分更新语义（TS-17）：仅显式提交的字段被更新；
+    # Optional 默认 None = 未提交，空字符串 = 显式清空
+    nickname: str = None
+    avatar: str = None
+    bio: str = None
 
 
 class PrivacyUpdateIn(Schema):
@@ -96,15 +98,21 @@ def profile(request):
 @router.put("/profile", summary="更新个人资料")
 @login_required
 def update_profile(request, payload: ProfileUpdateIn):
-    """更新昵称/头像/签名。"""
+    """更新昵称/头像/签名（只改显式提交的字段，TS-17）。"""
     user = request.auth
-    if payload.nickname:
-        user.nickname = payload.nickname.strip()[:64]
-    if payload.avatar is not None:
-        user.avatar = payload.avatar[:512]
-    if payload.bio is not None:
-        user.bio = payload.bio.strip()[:255]
-    user.save(update_fields=["nickname", "avatar", "bio"])
+    fields = payload.dict(exclude_unset=True)
+    update_fields = []
+    if "nickname" in fields and fields["nickname"]:
+        user.nickname = fields["nickname"].strip()[:64]
+        update_fields.append("nickname")
+    if "avatar" in fields:
+        user.avatar = (fields["avatar"] or "")[:512]
+        update_fields.append("avatar")
+    if "bio" in fields:
+        user.bio = (fields["bio"] or "").strip()[:255]
+        update_fields.append("bio")
+    if update_fields:
+        user.save(update_fields=update_fields)
     return _user_dict(user)
 
 

@@ -5,6 +5,7 @@
 """
 
 import logging
+from datetime import date
 
 from apps.core import sensitive
 from apps.journals.models import Journal
@@ -67,14 +68,37 @@ def create_journal(
 EDIT_FIELDS = ("title", "content", "images", "visited_at")
 
 
+def _json_safe_patch(patch: dict) -> dict:
+    """把 patch 转为可存 JSONField 的形态（TS-05：date -> ISO 字符串）。"""
+    out = dict(patch)
+    if isinstance(out.get("visited_at"), date):
+        out["visited_at"] = out["visited_at"].isoformat()
+    return out
+
+
+def _restore_patch_types(patch: dict) -> dict:
+    """应用快照前把 ISO 日期字符串转回 date（配合 _json_safe_patch）。"""
+    out = dict(patch)
+    v = out.get("visited_at")
+    if isinstance(v, str) and v:
+        try:
+            out["visited_at"] = date.fromisoformat(v[:10])
+        except ValueError:
+            out["visited_at"] = None
+    return out
+
+
 def update_journal(journal: Journal, data: dict) -> tuple:
     """更新手账（仅作者）。
 
     - 已通过（approved）：修改写入 pending_edit 快照，edit_pending=True；
       旧版继续公开展示，审核通过后替换，驳回则保留旧版。
     - 待审/已驳回：直接替换内容并回到 pending（旧版本就未公开）。
+
+    字段语义（TS-06）：键存在即视为修改——visited_at=None 表示清空日期；
+    键不存在表示未修改。API 层用 exclude_unset 区分。
     """
-    patch = {k: data[k] for k in EDIT_FIELDS if k in data and data[k] is not None}
+    patch = {k: data[k] for k in EDIT_FIELDS if k in data}
     if "is_public" in data and data["is_public"] is not None:
         patch["is_public"] = data["is_public"]
 
@@ -87,7 +111,7 @@ def update_journal(journal: Journal, data: dict) -> tuple:
 
     if journal.status == "approved":
         snapshot = dict(journal.pending_edit or {})
-        snapshot.update(patch)
+        snapshot.update(_json_safe_patch(patch))
         journal.pending_edit = snapshot
         journal.edit_pending = True
         # is_public 允许作者直接切换（不影响正文审核）
@@ -119,7 +143,7 @@ def moderate(journal: Journal, action: str, moderator, reason: str = ""):
     if action == "approve":
         # 应用待审快照（二次编辑通过 -> 新版替换旧版）
         if journal.edit_pending and journal.pending_edit:
-            snap = dict(journal.pending_edit)
+            snap = _restore_patch_types(dict(journal.pending_edit))
             snap.pop("is_public", None)
             for field in EDIT_FIELDS:
                 if field in snap:

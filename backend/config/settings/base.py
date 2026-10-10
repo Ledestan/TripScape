@@ -17,8 +17,17 @@ import environ
 # 基础路径：
 #   BACKEND_DIR = backend/（Django 工程根）
 #   BASE_DIR    = 仓库根（data/ models/ runtime/ frontend/ .env 都在这里）
+#
+# PyInstaller 冻结环境：datas 以 .py 原样拷贝，__file__ 保留打包机
+# 绝对路径——必须改按 exe 实际位置解析（_internal/），否则运行期
+# 读写全落在打包机目录（库建到源项目、模型读源路径）。
 # ----------------------------------------------------------------------
-BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
+import sys as _sys
+
+if getattr(_sys, "frozen", False):
+    BACKEND_DIR = Path(_sys.executable).resolve().parent / "_internal" / "backend"
+else:
+    BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 BASE_DIR = BACKEND_DIR.parent
 
 env = environ.Env(
@@ -27,7 +36,8 @@ env = environ.Env(
     DJANGO_SECRET_KEY=(str, "django-insecure-tripscape-dev-key-change-me"),
     DJANGO_ALLOWED_HOSTS=(list, ["*"]),
     DJANGO_CSRF_TRUSTED_ORIGINS=(list, []),
-    # ---------------- MySQL ----------------
+    # ---------------- 数据库 ----------------
+    DB_ENGINE=(str, "mysql"),  # mysql | sqlite（打包分发用单文件库）
     MYSQL_HOST=(str, "127.0.0.1"),
     MYSQL_PORT=(int, 3306),
     MYSQL_DB=(str, "tripscape"),
@@ -139,21 +149,32 @@ ASGI_APPLICATION = "config.asgi.application"
 WSGI_APPLICATION = "config.wsgi.application"
 
 # ----------------------------------------------------------------------
-# MySQL（django-environ 读取 .env）
+# 数据库（django-environ 读取 .env）
+#     DB_ENGINE=sqlite  -> runtime/tripscape.db 单文件库（演示/打包分发，
+#                          收方零安装；预构建种子随包）
+#     默认 mysql        -> 完整部署
 # ----------------------------------------------------------------------
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": env("MYSQL_DB"),
-        "USER": env("MYSQL_USER"),
-        "PASSWORD": env("MYSQL_PASSWORD"),
-        "HOST": env("MYSQL_HOST"),
-        "PORT": env("MYSQL_PORT"),
-        "OPTIONS": {
-            "charset": "utf8mb4",
-        },
+if env("DB_ENGINE") == "sqlite":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "runtime" / "tripscape.db",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": env("MYSQL_DB"),
+            "USER": env("MYSQL_USER"),
+            "PASSWORD": env("MYSQL_PASSWORD"),
+            "HOST": env("MYSQL_HOST"),
+            "PORT": env("MYSQL_PORT"),
+            "OPTIONS": {
+                "charset": "utf8mb4",
+            },
+        }
+    }
 
 # ----------------------------------------------------------------------
 # Redis / Celery

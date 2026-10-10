@@ -26,13 +26,29 @@ class LikeIn(Schema):
 @router.post("/", summary="点赞/取消点赞（toggle）")
 @login_required
 def toggle_like(request, payload: LikeIn):
-    """点赞/取消点赞（toggle），给作者发通知。"""
+    """点赞/取消点赞（toggle），给作者发通知。
+
+    目标可见性校验（TS-20）：私密/软删/隐藏内容不可点赞——
+    点赞数与通知都是公开信号，不得泄露不可见对象的存在。
+    """
     if payload.target_type not in ("journal", "comment"):
         raise HttpError(400, "目标类型不合法")
 
-    Model = Journal if payload.target_type == "journal" else Comment
-    if not Model.objects.filter(id=payload.target_id).exists():
-        raise HttpError(404, "内容不存在")
+    if payload.target_type == "journal":
+        obj = Journal.objects.filter(
+            id=payload.target_id,
+            deleted_at__isnull=True,
+            is_public=True,
+            status="approved",
+        ).first()
+    else:
+        obj = Comment.objects.filter(
+            id=payload.target_id,
+            deleted_at__isnull=True,
+            is_hidden=False,
+        ).first()
+    if not obj:
+        raise HttpError(404, "内容不存在或不可见")
 
     like = Like.objects.filter(
         user=request.auth, target_type=payload.target_type, target_id=payload.target_id
@@ -49,7 +65,6 @@ def toggle_like(request, payload: LikeIn):
         liked = True
         # 通知作者（不通知自己）
         try:
-            obj = Model.objects.select_related("user").get(id=payload.target_id)
             if obj.user_id != request.auth.id:
                 what = (
                     "手账《%s》" % (getattr(obj, "title", None) or "无题")

@@ -178,7 +178,7 @@ class Command(BaseCommand):
                     "lat": lat,
                     "lon": lon,
                     "intro": intro,
-                    "image_url": f"/static/landmarks/{target_id}.jpg",
+                    "image_url": f"/lmimg/{target_id}.jpg",
                 },
             )
             created_lms += int(created)
@@ -256,7 +256,7 @@ class Command(BaseCommand):
                 dst = static_dir / f"{lm.target_id}.jpg"
                 if not dst.exists():
                     shutil.copyfile(src, dst)
-                lm.image_url = f"/landmarks/{lm.target_id}.jpg"
+                lm.image_url = f"/lmimg/{lm.target_id}.jpg"
                 lm.save(update_fields=["image_url"])
                 picked += 1
         self.stdout.write(f"   已为 {picked} 个地标挑选百科图片")

@@ -12,7 +12,7 @@ GET  /api/recognition/task/{id}   查询异步任务结果（前端轮询，
 
 import logging
 
-from apps.core.auth import login_required
+from apps.core.auth import login_required, OptionalAuth
 from django.conf import settings
 from ninja import Router
 from ninja.errors import HttpError
@@ -44,21 +44,43 @@ def _validate(file) -> bytes:
     return data
 
 
-@router.post("/recognize", summary="上传图片识别（同步）", auth=None)
+@router.post("/recognize", summary="上传图片识别（同步）", auth=OptionalAuth())
 def recognize_sync(request, image: UploadedFile = None):
     """同步图片识别（返回 top-3 与低置信度候选）。"""
     data = _validate(image)
-    user = request.auth if getattr(request, "auth", None) else None
+    user = (
+        request.auth
+        if getattr(request.auth, "is_authenticated", False)
+        else None
+    )
     result = recognizer.recognize_image(data, user=user)
     if not result.get("success"):
         return result
     return result
 
 
+def _celery_available() -> bool:
+    """Celery 任务链是否可用（打包分发包不带 worker，TS-18）。
+
+    探测方式：导入 celery.loaders.default（PyInstaller 收集不全时
+    正是它缺）；失败即视为异步能力不可用。
+    """
+    try:
+        import celery.loaders.default  # noqa: F401
+
+        from config.celery import app as celery_app
+
+        return bool(celery_app.conf.broker_url)
+    except Exception:
+        return False
+
+
 @router.post("/submit", summary="提交异步识别任务")
 @login_required
 def submit(request, image: UploadedFile = None):
-    """提交异步识别任务（Celery）。"""
+    """提交异步识别任务（Celery；分发包无 worker 时明确 503，TS-18）。"""
+    if not _celery_available():
+        raise HttpError(503, "异步识别在当前环境不可用，请使用同步识别接口")
     data = _validate(image)
     # 暂存文件供 worker 读取
     import os
@@ -82,7 +104,9 @@ def submit(request, image: UploadedFile = None):
 @router.get("/task/{task_id}", summary="查询异步识别结果")
 @login_required
 def task_result(request, task_id: str):
-    """查询异步任务结果。"""
+    """查询异步任务结果（分发包无 Celery 时明确 503，TS-18）。"""
+    if not _celery_available():
+        raise HttpError(503, "异步识别在当前环境不可用")
     from tasks.recognition_tasks import get_result
 
     payload = get_result(task_id)

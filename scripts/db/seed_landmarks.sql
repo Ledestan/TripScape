@@ -1,8 +1,8 @@
--- 地标种子：26 个世界地标的完整数据。
+﻿-- 地标种子：26 个世界地标的完整数据。
 -- 字段：target_id（英文标识，同时是百科图片文件名）/ name（中文名）/ name_en（英文名）/
 --       region（大区）/ country（国家）/ lat（纬度）/ lon（经度）/ intro（百科介绍）。
 -- 由 `python backend/manage.py init_tripscape` 解析写入 Landmark 表；
--- 百科图片按 /static/landmarks/<target_id>.jpg 约定自动关联。
+-- 百科图片按 /lmimg/<target_id>.jpg 约定自动关联。
 -- 新增地标：按下方格式追加一行 INSERT 元组即可，无需改任何代码。
 
 INSERT INTO landmarks (target_id, name, name_en, region, country, lat, lon, intro) VALUES

@@ -14,7 +14,7 @@ GET    /api/landmarks/{id}/comments    地标下的公开评论
 """
 
 
-from apps.core.auth import any_admin_required, login_required
+from apps.core.auth import any_admin_required, login_required, OptionalAuth
 from apps.core.views import paginate
 from apps.landmarks.models import Landmark, UserFavorite
 from django.conf import settings
@@ -39,7 +39,7 @@ class LandmarkIn(Schema):
     image_url: str = ""
 
 
-@router.get("/spots", summary="地球光点数据（含热度/评论数/足迹状态）", auth=None)
+@router.get("/spots", summary="地球光点数据（含热度/评论数/足迹状态）", auth=OptionalAuth())
 def spots(request):
     """光点数据：个人模式附 visited，公共模式附热度（手账数/评论数/访客数）。"""
     from apps.comments.models import Comment
@@ -49,19 +49,22 @@ def spots(request):
     lms = list(Landmark.objects.filter(is_active=True).order_by("id"))
 
     journal_counts = dict(
-        Journal.objects.filter(is_public=True, status="approved")
+        Journal.objects.filter(
+            is_public=True, status="approved", deleted_at__isnull=True
+        )
         .values_list("landmark")
         .annotate(c=Count("id"))
     )
     comment_counts = dict(
-        Comment.objects.filter(is_hidden=False)
+        Comment.objects.filter(is_hidden=False, deleted_at__isnull=True)
         .values_list("landmark")
         .annotate(c=Count("id"))
     )
+    # 公开热度：隐藏足迹不计（TS-16：与 footprints/public 同口径）
     visitor_counts = dict(
-        Footprint.objects.values_list("landmark").annotate(
-            c=Count("user", distinct=True)
-        )
+        Footprint.objects.filter(hidden=False)
+        .values_list("landmark")
+        .annotate(c=Count("user", distinct=True))
     )
 
     user = getattr(request, "auth", None)
@@ -82,7 +85,7 @@ def spots(request):
     return {"success": True, "data": data}
 
 
-@router.get("/", summary="地标列表", auth=None)
+@router.get("/", summary="地标列表", auth=OptionalAuth())
 def list_landmarks(
     request, page: int = 1, page_size: int = 0, region: str = "", q: str = ""
 ):
@@ -98,7 +101,7 @@ def list_landmarks(
     return {"success": True, "data": [lm.as_dict() for lm in items], "meta": meta}
 
 
-@router.get("/{landmark_id}", summary="地标详情（浏览量+1）", auth=None)
+@router.get("/{landmark_id}", summary="地标详情（浏览量+1）", auth=OptionalAuth())
 def landmark_detail(request, landmark_id: int):
     """地标详情：百科介绍 + 计数（评论/手账/访客）。"""
     try:

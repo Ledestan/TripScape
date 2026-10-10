@@ -60,9 +60,11 @@ urlpatterns = [
     path("api/", api.urls),
     # 开发态 media 服务（生产由 Nginx 直接提供）
     path("media/<path:path>", static_serve, {"document_root": settings.MEDIA_ROOT}),
-    # 地标百科图片（frontend/public/landmarks -> 构建后 frontend/dist/landmarks）
+    # 地标百科图片：独立前缀 /lmimg/（frontend/dist/lmimg）。
+    # 不用 /landmarks/ 的原因：该前缀是前端路由 /landmarks/:id，
+    # 静态服务会抢占深链导致刷新 404（TS-07/TS-19）。
     re_path(
-        r"^landmarks/(?P<path>.*)$",
+        r"^lmimg/(?P<path>.*)$",
         static_serve,
         {"document_root": str(settings.BASE_DIR / "frontend" / "dist" / "landmarks")},
     ),
@@ -72,15 +74,15 @@ urlpatterns = [
         static_serve,
         {"document_root": str(settings.BASE_DIR / "frontend" / "dist" / "assets")},
     ),
-    # 前端 public 根文件
+    # 前端 public 根文件（含启动背景 stars/earth-arc，TS-07）
     re_path(
-        r"^(?P<path>favicon\.svg|earth\.png|manifest\.webmanifest)$",
+        r"^(?P<path>favicon\.svg|earth\.png|stars\.jpg|earth-arc\.jpg|manifest\.webmanifest)$",
         static_serve,
         {"document_root": str(settings.BASE_DIR / "frontend" / "dist")},
     ),
-    # React SPA 兜底（前端路由）
+    # React SPA 兜底（前端路由；/landmarks/:id 深链正常进入 SPA）
     re_path(
-        r"^(?!api/|admin/|media/|landmarks/|assets/|healthz|readyz|static/|favicon\.svg|earth\.png|manifest\.webmanifest).*$",
+        r"^(?!api/|admin/|media/|lmimg/|assets/|healthz|readyz|static/|favicon\.svg|earth\.png|stars\.jpg|earth-arc\.jpg|manifest\.webmanifest).*$",
         spa,
     ),
 ]

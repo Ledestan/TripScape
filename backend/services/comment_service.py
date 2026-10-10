@@ -38,9 +38,24 @@ def create_comment(user, landmark_id: int, content: str, parent_id=None) -> tupl
 
     parent = None
     if parent_id:
-        parent = Comment.objects.filter(id=parent_id).first()
+        parent = (
+            Comment.objects.filter(
+                id=parent_id,
+                deleted_at__isnull=True,  # 已删父评论不可回复
+            )
+            .select_related("parent")
+            .first()
+        )
         if not parent:
             return False, "回复的评论不存在"
+        # 跨地标校验（TS-14）：回复必须归属父评论所在地标，
+        # 防止地标 A 的评论树里出现地标 B 的内容
+        if parent.landmark_id != lm.id:
+            return False, "回复与原评论不属于同一地标"
+        # 深度限制（TS-15）：最多两级——三级及以上回复自动挂到
+        # 顶级父评论下（扁平化），保证"发布成功的评论都能被读到"
+        if parent.parent_id:
+            parent = parent.parent
 
     comment = Comment.objects.create(
         user=user, landmark=lm, parent=parent, content=content[:2000]

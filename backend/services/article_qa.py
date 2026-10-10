@@ -359,6 +359,20 @@ def answer_question(question: str, history=None):
         return {"answer": "请输入有效的问题。", "confidence": 0.0, "known": False,
                 "landmark": None, "source": "article"}
 
+    # 0. 指代消解（TS-08）：问题无地标名且含代词/省略主语时，
+    #    用会话历史最近一轮的地标补全（"它有多高" -> "埃菲尔铁塔有多高"）。
+    #    仅在当前问题确实无主题时替换，不跨主题污染。
+    resolved_landmark = None
+    if not extract_topics(question, idx.name_map) and history:
+        pronoun_pat = re.compile(r"^(它|他|她|这个|那个|这座|该|此地|那里)|它|这座|该塔|该建筑")
+        if pronoun_pat.search(question):
+            for row in reversed(history[-3:]):
+                lm_name = (row.get("landmark_name") or "").strip()
+                if lm_name and lm_name in idx.name_map:
+                    resolved_landmark = lm_name
+                    question = f"{lm_name}{question}"
+                    break
+
     # 1. 主题提取（多主题 -> 逐主题作答后合并）
     topics = extract_topics(question, idx.name_map)
     if not topics:
@@ -370,16 +384,19 @@ def answer_question(question: str, history=None):
             return {"answer": UNKNOWN_ANSWER, "confidence": 0.0, "known": False,
                     "landmark": None, "source": "article"}
         # 泛问句（如"最高的塔是什么"）：全库检索，置信要求更高（0.55）
+        # 域外拒答（TS-09）：命中句必须与问题共享至少一个实词（2 字以上
+        # 非停用词），防止"今天股票怎么买"凭弱相似命中随机地标百科。
         results = idx.search(question, top_k=3)
         if results and results[0]["vec_sim"] >= 0.55:
             top = results[0]
-            return {
-                "answer": top["text"],
-                "confidence": float(top["vec_sim"]),
-                "known": True,
-                "landmark": _lm_info(top["target_id"]),
-                "source": "article",
-            }
+            if _shares_content_word(question, top["text"]):
+                return {
+                    "answer": top["text"],
+                    "confidence": float(top["vec_sim"]),
+                    "known": True,
+                    "landmark": _lm_info(top["target_id"]),
+                    "source": "article",
+                }
         return {"answer": UNKNOWN_ANSWER, "confidence": 0.0, "known": False,
                 "landmark": None, "source": "article"}
 
@@ -562,6 +579,27 @@ def _sentence_aspects(sent: str):
         if aspect == "height" and re.search(r"\d+\s*(米|公里|千米|m|km)", sent):
             hits.add(aspect)
     return hits
+
+
+def _shares_content_word(question: str, text: str) -> bool:
+    """问句与候选答案是否共享至少一个实词（域相关性校验，TS-09）。
+
+    规则：取问句中 2 字以上的非停用词片段，任一在答案文本中出现
+    即认为相关。纯向量相似对域外问题（"今天股票怎么买"）会命中
+    随机地标百科，词面校验是最后一道拒答闸门。
+    """
+    stop = {"什么", "怎么", "为什么", "哪里", "哪个", "多少", "可以",
+            "能够", "还是", "有没有", "请问", "一下", "今天", "现在",
+            "告诉", "我想", "知道", "如何", "怎样"}
+    # 简易中文二元切分取实词片段
+    words = set()
+    q = re.sub(r"[？?！!。，,、\s]", "", question)
+    for n in (2, 3, 4):
+        for i in range(len(q) - n + 1):
+            seg = q[i : i + n]
+            if seg not in stop and not seg.isdigit():
+                words.add(seg)
+    return any(w in text for w in words)
 
 
 def _overview_sentence(idx, target_id: str) -> str:

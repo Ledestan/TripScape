@@ -40,6 +40,20 @@ def api_client():
                 headers["HTTP_AUTHORIZATION"] = f"Bearer {token}"
             return self.get(path, **headers, **kw)
 
+        def json_put(self, path, data=None, token=None, **kw):
+            import json
+
+            headers = kw.pop("headers", {})
+            if token:
+                headers["HTTP_AUTHORIZATION"] = f"Bearer {token}"
+            return self.put(
+                path,
+                data=json.dumps(data or {}),
+                content_type="application/json",
+                **headers,
+                **kw,
+            )
+
     return JsonClient()
 
 

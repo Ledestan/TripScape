@@ -20,6 +20,37 @@ from ninja.security import HttpBearer
 User = get_user_model()
 
 
+class AccountForbidden(Exception):
+    """账号被处罚（封禁/限登/禁言到期前）拒绝访问。"""
+
+    def __init__(self, reason: str):
+        self.reason = reason
+        super().__init__(reason)
+
+
+def check_account_status(user) -> None:
+    """校验账号处罚状态（封禁/限登）。
+
+    每次令牌认证调用——处罚（admin 封禁/限登）立即对旧令牌生效，
+    无需等令牌自然过期（TS-01）。
+
+    抛出：
+        AccountForbidden（含中文原因）；正常返回 None。
+    """
+    if user.banned:
+        raise AccountForbidden(
+            f"账号已被封禁{('：' + user.banned_reason) if user.banned_reason else ''}"
+        )
+    if user.is_locked:
+        until = user.locked_until.strftime("%Y-%m-%d %H:%M")
+        raise AccountForbidden(f"账号被限制登录至 {until}")
+
+
+def is_muted(user) -> bool:
+    """禁言判定（发布/编辑评论与手账前调用，TS-13）。"""
+    return bool(user.is_muted)
+
+
 def make_token(user):
     """为用户签发 JWT。"""
     now = int(time.time())
@@ -45,6 +76,7 @@ class GlobalAuth(HttpBearer):
 
     - 未带 token：request.auth = None（匿名），由各路由自行决定是否放行
     - token 无效：401
+    - 账号被封禁/限登：403（处罚立即对旧令牌生效，TS-01）
     """
 
     def authenticate(self, request, token):
@@ -55,16 +87,66 @@ class GlobalAuth(HttpBearer):
             user = User.objects.get(id=payload["user_id"], is_active=True)
         except User.DoesNotExist:
             return None
+        try:
+            check_account_status(user)
+        except AccountForbidden as exc:
+            from ninja.errors import HttpError
+
+            request.forbidden_reason = exc.reason
+            raise HttpError(403, exc.reason)
         request.user = user
         return user
 
 
+class OptionalAuth:
+    """公开接口的可选认证（TS-04）。
+
+    Ninja 认证器返回假值一律 401（operation 层 if result 判定），
+    因此本类在匿名时返回 AnonymousUser 哨兵而非 None：
+    - 无 Authorization 头 / 令牌无效：匿名（哨兵），公开数据放行；
+    - 带有效令牌：解析真实用户挂到 request.auth/user；
+    - 封禁/限登账号：403（公开接口不得绕过处罚）。
+    """
+
+    def __call__(self, request):
+        header = request.META.get("HTTP_AUTHORIZATION", "")
+        token = header[7:].strip() if header.lower().startswith("bearer ") else ""
+        user = None
+        if token:
+            payload = decode_token(token)
+            if payload:
+                try:
+                    user = User.objects.get(id=payload["user_id"], is_active=True)
+                except User.DoesNotExist:
+                    user = None
+        if user is not None:
+            try:
+                check_account_status(user)
+            except AccountForbidden as exc:
+                from ninja.errors import HttpError
+
+                raise HttpError(403, exc.reason)
+            request.user = user
+            return user
+        # 匿名哨兵（真值对象，让 Ninja 放行）
+        from django.contrib.auth.models import AnonymousUser
+
+        anon = AnonymousUser()
+        request.user = anon
+        return anon
+
+
 def login_required(view):
-    """匿名直接 401 的路由装饰器。"""
+    """匿名直接 401 的路由装饰器。
+
+    OptionalAuth 匿名时挂 AnonymousUser（Ninja 真值哨兵），
+    必须用 is_authenticated 判定而非真值判断。
+    """
 
     @wraps(view)
     def wrapper(request, *args, **kwargs):
-        if not getattr(request, "auth", None):
+        user = getattr(request, "auth", None)
+        if not getattr(user, "is_authenticated", False):
             from ninja.errors import HttpError
 
             raise HttpError(401, "请先登录")

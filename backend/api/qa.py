@@ -9,7 +9,7 @@ POST /api/qa/chat
            "landmark": {...} | null, "landmarks": [...], "source": "article"}
 """
 
-from apps.core.auth import login_required
+from apps.core.auth import login_required, OptionalAuth
 from apps.landmarks.models import QAContext
 from ninja import Router, Schema
 from ninja.errors import HttpError
@@ -25,10 +25,14 @@ class ChatIn(Schema):
 @router.get("/history", summary="历史会话记录")
 @login_required
 def history(request, limit: int = 50):
-    """当前用户的历史问答（会话上下文按用户前缀存储）。"""
+    """当前用户的历史问答（会话上下文按用户前缀存储）。
+
+    limit 负数归一为 20（TS-11：负切片触发 500）。
+    """
+    limit = min(max(limit, 1), 200)
     rows = QAContext.objects.filter(
         session_id__startswith=f"u{request.auth.id}-"
-    ).order_by("-created_at")[: min(limit, 200)]
+    ).order_by("-created_at")[:limit]
     return {
         "success": True,
         "data": [
@@ -44,7 +48,7 @@ def history(request, limit: int = 50):
     }
 
 
-@router.post("/chat", summary="智能问答（RAG + 会话上下文）", auth=None)
+@router.post("/chat", summary="智能问答（RAG + 会话上下文）", auth=OptionalAuth())
 def chat(request, payload: ChatIn):
     """智能问答（RAG 检索 + 上下文；低置信度回答不知道）。"""
     question = (payload.question or "").strip()

@@ -93,6 +93,8 @@ export default function LandmarkDetailWindow({
       setReplyTo(null);
       refetch();
       qc.invalidateQueries({ queryKey: ["landmark", landmarkId] });
+      // 个人中心的评论数与列表要同步刷新（否则 30s 缓存内看到旧数据）
+      qc.invalidateQueries({ queryKey: ["profile"] });
     },
     onError: (e) => toast.error(errMessage(e, "评论失败")),
   });
@@ -110,6 +112,7 @@ export default function LandmarkDetailWindow({
       toast.success("评论已更新");
       setEditingComment(null);
       refetch();
+      qc.invalidateQueries({ queryKey: ["profile"] });
     },
     onError: (e) => toast.error(errMessage(e, "更新失败")),
   });
@@ -120,6 +123,7 @@ export default function LandmarkDetailWindow({
       toast.success("评论已删除");
       refetch();
       qc.invalidateQueries({ queryKey: ["landmark", landmarkId] });
+      qc.invalidateQueries({ queryKey: ["profile"] });
     },
   });
 

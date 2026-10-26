@@ -70,14 +70,14 @@
   }
 }
 
-/* 地球场景背景：沉浸式空间渐变（日间深蓝远空 / 夜间近黑深空），不用纯黑 */
+/* 地球场景背景：深空蓝黑（不用纯黑，避免地球边缘形成死硬轮廓） */
 .globe-bg {
   background:
-    radial-gradient(ellipse 120% 90% at 50% 40%, #3a7bc4 0%, #234f8c 40%, #16325c 72%, #0d1f3d 100%);
+    radial-gradient(ellipse 120% 90% at 50% 40%, #101a2b 0%, #0a1220 45%, #050a14 78%, #02040a 100%);
 }
 .dark .globe-bg {
   background:
-    radial-gradient(ellipse 120% 90% at 50% 40%, #2a5c9e 0%, #1b4378 38%, #122b52 70%, #0a1a34 100%);
+    radial-gradient(ellipse 120% 90% at 50% 40%, #080d16 0%, #05080f 45%, #02040a 78%, #000000 100%);
 }
 
 /* 顶部渐隐遮罩：让 UI 控件区与场景过渡自然（GE 式 vignette） */

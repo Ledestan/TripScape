@@ -34,28 +34,65 @@ HOST = "127.0.0.1"
 PORT = 8000
 URL = f"http://{HOST}:{PORT}"
 
+# 后台线程启动异常（主线程据此报错退出，而不是打开白屏窗口）
+_STARTUP_ERROR = []
+
+
+def _mysql_reachable() -> bool:
+    """探测 .env 配置的 MySQL 是否可连接（决定是否回退 SQLite）。
+
+    返回：
+        bool，可连接 True；未配置/连不上 False。
+    """
+    import socket
+
+    try:
+        import environ
+
+        env = environ.Env()
+        env.read_env(str(ROOT / ".env"))
+        host = env.str("MYSQL_HOST", default="127.0.0.1")
+        port = env.int("MYSQL_PORT", default=3306)
+    except Exception:
+        host, port = "127.0.0.1", 3306
+    try:
+        with socket.create_connection((host, port), timeout=1.5):
+            return True
+    except OSError:
+        return False
+
 
 def start_django():
     """在后台线程里启动 Django 开发服务器（冻结环境切工作目录到 exe 侧）。"""
     import os
+    import traceback
 
-    os.chdir(ROOT)  # runtime/ 等相对路径以 exe 目录为根
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
-    os.environ.setdefault("DJANGO_DEPLOY", "dev")
-    if getattr(sys, "frozen", False):
-        # 打包分发：SQLite 单文件库（收方零安装 MySQL）
-        os.environ["DB_ENGINE"] = "sqlite"
+    try:
+        os.chdir(ROOT)  # runtime/ 等相对路径以 exe 目录为根
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+        os.environ.setdefault("DJANGO_DEPLOY", "dev")
 
-    from django.core.management import execute_from_command_line
+        # 数据库选择：打包版固定 SQLite；源码运行 MySQL 可用则用 MySQL，
+        # 连不上自动回退 SQLite（本地无 MySQL 也能一键启动）
+        if getattr(sys, "frozen", False):
+            os.environ["DB_ENGINE"] = "sqlite"
+        elif not _mysql_reachable():
+            os.environ["DB_ENGINE"] = "sqlite"
+            print("MySQL 不可用，已自动切换 SQLite（runtime/tripscape.db）")
 
-    # 首次启动自动建库（迁移 + 种子账号 + 种子数据）
-    if not (ROOT / "runtime" / "tripscape.db").exists():
-        execute_from_command_line(["manage.py", "migrate", "--noinput"])
-        execute_from_command_line(["manage.py", "init_tripscape"])
+        from django.core.management import execute_from_command_line
 
-    execute_from_command_line(
-        ["manage.py", "runserver", f"{HOST}:{PORT}", "--noreload"]
-    )
+        # 首次启动自动建库（迁移 + 种子账号 + 种子数据）
+        if not (ROOT / "runtime" / "tripscape.db").exists():
+            execute_from_command_line(["manage.py", "migrate", "--noinput"])
+            execute_from_command_line(["manage.py", "init_tripscape"])
+
+        execute_from_command_line(
+            ["manage.py", "runserver", f"{HOST}:{PORT}", "--noreload"]
+        )
+    except Exception as exc:
+        _STARTUP_ERROR.append(f"{exc}")
+        traceback.print_exc()
 
 
 def wait_server_ready(timeout=60):
@@ -100,8 +137,12 @@ def main():
     t.start()
 
     # 等服务器起来再开窗口，避免白屏（识别/问答模型惰性加载，超时给足）
-    if not wait_server_ready(timeout=120):
-        print("服务器启动超时，窗口仍会打开但可能显示异常")
+    ready = wait_server_ready(timeout=120)
+    if not ready:
+        reason = _STARTUP_ERROR[-1] if _STARTUP_ERROR else "服务未在 120 秒内就绪"
+        print("\n启动失败：" + reason)
+        print("常见原因：数据库不可用、端口 8000 被占用、前端未构建（frontend/dist 缺失）。")
+        sys.exit(1)
 
     webview.create_window(
         "行旅识景 · 世界著名地标智能识别",
@@ -109,7 +150,7 @@ def main():
         width=1280,
         height=820,
         min_size=(960, 640),
-        background_color="#9bb7d7",
+        background_color="#0a1220",
     )
     webview.start()
 

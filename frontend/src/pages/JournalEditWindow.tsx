@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ImagePlus, X, Share2, Search } from "lucide-react";
 
@@ -34,6 +34,7 @@ export default function JournalEditWindow({
   onClose: () => void;
 }) {
   const token = useAuthStore((s) => s.token);
+  const qc = useQueryClient();
   const [landmarkId, setLandmarkId] = useState<string>(presetLandmarkId ? String(presetLandmarkId) : "");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -135,6 +136,12 @@ export default function JournalEditWindow({
         await api.post("/journals/", payload);
         toast.success("手账已发布，足迹 +1");
       }
+      // 手账/足迹/个人中心与地标热度全部刷新（此前完全没失效，导致
+      // 发完手账后个人主页与地球计数仍是旧数据）
+      qc.invalidateQueries({ queryKey: ["profile"] });
+      qc.invalidateQueries({ queryKey: ["landmark"] });
+      qc.invalidateQueries({ queryKey: ["spots"] });
+      qc.invalidateQueries({ queryKey: ["footprints"] });
       onClose();
     } catch (e) {
       toast.error(errMessage(e, "保存失败"));

@@ -350,7 +350,6 @@ function EarthContent({
         <Suspense fallback={<EarthTextureFallback />}>
           <EarthTexture />
         </Suspense>
-        <Atmosphere />
         {/* 点位层：远=区域气泡 / 近=散点徽章 */}
         <group ref={markersGroupRef}>
           {zoomedIn
@@ -402,22 +401,6 @@ function EarthTexture() {
     <mesh>
       <sphereGeometry args={[1.001, 64, 64]} />
       <meshBasicMaterial map={tex} toneMapped={false} />
-    </mesh>
-  );
-}
-
-function Atmosphere() {
-  return (
-    <mesh>
-      <sphereGeometry args={[1.028, 64, 64]} />
-      <meshBasicMaterial
-        color="#6aa9ff"
-        transparent
-        opacity={0.12}
-        side={THREE.BackSide}
-        blending={THREE.AdditiveBlending}
-        depthWrite={false}
-      />
     </mesh>
   );
 }

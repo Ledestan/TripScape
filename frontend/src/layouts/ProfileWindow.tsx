@@ -62,6 +62,9 @@ export default function ProfileWindow({ onClose }: { onClose: () => void }) {
   const { data } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => (await api.get("/auth/profile")).data as ProfileData,
+    // 个人中心是低频页面：每次打开都重新取，避免评论/手账刚写完仍显示旧缓存
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   /* 我的徽章（含进度） */

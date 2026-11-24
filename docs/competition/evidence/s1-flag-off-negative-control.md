@@ -14,6 +14,30 @@
 {"hud":0,"globeLayer":0,"features":{"tripScape2":false,"version":"2.0.0"},"cardStatus":404}
 ```
 
+## 3. 匿名请求的状态码分层（同一份关闭态构建，2026-11-25 实测）
+
+```
+$ curl -sS http://127.0.0.1:8000/api/features
+{"tripScape2": false, "version": "2.0.0"}
+
+$ curl -i http://127.0.0.1:8000/api/narrative/card/8
+HTTP/1.1 404
+{"detail": "TripScape 2.0 叙事层未开启（tripScape2=false）"}
+
+$ curl -i -X POST http://127.0.0.1:8000/api/narrative/journal/cards \
+       -H 'Content-Type: application/json' -d '{"card_id":1}'
+HTTP/1.1 401
+{"detail": "Unauthorized"}
+
+$ curl -i 'http://127.0.0.1:8000/api/narrative/fragments/pick?landmark_id=8'
+HTTP/1.1 401
+{"detail": "Unauthorized"}
+```
+
+判读：`get_card` 用 `OptionalAuth`（匿名放行），所以匿名也直接走到 `_gate()` → **404**；
+其余五个叙事端点的 `@login_required` 在 router 装饰器内层、**先于** `_gate()`，
+因此匿名调用得到 **401**；带有效 token 时才会走到 `_gate()` → **404**。
+
 字段含义：
   hud        = 页面中 data-testid="narrative-hud" 的数量（0 = 叙事层未渲染）
   globeLayer = data-testid="narrative-layer-globe" 的数量

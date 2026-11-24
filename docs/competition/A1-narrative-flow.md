@@ -29,12 +29,13 @@ globe（未被讲述） → 点叙事轨道里的地标入口 → landmark（正
 - **术语边界**：本图的"手账"= `layer=journal` 与 `ts_narrative_journal_card`（叙事卡片的手账）；
   产品里另有一个既有的**手账编辑器浮窗** `JournalEditWindow`（`/journal_edit`，地标详情的"写手账"入口，
   写的是 `ts_journal`），两者不是同一个东西，展板绘制时不要画串。
-- **开关前置**：本图所有叙事端点与 `NarrativeHud` 都受 `tripScape2` 门控——
-  开关关闭时组件返回 `null`；叙事端点在 `_gate()` 处返回 **404**，但**未登录调用会先被
-  `@login_required` / 全局 `GlobalAuth` 拦成 401**。因此关闭态的准确表述是
-  **"带 token 一律 404，匿名 401"**（实测：`GET /api/narrative/card/{id}` → 404；
-  匿名 `POST /api/narrative/journal/cards` 与 `GET /api/narrative/fragments/pick` → 401）。
-  展板应标注该图是**"开关开启态"**（关闭态见 `s1-flag-off-negative-control.md`）。
+- **开关前置**：本图所有叙事端点与 `NarrativeHud` 都受 `tripScape2` 门控。关闭态的准确分层是
+  **`get_card`（`OptionalAuth`，匿名放行）→ 404；其余五个 `@login_required` 端点匿名 → 401，
+  带 token → 404**（`@login_required` 在 router 装饰器内层、先于 `_gate()`）。
+  实测（同一份关闭态构建）：`GET /api/narrative/card/8` → 404；
+  匿名 `POST /api/narrative/journal/cards` → 401；匿名 `GET /api/narrative/fragments/pick` → 401；
+  `NarrativeHud` 不渲染（hud=0）。原始请求/响应见 `s1-flag-off-negative-control.md` §3 与同名 `.log`。
+  展板应标注该图是**"开关开启态"**。
 - ④ **不是第四个 layer**，而是**跨用户异步流**：碎片写入 `ts_narrative_fragment`，
   另一个会话在同一个地标层里读取它。图上把 ④ 画成"池 + 另一个会话"，
   而不是画成第四条平行轨道——否则会把"同步状态切换"和"异步跨用户投递"混为一谈。
@@ -80,7 +81,7 @@ flowchart LR
   N3 -->|"加入手账<br/>addToJournal.mutate()"| N6
   N6 -.->|"仅刷新计数<br/>invalidateQueries（layer 仍为 landmark）"| N3
   N3 -->|"点『手账』按钮<br/>showJournal()"| N7
-  N7 -->|"刷新页面<br/>（layer 重置为 globe）"| N8
+  N7 -->|"刷新 / 任意挂载<br/>（已登录即拉取，与 layer 无关）"| N8
   N8 -.->|"刷新后先回 globe<br/>再点『手账』才回 N7"| N1
   N7 -->|"匿名投递<br/>deliver.mutate()"| N9
   N3 -->|"就地投递『投递到此处』<br/>前置：卡片已加入手账<br/>未入账则 403，不写库"| N9
@@ -97,11 +98,13 @@ flowchart LR
   linkStyle 16,17 stroke-dasharray:6 3 2 3
 ```
 
-**线型约定（供展板绘制）**：实线 = 正常写入/切层；虚线 = 只刷新视图、不写库、不切层的回执
-（`N6⇢N3`、`N8⇢N1`）；点划线 = **仅后端可达的复核分支**（`N10⇢N15`、`N15⇢N15`：
+**线型约定（供展板绘制）**：实线 = 正常写入/切层；虚线 = **不写库的转换**（回执 `N6⇢N3`；
+视点复位 `N8⇢N1`——刷新触发的 store 初值复位，是一次切层但无写入，与 N8 的数据拉取无因果）；
+点划线 = **仅后端可达的复核分支**（`N10⇢N15`、`N15⇢N15`：
 `POST /api/narrative/fragments/{id}/pick` 在 `frontend/src` 零调用，只被测试与 curl 使用）。
 Mermaid 没有原生点划线箭头，图上用 `linkStyle 16,17 stroke-dasharray:6 3 2 3` 表达；
-展板绘制时请把这两条画成点划线，与虚线的"回执"语义区分开。
+若渲染器不支持 dasharray，退化为虚线并**必须在图例中注明**"点划线=仅后端可达"，不能省略该语义。
+展板绘制时请把这两条画成点划线，与虚线的"不写库转换"语义区分开。
 子图内节点声明顺序不影响语义，Mermaid 会自动布局；如需完全避免交叉，可把 JOURNAL 子图改为从上到下排列，
 并把 N12/N13 移入独立的旁路子图。
 
@@ -136,9 +139,9 @@ Mermaid 没有原生点划线箭头，图上用 `linkStyle 16,17 stroke-dasharra
 | N4→N5 | **进入地标层且该地标无卡** | `get_card` → `latest_card()` → 无卡时 `build_narrative_card()` | `ts_narrative_card`（现建：`source=landmark`、`confidence=0.0`） |
 | N12→N5 | 识别成功 | `_attach_narrative_card()`（`api/recognition.py`） | 同上 + 识别响应字段 |
 | N3→N6 | 点"加入手账" | `addToJournal.mutate()` → `POST /api/narrative/journal/cards` | `ts_narrative_journal_card`；**layer 仍停在 landmark** |
-| N6⇢N3 | 加入手账后的回执 | `addToJournal.onSuccess` → `invalidateQueries(["narrative","journal"])`（只刷新手账计数，不切层） | 无写库（前端缓存失效） |
+| N6⇢N3 | 加入手账后的回执 | `addToJournal.onSuccess` → `invalidateQueries(["narrative","journal"])`（**layer 不变**；该 key 同时喂顶部计数与手账列表，失效后两者都会重取，只是当前不在 journal 层看不到） | 无写库（前端缓存失效） |
 | N3→N7 | 点"手账"按钮 | `data-testid="narrative-open-journal"` → `showJournal()` | 前端状态 `layer=journal` |
-| N7→N8 | **刷新页面** | `useQuery(["narrative","journal"])` 重新拉取（该 query 只按"已登录"启用，与当前 layer 无关） | 服务端 `ts_narrative_journal_card` |
+| N7→N8 | **刷新 / 任意挂载** | `useQuery(["narrative","journal"])` 重新拉取（该 query 只按"已登录"启用，**与当前 layer 无关**） | 服务端 `ts_narrative_journal_card` |
 | N8⇢N1 | 刷新后的视点 | `stores/narrative.ts` 初始 `layer="globe"`（**视点回 globe 由 store 初值决定，与 N8 的数据拉取无因果**） | 前端状态 `layer=globe`；再点"手账"才回 N7 |
 | N7→N9 | 点"匿名投递" | `deliver.mutate()` → `POST /api/narrative/fragments` | `ts_narrative_fragment` |
 | N3→N9 | 点"投递到此处"（就地投递，**有前置门**） | `data-testid="narrative-deliver"` → `onDeliver(card.id)` → `deliver.mutate()` → `deliver_fragment()` **先校验** `JournalCard.objects.filter(user=user, card=card).exists()`；未入账 → 403「只能投递手账中的叙事卡片」，不写库 | 仅当 N3→N6 已成立才写 `ts_narrative_fragment` |
@@ -186,7 +189,7 @@ Mermaid 没有原生点划线箭头，图上用 `linkStyle 16,17 stroke-dasharra
 | S1 截图 | `docs/competition/evidence/s1-journal-{before,after}-refresh.png` | 刷新前后卡片一致 |
 | S3 投递/拾取 | `tests/backend/test_s3_fragment_{delivery,pickup}.py` → `docs/competition/evidence/s3-functional-green.log` | 第 4 次 409 / 二次拾取 409 / 摘要字段（`6 passed`） |
 | S3 手动 | `docs/competition/evidence/s3-manual-curl.log` | 真实 HTTP 200/200/200/409 + 拾取 200 + 二次拾取 409 |
-| 开关关闭实测 | `docs/competition/evidence/s1-flag-off-negative-control.md` | HUD 不渲染（hud=0）；`GET /api/narrative/card/{id}` → 404；匿名调用叙事写端点 → 401 |
+| 开关关闭实测 | `docs/competition/evidence/s1-flag-off-negative-control.{md,log}` | hud=0；`GET /api/narrative/card/8` → 404（OptionalAuth 直入 `_gate`）；匿名 `POST .../journal/cards` 与 `GET .../fragments/pick` → 401（login_required 先于 `_gate`） |
 
 ## 7. 本图不包含什么
 

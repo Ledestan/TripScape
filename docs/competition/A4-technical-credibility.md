@@ -13,18 +13,18 @@ flowchart LR
     I2["DINOv2 ViT-S/14<br/>services/retrieval_engine.py:49（本地权重 models/dinov2/）"]
     I3["FAISS 索引 351 条<br/>runtime/index/landmarks.faiss（539181 B）"]
     I4["注册图元数据 351 条 / 磁盘缺失 333 条<br/>runtime/index/landmarks.meta.json"]
-    I5["并行装载并互校<br/>retrieval_engine.py（ntotal == len(meta)）"]
+    I5["并列装载并互校<br/>顺序读取 faiss 与 meta 后比对 ntotal == len(meta)<br/>retrieval_engine.py:144-146"]
     I6["target_id → Landmark 解析<br/>解析失败即丢弃（recognition_service.py:61-67）"]
     I7["top-3 + 阈值 0.35<br/>_build_result<br/>confidence = 余弦相似度"]
     I8["响应 success=true<br/>候选为附加区块（非拒答）"]
     I9["MessageBar 候选列表<br/>frontend/src/features/qa/MessageBar.tsx:83"]
   end
-  subgraph FRAG["碎片链（卡片 → 陌生人）"]
-    F1["JournalCard<br/>ts_narrative_journal_card"]
-    F2["deliver_fragment<br/>同用户×同地标 ≤3，第 4 次 409"]
-    F3["NarrativeFragment<br/>anonymous=true，响应无 delivered_by"]
-    F4["pick（_unpicked_queryset 排除自投）<br/>GET .../pick（无可用 404）"]
-    F5["FragmentPickup<br/>unique_together=(fragment,user)"]
+  subgraph FRAG["碎片链（三个端点均由 tripScape2 门控：关闭时 404，api/narrative.py:32-35）"]
+    F1["JournalCard（用户 A 的手账）<br/>ts_narrative_journal_card"]
+    F2["投递（用户 A，t1）<br/>deliver_fragment：同用户×同地标 ≤3，第 4 次 409"]
+    F3["NarrativeFragment（投递产物）<br/>anonymous=true，响应无 delivered_by"]
+    F4["拾取（用户 B，更晚）<br/>pick：_unpicked_queryset 排除自投，无可用 404"]
+    F5["FragmentPickup（用户 B 的拾取记录）<br/>unique_together=(fragment,user)"]
   end
   I1 --> I2
   I2 --> I3

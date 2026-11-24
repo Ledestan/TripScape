@@ -1,0 +1,413 @@
+{
+  "artifact": "A4-recognition-selfcheck",
+  "protocol": "每地标取 data/<target_id>/ 下按文件名排序的第 1 张，共 26 张；其中与索引注册图重名的张数与索引路径缺失数见 eval/ index 两节。本报告是跨批次自评（部分图为索引外照片），不构成泛化准确率声明。",
+  "index": {
+    "manifest": {
+      "fingerprint": "1d8a9aa3eb55dba0",
+      "count": 351
+    },
+    "registered_images": 351,
+    "meta_paths_missing_on_disk": 333
+  },
+  "engine_load_seconds": 3.8,
+  "evaluated": 26,
+  "evaluated_in_index": 3,
+  "evaluated_out_of_index": 23,
+  "top1_hits": 26,
+  "top1_rate": 1.0,
+  "confidence": {
+    "min": 0.936256,
+    "median": 0.999756,
+    "max": 0.999984,
+    "buckets": {
+      "<0.35": 0,
+      "0.35-0.70": 0,
+      ">=0.70": 26
+    }
+  },
+  "elapsed_ms": {
+    "first": 56,
+    "min": 56,
+    "median": 65,
+    "max": 2569
+  },
+  "thresholds": {
+    "RECOG_CONFIDENCE_THRESHOLD_source": "backend/config/settings/base.py"
+  },
+  "elapsed_seconds": 4.2,
+  "caveat": "评测图与索引注册图只部分重合；每类仅 1 张、无对抗样本，不得作为对外准确率或泛化能力声明。",
+  "rows": [
+    {
+      "landmark_id": 1,
+      "target_id": "AbuSimbelTemples",
+      "image": "AbuSimbelTemples_1.jpg",
+      "in_index": false,
+      "top1": "AbuSimbelTemples",
+      "hit": true,
+      "confidence": 0.998872,
+      "top3": [
+        "AbuSimbelTemples"
+      ],
+      "elapsed_ms": 2569
+    },
+    {
+      "landmark_id": 2,
+      "target_id": "AngelFalls",
+      "image": "AngelFalls_1.jpg",
+      "in_index": false,
+      "top1": "AngelFalls",
+      "hit": true,
+      "confidence": 0.99997,
+      "top3": [
+        "AngelFalls",
+        "Huangguoshu"
+      ],
+      "elapsed_ms": 61
+    },
+    {
+      "landmark_id": 3,
+      "target_id": "BentPyramid",
+      "image": "BentPyramid_1.jpg",
+      "in_index": false,
+      "top1": "BentPyramid",
+      "hit": true,
+      "confidence": 0.999673,
+      "top3": [
+        "BentPyramid",
+        "GizaPyramids",
+        "Sphinx"
+      ],
+      "elapsed_ms": 71
+    },
+    {
+      "landmark_id": 4,
+      "target_id": "BurjKhalifa",
+      "image": "BurjKhalifa_1.jpg",
+      "in_index": false,
+      "top1": "BurjKhalifa",
+      "hit": true,
+      "confidence": 0.99834,
+      "top3": [
+        "BurjKhalifa",
+        "ThreePagodas"
+      ],
+      "elapsed_ms": 64
+    },
+    {
+      "landmark_id": 5,
+      "target_id": "ChichenItza",
+      "image": "ChichenItza_1.jpg",
+      "in_index": false,
+      "top1": "ChichenItza",
+      "hit": true,
+      "confidence": 0.936256,
+      "top3": [
+        "ChichenItza",
+        "GizaPyramids",
+        "Sphinx"
+      ],
+      "elapsed_ms": 67
+    },
+    {
+      "landmark_id": 6,
+      "target_id": "ChristTheRedeemer",
+      "image": "ChristTheRedeemer_1.jpg",
+      "in_index": false,
+      "top1": "ChristTheRedeemer",
+      "hit": true,
+      "confidence": 0.999938,
+      "top3": [
+        "ChristTheRedeemer",
+        "LibertyStatue",
+        "Leifeng"
+      ],
+      "elapsed_ms": 67
+    },
+    {
+      "landmark_id": 7,
+      "target_id": "DjoserPyramid",
+      "image": "DjoserPyramid_1.jpg",
+      "in_index": false,
+      "top1": "DjoserPyramid",
+      "hit": true,
+      "confidence": 0.999793,
+      "top3": [
+        "DjoserPyramid",
+        "GizaPyramids",
+        "Sphinx"
+      ],
+      "elapsed_ms": 56
+    },
+    {
+      "landmark_id": 8,
+      "target_id": "EiffelTower",
+      "image": "EiffelTower_1.jpg",
+      "in_index": false,
+      "top1": "EiffelTower",
+      "hit": true,
+      "confidence": 0.998684,
+      "top3": [
+        "EiffelTower",
+        "Leifeng",
+        "HeavenTemple"
+      ],
+      "elapsed_ms": 63
+    },
+    {
+      "landmark_id": 9,
+      "target_id": "GizaPyramids",
+      "image": "GizaPyramids_1.jpg",
+      "in_index": false,
+      "top1": "GizaPyramids",
+      "hit": true,
+      "confidence": 0.999806,
+      "top3": [
+        "GizaPyramids",
+        "BentPyramid",
+        "Sphinx"
+      ],
+      "elapsed_ms": 64
+    },
+    {
+      "landmark_id": 10,
+      "target_id": "GreatWall",
+      "image": "GreatWall_1.jpg",
+      "in_index": false,
+      "top1": "GreatWall",
+      "hit": true,
+      "confidence": 0.999958,
+      "top3": [
+        "GreatWall",
+        "Leifeng"
+      ],
+      "elapsed_ms": 67
+    },
+    {
+      "landmark_id": 11,
+      "target_id": "HatshepsutTemples",
+      "image": "HatshepsutTemples_1.jpg",
+      "in_index": false,
+      "top1": "HatshepsutTemples",
+      "hit": true,
+      "confidence": 0.999412,
+      "top3": [
+        "HatshepsutTemples",
+        "Petra",
+        "AbuSimbelTemples"
+      ],
+      "elapsed_ms": 60
+    },
+    {
+      "landmark_id": 12,
+      "target_id": "HeavenTemple",
+      "image": "HeavenTemple_1.jpg",
+      "in_index": true,
+      "top1": "HeavenTemple",
+      "hit": true,
+      "confidence": 0.999862,
+      "top3": [
+        "HeavenTemple",
+        "Leifeng"
+      ],
+      "elapsed_ms": 63
+    },
+    {
+      "landmark_id": 13,
+      "target_id": "Huangguoshu",
+      "image": "Huangguoshu_1.jpg",
+      "in_index": false,
+      "top1": "Huangguoshu",
+      "hit": true,
+      "confidence": 0.999984,
+      "top3": [
+        "Huangguoshu",
+        "AngelFalls"
+      ],
+      "elapsed_ms": 62
+    },
+    {
+      "landmark_id": 14,
+      "target_id": "Leifeng",
+      "image": "Leifeng_1.jpg",
+      "in_index": false,
+      "top1": "Leifeng",
+      "hit": true,
+      "confidence": 0.999881,
+      "top3": [
+        "Leifeng",
+        "ThreePagodas"
+      ],
+      "elapsed_ms": 63
+    },
+    {
+      "landmark_id": 15,
+      "target_id": "LibertyStatue",
+      "image": "LibertyStatue_1.jpg",
+      "in_index": false,
+      "top1": "LibertyStatue",
+      "hit": true,
+      "confidence": 0.999688,
+      "top3": [
+        "LibertyStatue",
+        "ChristTheRedeemer",
+        "MemnonColossi"
+      ],
+      "elapsed_ms": 67
+    },
+    {
+      "landmark_id": 16,
+      "target_id": "MachuPicchu",
+      "image": "MachuPicchu_1.jpg",
+      "in_index": false,
+      "top1": "MachuPicchu",
+      "hit": true,
+      "confidence": 0.999554,
+      "top3": [
+        "MachuPicchu",
+        "GreatWall"
+      ],
+      "elapsed_ms": 71
+    },
+    {
+      "landmark_id": 17,
+      "target_id": "MemnonColossi",
+      "image": "MemnonColossi_1.jpg",
+      "in_index": false,
+      "top1": "MemnonColossi",
+      "hit": true,
+      "confidence": 0.999313,
+      "top3": [
+        "MemnonColossi",
+        "Ramesseum"
+      ],
+      "elapsed_ms": 66
+    },
+    {
+      "landmark_id": 18,
+      "target_id": "Petra",
+      "image": "Petra_1.jpg",
+      "in_index": true,
+      "top1": "Petra",
+      "hit": true,
+      "confidence": 0.999578,
+      "top3": [
+        "Petra"
+      ],
+      "elapsed_ms": 66
+    },
+    {
+      "landmark_id": 19,
+      "target_id": "Potala",
+      "image": "Potala_1.jpg",
+      "in_index": false,
+      "top1": "Potala",
+      "hit": true,
+      "confidence": 0.999867,
+      "top3": [
+        "Potala",
+        "HeavenTemple"
+      ],
+      "elapsed_ms": 60
+    },
+    {
+      "landmark_id": 20,
+      "target_id": "Qomolangma",
+      "image": "Qomolangma_1.jpg",
+      "in_index": false,
+      "top1": "Qomolangma",
+      "hit": true,
+      "confidence": 0.999971,
+      "top3": [
+        "Qomolangma"
+      ],
+      "elapsed_ms": 62
+    },
+    {
+      "landmark_id": 21,
+      "target_id": "Ramesseum",
+      "image": "Ramesseum_1.jpg",
+      "in_index": false,
+      "top1": "Ramesseum",
+      "hit": true,
+      "confidence": 0.999726,
+      "top3": [
+        "Ramesseum",
+        "AbuSimbelTemples",
+        "MemnonColossi"
+      ],
+      "elapsed_ms": 61
+    },
+    {
+      "landmark_id": 22,
+      "target_id": "RomanColosseum",
+      "image": "RomanColosseum_1.jpg",
+      "in_index": false,
+      "top1": "RomanColosseum",
+      "hit": true,
+      "confidence": 0.999803,
+      "top3": [
+        "RomanColosseum",
+        "Ramesseum",
+        "HatshepsutTemples"
+      ],
+      "elapsed_ms": 69
+    },
+    {
+      "landmark_id": 23,
+      "target_id": "Sphinx",
+      "image": "Sphinx_1.jpg",
+      "in_index": false,
+      "top1": "Sphinx",
+      "hit": true,
+      "confidence": 0.997442,
+      "top3": [
+        "Sphinx",
+        "GizaPyramids",
+        "BentPyramid"
+      ],
+      "elapsed_ms": 69
+    },
+    {
+      "landmark_id": 24,
+      "target_id": "Stonehenge",
+      "image": "Stonehenge_1.jpg",
+      "in_index": true,
+      "top1": "Stonehenge",
+      "hit": true,
+      "confidence": 0.999787,
+      "top3": [
+        "Stonehenge",
+        "MemnonColossi"
+      ],
+      "elapsed_ms": 69
+    },
+    {
+      "landmark_id": 25,
+      "target_id": "TajMahal",
+      "image": "TajMahal_1.jpg",
+      "in_index": false,
+      "top1": "TajMahal",
+      "hit": true,
+      "confidence": 0.999618,
+      "top3": [
+        "TajMahal"
+      ],
+      "elapsed_ms": 66
+    },
+    {
+      "landmark_id": 26,
+      "target_id": "ThreePagodas",
+      "image": "ThreePagodas_1.jpg",
+      "in_index": false,
+      "top1": "ThreePagodas",
+      "hit": true,
+      "confidence": 0.999893,
+      "top3": [
+        "ThreePagodas",
+        "HeavenTemple",
+        "Leifeng"
+      ],
+      "elapsed_ms": 64
+    }
+  ]
+}

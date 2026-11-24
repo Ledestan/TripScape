@@ -20,6 +20,39 @@ spec: "SPEC.md §3.6（叙事流通层结构草稿）"
 project: "TripScape 2.0"
 feature_flag: "tripScape2（settings.TRIPSCAPE2_ENABLED，默认 false）"
 reading_order: "left_to_right（stage_order 越小越靠左）"
+edge_semantics: >-
+  nodes[*].next 只表示**跨线 rail 与换乘**（例如 F4 -> FRAGMENT、B2 -> CARD）；
+  同一条线内部的相邻关系由 lines[].stations 的顺序给出，不重复写成 next，
+  避免同一关系在边集里出现两遍、或出现"同线自环"。
+axis_note: >-
+  line 与 lane 在本层恰好 1:1（每条线只落在对应泳道），这是设计选择而非冗余：
+  line 给"叙事/证据/治理"三条轨道（供地铁图配色与命名），lane 给服务蓝图的
+  泳道语义（front_stage / back_stage / support，供蓝图表纵向分层）；
+  stage_order 则是横向时间轴（跨线共享，同一 stage_order 表示同一叙事时刻）。
+  三个字段分别服务三种展板画法，若后续出现跨泳道的线，line 与 lane 会分离。
+
+legend:
+  rails:
+    - {line: narrative, color: "#2E7DF7", width: 6, meaning: "用户可见的叙事动作"}
+    - {line: evidence, color: "#6B7280", width: 4, meaning: "系统真实触点（识别/检索/存储）"}
+    - {line: governance, color: "#C2410C", width: 3, dash: "2 4", meaning: "约束与失败语义（回边用虚线）"}
+  markers:
+    - {id: transfer_hub, shape: "双环圆", meaning: "换乘站（CARD / FRAGMENT）"}
+    - {id: station, shape: "实心圆", meaning: "普通站点"}
+    - {id: feedback, shape: "虚线箭头", meaning: "反馈/约束回边（见 feedback_edges）"}
+  timeline_note: >-
+    stage_order 1–6 是跨线共享的叙事时刻：1 提供照片 → 2 定位地标 → 3 检索 →
+    4 组装卡片 → 5 沉淀/投递 → 6 拾取/失败语义。
+    叙事线在 3/4 没有站点，因为这两步由证据线完成，用户侧只是等待——
+    "线跳过某个 stage" 表示该线在该时刻无事可做，不是缺站。
+
+feedback_edges:
+  - {from: G5, to: B1, why: "失败语义回写识别状态（低置信度/成功假）"}
+  - {from: G5, to: B6, why: "治理线回边到审核治理"}
+  - {from: G2, to: F4, why: "额度约束回边到投递动作"}
+  - {from: G3, to: F5, why: "唯一性约束回边到拾取动作"}
+  - {from: G1, to: FRAGMENT, why: "匿名剥离发生在写入碎片池时"}
+  - {from: F5, to: FRAGMENT, why: "拾取动作回到碎片池取数（读取方向）"}
 
 lines:
   - id: narrative
@@ -44,19 +77,23 @@ lines:
 interchanges:
   - id: CARD
     name: "叙事卡片（换乘站）"
+    kind: transfer_hub
     table: ts_narrative_card
+    stage_order: 4
     why: "识别路径与地标现建路径在此合流；加入手账、投递都以它为单位"
     incoming: [B2, B5]
-    outgoing: [F3, F4, B1]
-    transfer_note: "证据线（B2/B5）把卡片写进来；叙事线（F3/F4）从卡片出发"
+    outgoing: [F3, F4]
+    transfer_note: "证据线（B2 组装 / B5 手账回取）把卡片写进来；叙事线（F3 加入手账、F4 投递）从卡片出发。B1 是卡片的输入来源之一，属反向边，不列在 outgoing。"
   - id: FRAGMENT
     name: "匿名碎片（换乘站）"
+    kind: transfer_hub
     table: ts_narrative_fragment
     pickup_table: ts_narrative_fragment_pickup
+    stage_order: 5
     why: "叙事离开作者、进入陌生人拾取池的唯一出口"
-    incoming: [F4]
+    incoming: [F4, G1, B4]
     outgoing: [F5]
-    transfer_note: "F4 写入碎片 -> 碎片池 -> F5 拾取；这是三条线唯一必经的换乘点"
+    transfer_note: "F4（投递动作）、G1（响应层匿名）、B4（碎片与拾取记录）汇入碎片池；F5 从池中拾取。F4 -> FRAGMENT -> F5 是叙事线与证据线唯一的必经换乘。"
 
 nodes:
   # ----------------------------- 叙事线（前台行为） -----------------------------
@@ -85,17 +122,18 @@ nodes:
       不冒充已存在的独立交互。
     source:
       kind: api
-      ref: "GET /api/landmarks/spots"
+      ref: "GET /api/narrative/card/{landmark_id}（真正返回切面字段的端点）"
     evidence:
-      - "backend/api/landmarks.py::spots"
+      - "backend/api/narrative.py::get_card（返回 as_card(): timeFragments/ragSnippets/geo/confidence/photo/…）"
+      - "backend/api/landmarks.py::spots（只提供地标入口 marker：坐标/热度，不含切面字段）"
       - "frontend/src/features/narrative/NarrativeHud.tsx（data-testid=narrative-landmark-entry）"
       - "frontend/src/stores/narrative.ts::enterLandmark"
-    next: [B2]
+    next: [CARD]
 
   - id: F3
     line: narrative
     lane: front_stage
-    stage_order: 3
+    stage_order: 5
     name: "加入手账（只读沉淀）"
     description: "把卡片放进个人手账；卡片成为只读快照，不提供编辑/覆盖接口。"
     source:
@@ -110,7 +148,7 @@ nodes:
   - id: F4
     line: narrative
     lane: front_stage
-    stage_order: 4
+    stage_order: 5
     name: "匿名投递到地标"
     description: "把手账中的一张卡片投递到某个地标，投递者身份不进入任何响应。"
     source:
@@ -125,7 +163,7 @@ nodes:
   - id: F5
     line: narrative
     lane: front_stage
-    stage_order: 5
+    stage_order: 6
     name: "拾取一条碎片"
     description: "探索到该地标的人可以拾取一条自己没拾取过、也不是自己投递的碎片。"
     source:
@@ -195,20 +233,24 @@ nodes:
     evidence:
       - "backend/apps/narrative/models.py::NarrativeFragment"
       - "backend/apps/narrative/models.py::FragmentPickup（unique_together=(fragment, user)）"
-    next: [G3, FRAGMENT]
+    next: [G3]
 
   - id: B5
     line: evidence
     lane: back_stage
     stage_order: 5
-    name: "手账持久化与刷新取回"
-    description: "手账条目按加入时间持久化；刷新后由服务端取回，前端内存不承担持久化。"
+    name: "手账持久化（写）+ 刷新取回（读）"
+    description: >-
+      写入发生在 F3 的同一次请求内（add_card_to_journal 同步 get_or_create），
+      本节点表示"此后可被读回"：GET /api/narrative/journal 在刷新后取回手账条目。
+      写与读不是两个延迟站点，而是同一条记录在不同时刻的两种访问。
     source:
       kind: api
       ref: "GET /api/narrative/journal"
     evidence:
       - "backend/api/narrative.py::my_journal"
       - "backend/services/narrative_service.py::journal_cards"
+      - "backend/services/narrative_service.py::add_card_to_journal（写入在 F3 请求内完成）"
       - "e2e/narrative-journal.spec.ts（刷新后仍在）"
     next: [CARD]
 
@@ -234,7 +276,7 @@ nodes:
   - id: G1
     line: governance
     lane: support
-    stage_order: 4
+    stage_order: 5
     name: "匿名性（响应层剥离身份）"
     description: "碎片响应只含 anonymous=true 与来源卡片摘要，不含投递者字段；库内 delivered_by 仅用于额度与自投排除。"
     source:
@@ -248,7 +290,7 @@ nodes:
   - id: G2
     line: governance
     lane: support
-    stage_order: 4
+    stage_order: 5
     name: "投递额度（同地标 ≤ 3）"
     description: "同一用户对同一地标最多 3 条碎片；第 4 条返回 409 与中文额度消息。"
     source:
@@ -262,7 +304,7 @@ nodes:
   - id: G3
     line: governance
     lane: support
-    stage_order: 5
+    stage_order: 6
     name: "单次拾取（同碎片 ≤ 1 次/人）"
     description: "数据库唯一约束 + 服务层显式拒绝；随机拾取会排除已拾取与自投碎片。"
     source:
@@ -316,9 +358,9 @@ failure_modes:
     where: "索引缺失或未识别出地标（业务失败不升级为 HTTP 错误）"
     evidence: "backend/services/recognition_service.py::recognize_image（return {'success': False, ...}）"
   - code: 404
-    at: [F2, F3, F4, F5]
-    where: "开关关闭 / 地标不存在 / 卡片不存在 / 无可用碎片"
-    evidence: "backend/api/narrative.py::_gate / _landmark_or_404 / NarrativeError(404)"
+    at: [F3, F4, F5]
+    where: "开关关闭（叙事端点一律 404；F2 的 GET /api/landmarks/spots 不受门控，但随后取卡片会 404）/ 地标不存在 / 卡片不存在 / 无可用碎片"
+    evidence: "backend/api/narrative.py::_gate / _landmark_or_404 / NarrativeError(404)；backend/api/landmarks.py::spots 未加 _gate"
   - code: 403
     at: [F4]
     where: "投递的卡片不在自己的手账里"

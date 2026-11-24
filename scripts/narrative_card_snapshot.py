@@ -64,7 +64,7 @@ FIELD_DOC = {
 
 # SPEC 必需字段之外、实现额外返回的字段（不得混入 fieldOrder）
 EXTENSION_DOC = {
-    "createdAt": "ISO 时间戳（ts_narrative_card.created_at）；M9 时间刻度切面使用，不属 SPEC 必需字段",
+    "createdAt": "ISO 时间戳（ts_narrative_card.created_at）；A2 矩阵 M10 时间刻度切面使用，不属 SPEC 必需字段",
 }
 
 

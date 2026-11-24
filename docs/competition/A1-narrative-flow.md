@@ -8,7 +8,7 @@
 
 ```
 globe（未被讲述） → 点叙事轨道里的地标入口 → landmark（正在被讲述：卡片切面）
-      → 加入手账（layer 不变，只增一张只读快照）
+      → 加入手账（layer 不变，只新增一条指向同一卡片的只读记录）
       → 点"手账"按钮 → journal（已沉淀）
       → 匿名投递 → 碎片池（跨用户） → 陌生人在同一地标拾取（来源卡片摘要）
 ```
@@ -21,9 +21,14 @@ globe（未被讲述） → 点叙事轨道里的地标入口 → landmark（正
 
 - ①②③ 是**同一组 layer 状态值**（`useNarrativeStore.layer`，类型是
   `"globe" | "landmark" | "journal"` 三值，没有第四值）。承载这三层的 `NarrativeHud`
-  渲染在 `GlobeApp` 里，而 `GlobeApp` 同时是 `/`、`/login`、`/landmarks/:id`、`/journals/:id`、
-  `/journal_edit`、`/search`、`/profile`、`/qa-history`、`/admin/*`、`/dashboard` 的 element——
+  渲染在 `GlobeApp` 里；`GlobeApp` 直接是 `/`、`/landmarks/:id`、`/journals/:id`、`/profile`、
+  `/qa-history`、`/admin/*`、`/dashboard` 的 element，并通过 `LoginRoute` / `JournalEditRoute` /
+  `SearchRoute` 三个包装组件间接渲染于 `/login`、`/journal_edit`、`/search`。
+  **唯一没有叙事轨道的是 `/share/:token`**（`SharePage`，站外公开分享页）。
   所以"零跳转"指的是**层间切换不触发路由跳转**，而不是"只有一个 URL"。
+- **术语边界**：本图的"手账"= `layer=journal` 与 `ts_narrative_journal_card`（叙事卡片的手账）；
+  产品里另有一个既有的**手账编辑器浮窗** `JournalEditWindow`（`/journal_edit`，地标详情的"写手账"入口，
+  写的是 `ts_journal`），两者不是同一个东西，展板绘制时不要画串。
 - ④ **不是第四个 layer**，而是**跨用户异步流**：碎片写入 `ts_narrative_fragment`，
   另一个会话在同一个地标层里读取它。图上把 ④ 画成"池 + 另一个会话"，
   而不是画成第四条平行轨道——否则会把"同步状态切换"和"异步跨用户投递"混为一谈。
@@ -44,7 +49,7 @@ flowchart LR
   end
 
   subgraph JOURNAL["③ journal · 已被沉淀的个人叙事（layer=journal）"]
-    N6["加入手账（只读快照）<br/>POST /api/narrative/journal/cards<br/>ts_narrative_journal_card"]
+    N6["加入手账（指向同一卡片的只读记录）<br/>POST /api/narrative/journal/cards<br/>ts_narrative_journal_card（不复制卡片字段）"]
     N7["手账层叙事轨道<br/>JournalCardsPanel<br/>testid: narrative-layer-journal"]
     N8["刷新后取回<br/>GET /api/narrative/journal"]
   end
@@ -53,8 +58,8 @@ flowchart LR
     N9["匿名投递动作<br/>POST /api/narrative/fragments"]
     N14["碎片池（跨用户）<br/>ts_narrative_fragment<br/>card_id + landmark_id + delivered_by<br/>索引 landmark+-created_at"]
     N10["另一个人的地标层<br/>（同一组件的第二会话实例）"]
-    N11["随机拾取<br/>GET /api/narrative/fragments/pick<br/>只可能 404，不会 409"]
-    N15["按 ID 拾取（唯一性闸门的失败分支）<br/>POST /api/narrative/fragments/{id}/pick<br/>二次拾取 409"]
+    N11["随机拾取<br/>GET /api/narrative/fragments/pick<br/>无可用碎片 404（不会 409）"]
+    N15["按 ID 拾取（仅后端可达，前端零调用）<br/>POST /api/narrative/fragments/{id}/pick<br/>二次拾取 409"]
   end
 
   N12["识别入口（既有）<br/>POST /api/recognition/recognize<br/>tripScape2 开启时并入卡片字段"]
@@ -75,17 +80,19 @@ flowchart LR
   N9 -->|"写入·同地标 ≤3<br/>fragment_limit()"| N14
   N14 -->|"点『拾取碎片』时才读取<br/>只取他人投递且本人未拾取"| N10
   N10 -->|"随机拾取<br/>pick.mutate()"| N11
-  N10 -->|"按 ID 拾取（测试/复核入口）"| N15
-  N15 -->|"二次拾取 409<br/>FragmentPickup 唯一约束"| N15
+  N10 -.->|"按 ID 拾取（**仅后端可达**，前端零调用）"| N15
+  N15 -.->|"二次拾取 409<br/>FragmentPickup 唯一约束"| N15
   N11 -->|"来源卡片摘要回落地标层"| N3
   N7 -->|"点手账卡片标题<br/>onWake → enterLandmark()"| N3
   N3 -->|"返回<br/>back()"| N1
   N7 -->|"返回（landmarkId 存在时）<br/>back()"| N3
 ```
 
-**线型约定（供展板绘制）**：实线 = 正常写入/切换；虚线 = 只刷新视图、不写库、不切层的回执
-（`N6⇢N3`、`N8⇢N1`）；`N15→N15` 自环 = 唯一性拒绝（409）。
-子图内节点声明顺序不影响语义，Mermaid 会自动布局；如需完全避免交叉，可把 JOURNAL 子图改为从上到下排列。
+**线型约定（供展板绘制）**：实线 = 正常写入/切层；虚线 = 只刷新视图、不写库、不切层的回执
+（`N6⇢N3`、`N8⇢N1`）；点划线 = **仅后端可达的复核分支**（`N10⇢N15`、`N15⇢N15`：
+`POST /api/narrative/fragments/{id}/pick` 在 `frontend/src` 零调用，只被测试与 curl 使用）。
+子图内节点声明顺序不影响语义，Mermaid 会自动布局；如需完全避免交叉，可把 JOURNAL 子图改为从上到下排列，
+并把 N12/N13 移入独立的旁路子图。
 
 ## 3. 节点表（每个节点都可追溯）
 
@@ -94,16 +101,16 @@ flowchart LR
 | N1 | 地球层叙事轨道 | 组件 | `frontend/src/features/narrative/NarrativeHud.tsx`（`layer==="globe"`，`data-testid="narrative-layer-globe"`） |
 | N2 | 地标光点清单 | API | `GET /api/landmarks/spots` → `backend/api/landmarks.py::spots`；前端**三处**消费：`NarrativeHud.tsx`（叙事轨道）、`GlobeApp.tsx`（地球光点）、`Globe.tsx`（光点对象） |
 | N3 | 当前会话的地标层 | 组件 | `NarrativeHud.tsx` + `LandmarkNarrativePanel.tsx`（`layer==="landmark"`） |
-| N4 | 叙事卡片 | API + 模型 | `GET /api/narrative/card/{landmark_id}` → `backend/api/narrative.py::get_card` → `NarrativeCard.as_card()`（`backend/apps/narrative/models.py`） |
+| N4 | 叙事卡片 | API + 模型 | `GET /api/narrative/card/{landmark_id}` → `narrative.py::get_card` → `narrative_service.latest_card()`（无卡时 `build_narrative_card` 现建）→ `NarrativeCard.as_card()`（`backend/apps/narrative/models.py`） |
 | N5 | 卡片组装 | 服务 | `backend/services/narrative_service.py::build_narrative_card`（`_time_fragments` / `_rag_snippets` / `_geo`） |
-| N6 | 加入手账 | API + 表 | `POST /api/narrative/journal/cards` → `narrative.py::add_card` → `ts_narrative_journal_card`（`unique_together=(user,card)`） |
+| N6 | 加入手账 | API + 表 | `POST /api/narrative/journal/cards` → `narrative.py::add_card` → `narrative_service.add_card_to_journal` → `ts_narrative_journal_card`（`unique_together=(user,card)`；只存外键，读取时 `journal_payload()` 现序列化卡片，**不复制字段**） |
 | N7 | 手账层叙事轨道 | 组件 | `JournalCardsPanel.tsx`（`data-testid="narrative-layer-journal"`） |
 | N8 | 刷新后取回 | API | `GET /api/narrative/journal` → `narrative.py::my_journal` → `narrative_service.journal_cards()` |
 | N9 | 匿名投递动作 | API | `POST /api/narrative/fragments` → `narrative.py::deliver` → `narrative_service.deliver_fragment()` |
 | N14 | 碎片池（跨用户） | 表 | `ts_narrative_fragment`（`card` / `landmark` / `delivered_by` 三外键；索引 `landmark,-created_at`）→ `backend/apps/narrative/models.py::NarrativeFragment` |
 | N10 | 另一个人的地标层 | **运行时实例** | 同一 `layer==="landmark"`（`useNarrativeStore` 是模块级单例，第二个浏览器会话即第二个实例；不是独立代码实体） |
-| N11 | 随机拾取（不会 409） | API + 表 | `GET /api/narrative/fragments/pick` → `narrative.py::pick` → `narrative_service.pick_fragment()`（先 `exclude` 已拾取与自投，无可用则 404）+ `FragmentPickup`（`unique_together=(fragment,user)`） |
-| N15 | 按 ID 拾取（唯一性失败分支） | API + 表 | `POST /api/narrative/fragments/{id}/pick` → `narrative.py::pick_by_id` → `pick_fragment_by_id()`（重复拾取 409「该碎片已被你拾取过，不能重复拾取」） |
+| N11 | 随机拾取（不会 409） | API + 表 | `GET /api/narrative/fragments/pick` → `narrative.py::pick` → `narrative_service.pick_fragment()`（先 `exclude` 已拾取与自投；无可用碎片 404，未登录 401、缺参 422）+ `FragmentPickup`（`unique_together=(fragment,user)`） |
+| N15 | 按 ID 拾取（唯一性失败分支，**仅后端可达**） | API + 表 | `POST /api/narrative/fragments/{id}/pick` → `narrative.py::pick_by_id` → `pick_fragment_by_id()`（重复拾取 409）；`frontend/src` 零调用，只被 pytest 与 curl 使用 |
 | N12 | 识别入口（既有） | API | `POST /api/recognition/recognize` → `backend/api/recognition.py::recognize_sync` → `_attach_narrative_card()` |
 | N13 | 既有地标详情（旁路） | 路由 + 组件 | `/landmarks/:id`（`frontend/src/App.tsx`）→ `LandmarkDetailWindow`（`frontend/src/pages/LandmarkDetail.tsx`）；与叙事层**无跳转**（`LandmarkDetail.tsx` 不引用 `useNarrativeStore`） |
 
@@ -119,8 +126,8 @@ flowchart LR
 | N3→N6 | 点"加入手账" | `addToJournal.mutate()` → `POST /api/narrative/journal/cards` | `ts_narrative_journal_card`；**layer 仍停在 landmark** |
 | N6⇢N3 | 加入手账后的回执 | `addToJournal.onSuccess` → `invalidateQueries(["narrative","journal"])`（只刷新手账计数，不切层） | 无写库（前端缓存失效） |
 | N3→N7 | 点"手账"按钮 | `data-testid="narrative-open-journal"` → `showJournal()` | 前端状态 `layer=journal` |
-| N7→N8 | **刷新页面** | `useQuery(["narrative","journal"])` 重新拉取；刷新后 `layer` 重置为 `globe` | 服务端 `ts_narrative_journal_card` |
-| N8⇢N1 | 刷新后的视点 | `stores/narrative.ts` 初始 `layer="globe"`（刷新不保留层状态） | 前端状态 `layer=globe`；再点"手账"才回 N7 |
+| N7→N8 | **刷新页面** | `useQuery(["narrative","journal"])` 重新拉取（该 query 只按"已登录"启用，与当前 layer 无关） | 服务端 `ts_narrative_journal_card` |
+| N8⇢N1 | 刷新后的视点 | `stores/narrative.ts` 初始 `layer="globe"`（**视点回 globe 由 store 初值决定，与 N8 的数据拉取无因果**） | 前端状态 `layer=globe`；再点"手账"才回 N7 |
 | N7→N9 | 点"匿名投递" | `deliver.mutate()` → `POST /api/narrative/fragments` | `ts_narrative_fragment` |
 | N3→N9 | 点"投递到此处"（就地投递，**有前置门**） | `data-testid="narrative-deliver"` → `onDeliver(card.id)` → `deliver.mutate()` → `deliver_fragment()` **先校验** `JournalCard.objects.filter(user=user, card=card).exists()`；未入账 → 403「只能投递手账中的叙事卡片」，不写库 | 仅当 N3→N6 已成立才写 `ts_narrative_fragment` |
 | N9→N14 | 投递写入碎片池 | `deliver_fragment()`（同用户同地标 ≤3，`fragment_limit()`） | `ts_narrative_fragment` |
@@ -147,10 +154,12 @@ flowchart LR
 4. **碎片池是"卡片引用 + 投递者"三层记录**：N14 记录 `card_id`、`landmark_id` 与投递者
    （投递者仅用于额度统计与"自投不可拾取"的排除）；匿名性是在**响应层**剥离的
    （`fragment_payload()` 不含投递者字段），库内仍可追溯。原始卡片不被复制。
-5. **额度与唯一性不是同一种闸门**：额度在"投递"（N9→N14，同地标 ≤3 按用户计，409）；
-   拾取侧有两个入口——`GET /api/narrative/fragments/pick`（随机池）靠 `exclude` 已拾取，
-   **只可能 404**（N11）；`POST /api/narrative/fragments/{id}/pick`（按 ID）才做显式检查并 **409**（N15）。
-   因此图上"可被评审看到的 409"来自 N15，而不是 N11。
+5. **额度与唯一性不是同一种闸门**：额度在"投递"（N9→N14，同地标 ≤3 **按用户计**，409）；
+   拾取侧有两个入口——`GET /api/narrative/fragments/pick`（随机池，前端唯一接线）靠 `exclude` 已拾取，
+   无可用碎片时 **404**（未登录 401、缺 `landmark_id` 422，**不会 409**，N11）；
+   `POST /api/narrative/fragments/{id}/pick`（按 ID，**前端零调用**）才做显式检查并 **409**（N15）。
+   **UI 上能被评审看到的 409 是第 4 次投递**（`s3-manual-curl.log` 第 8 行）；
+   N15 的 409 只能通过 curl / pytest 看到（同日志第 12 行）。
 6. **加入手账不切层**：N3→N6 之后仍停在 landmark（`N6⇢N3` 只刷新计数），
    进手账层是另一个显式动作（N3→N7）。这条"不跳转"的关系是展板上最容易画错的一处。
 

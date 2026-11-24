@@ -25,10 +25,13 @@
 | 索引 -> 地标元数据 | 351 条注册图元数据 | `runtime/index/landmarks.meta.json`（351 条）；`landmarks.manifest.json`（`count=351`） |
 | 结果 -> 置信度与候选 | top-3 候选 + 阈值判定 | `backend/services/recognition_service.py::_build_result`（`confidence` / `low_confidence` / `candidates`） |
 
-索引构建脚本：`scripts/register_landmarks.py`。**注意**：`landmarks.meta.json` 记录的 351 条
-注册图路径中，有 **333 条在当前磁盘上已不存在**（meta 指向 `*_177.jpg` 等旧编号文件名，
-而 `data/` 现为 `*_1.jpg` 等另一批文件），因此"用现在这份 `data/` 重建索引"并不可行，
-本轮也不宣称索引可原地重建。
+索引构建脚本：`scripts/register_landmarks.py`。**两点需要注意**：
+1. `landmarks.meta.json` 记录的 351 条注册图路径中，有 **333 条在当前磁盘上已不存在**
+   （meta 指向 `*_177.jpg` 等旧编号文件名，而 `data/` 现为 `*_1.jpg` 等另一批文件）；
+2. 用当前 `data/` 原地重建索引**也不可行**：脚本默认清单 `scripts/db/register_images.json`
+   不存在，回退路径要求的 `data/train/` 也不存在，`build_manifest_from_dataset` 会因
+   `train_dir` 缺失直接 `FileNotFoundError`（`scripts/register_landmarks.py` 的默认清单与
+   `data/train` 前置检查处）。因此本页只使用现成索引，不宣称可原地重建。
 
 ### 1.2 自评结果（跨批次自评，**不是泛化指标**）
 
@@ -43,7 +46,7 @@
 | top-1 命中 | **26 / 26**（`top1_rate=1.0`） | 每类仅 1 张、无对抗样本，不能外推 |
 | 置信度 min / median / max | **0.936256 / 0.999756 / 0.999984** | 中位由 `statistics.median` 计算（26 个值的中位） |
 | 置信度分桶 | `<0.35`:0；`0.35–0.70`:0；`>=0.70`:26 | 评测图偏"干净"，不代表真实场景分布 |
-| 单图耗时（本机 CPU，热态） | **首图 2401 ms**；其余 min **59 ms** / median **65 ms** / max **2401 ms** | 首图含首次推理预热；仅记录事实，不作性能承诺 |
+| 单图耗时（本机 CPU） | **全部 26 张：min 59 / median 65 / max 2401 ms（max 即首图）**；**其余 25 张：min 59 / median 65 / max 71 ms** | 首图含首次推理预热；仅记录事实，不作性能承诺 |
 | 引擎装载耗时（同进程） | **3.4 s** | `engine_load_seconds`：**包含** torch/faiss 首次导入与 `models/dinov2/` 本地权重加载，**不含**权重下载 |
 
 证据文件：`docs/competition/evidence/a4-recognition-selfcheck.json`
@@ -66,7 +69,8 @@ $env:DB_ENGINE='sqlite'
 ```
 settings.RECOG_CONFIDENCE_THRESHOLD (默认 0.35)
   -> recognition_service._build_result(): low_confidence = confidence < threshold
-  -> 命中时**额外附带**候选：candidates = top-3 去掉 top-1（landmark_id/target_id/name/confidence/image_url）
+  -> 命中时**额外附带**候选：candidates = 「top-3 中能解析到 ts_landmark 的部分」去掉 top-1
+     （解析不到地标的 target_id 会在 recognize_image 里被丢弃，故候选可能少于 2 条）
   -> 响应仍是 success=true，top-1 仍作为默认结果返回；候选是"另外可能是什么"的附加区块
   -> 前端 MessageBar 在 low_confidence 时把候选渲染成可点的列表（细节见下）
 ```
@@ -109,7 +113,7 @@ settings.RECOG_CONFIDENCE_THRESHOLD (默认 0.35)
 
 | 机制 | 实现 | 证据 |
 |---|---|---|
-| 投递额度（同**用户** × 同地标 ≤ 3） | `fragment_limit()`（读 `TRIPSCAPE2_MAX_FRAGMENTS_PER_LANDMARK`；按 `delivered_by + landmark` 计数） | `backend/services/narrative_service.py`；测试 `tests/backend/test_s3_fragment_delivery.py`（前 3 次 200，第 4 次 409） |
+| 投递额度（同**用户** × 同地标 ≤ 3） | 计数与限额判定在 `deliver_fragment`（按 `delivered_by + landmark` 计数后抛 409）；`fragment_limit()` 只负责读配置返回上限（`TRIPSCAPE2_MAX_FRAGMENTS_PER_LANDMARK`） | `backend/services/narrative_service.py::deliver_fragment` / `fragment_limit`；测试 `tests/backend/test_s3_fragment_delivery.py`（前 3 次 200，第 4 次 409） |
 | 单次拾取（同碎片 ≤ 1 次/人） | 数据库唯一约束 + 服务层显式拒绝 | `backend/apps/narrative/models.py::FragmentPickup`（`unique_together=(fragment, user)`）；`narrative_service.pick_fragment_by_id`；测试 `tests/backend/test_s3_fragment_pickup.py` |
 | 匿名性（响应不含投递者） | `fragment_payload()` 固定 `anonymous=true`，无投递者字段 | `backend/services/narrative_service.py`；测试 `test_s3_fragment_pickup.py`（断言无 `deliveredBy/user`） |
 | 随机拾取排除自投 | `_unpicked_queryset` 排除 `delivered_by=user`；**按 ID 拾取不排除**（`pick_fragment_by_id` 无此校验） | `narrative_service._unpicked_queryset`；测试 `test_own_fragment_is_not_pickable`（仅覆盖随机拾取） |
@@ -125,7 +129,7 @@ settings.RECOG_CONFIDENCE_THRESHOLD (默认 0.35)
 | K3 | **服务层未校验"卡片所属地标 == 投递地标"** | 跨地标投递当前可行（`s3-manual-curl.log` 即：源卡片 landmarkId=1 投到 landmark 8 得 200）；前端只传卡片自身 landmarkId，属 UI 约定而非实现约束 | 否（§2 未要求该校验，不加） |
 | K4 | 地标现建的卡片 `confidence=0.0` | 前端显示"置信 0%"，代表"未识别，不宣称确信" | 设计如此，已在 A2 M4 注明 |
 | K5 | 自评非泛化（26 张里 23 张在索引外） | 不能对外宣称准确率 | 已在 §1.2 显著标注 |
-| K6 | 引擎装载 3.4 s（含 torch/faiss 首次导入与本地权重加载）；首图 2401 ms（含首次推理预热） | 首个识别请求偏慢 | 记录事实，未优化（§5 禁引重型依赖） |
+| K6 | 引擎装载 3.4 s（含 torch/faiss 首次导入与本地权重加载）；首图 2401 ms（含首次推理预热），其余 25 张 59–71 ms | 首个识别请求偏慢 | 记录事实，未优化（§5 禁引重型依赖） |
 
 ## 6. 声明 → 证据索引（供评审逐条抽查）
 
@@ -138,7 +142,7 @@ settings.RECOG_CONFIDENCE_THRESHOLD (默认 0.35)
 | RRF 分数理论上界 2/61 ≈ 0.032787，实测触及 0.032787 | 数据 + 代码 | `docs/competition/A2-card-schema.snapshot.json`（`sample.ragSnippets[0].score`）、`backend/services/article_qa.py`（K=60） |
 | 卡片字段集与真实响应对齐 | 快照 | `docs/competition/A2-card-schema.snapshot.json` |
 | 时间碎片/检索片段不编造 | 代码 + 数据 | `narrative_service.py`、`runtime/index/qa_chunks.json` |
-| 同地标 ≤ 3 条投递 | 测试 | `tests/backend/test_s3_fragment_delivery.py` |
+| 同**用户** × 同地标 ≤ 3 条投递 | 测试 | `tests/backend/test_s3_fragment_delivery.py` |
 | 单次拾取唯一 | 测试 + 表约束 | `tests/backend/test_s3_fragment_pickup.py`、`apps/narrative/models.py` |
 | 叙事三层流程可走通 | e2e | `e2e/narrative-journal.spec.ts`、`evidence/s1-e2e-green.log` |
 

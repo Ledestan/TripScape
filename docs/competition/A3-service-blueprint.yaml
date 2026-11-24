@@ -49,19 +49,17 @@ legend:
     因为"沉淀 + 碎片池"是叙事真正离开作者的一刻；F4（投递，stage 6）必须在 F3（加入手账，stage 5）
     之后——代码里未入账的卡片投递直接 403。展板可在此处做局部放大，而不是把整条线拉平。
 
-feedback_edges:
-  - {from: B5, to: CARD, why: "stage 5 回读到 stage 4 的卡片（读回方向）"}
-  - {from: F5, to: FRAGMENT, why: "拾取动作回到 stage 5 的碎片池取数（读取方向）"}
-  - {from: G5, to: B1, why: "stage 6 的失败语义回写 stage 2 的识别状态"}
-
-constraint_links:
-  - {from: G1, to: FRAGMENT, why: "同 stage 横向约束：匿名在写入时剥离"}
-  - {from: G2, to: F4, why: "同 stage 横向约束：额度约束投递"}
-  - {from: G3, to: F5, why: "同 stage 横向约束：唯一性约束拾取"}
-  - {from: G5, to: B6, why: "同 stage 横向约束：失败语义与审核治理同刻"}
-constraint_note: >-
-  这些不是回边（stage_order 相等），是同一叙事时刻上的横向约束；
-  展板用不同线型表示，避免被误读为行车方向。
+edge_kinds:
+  note: >-
+    本表只给 nodes[*].next 里的边**分类**，不新增任何关系；权威边集仍是
+    nodes[*].next（跨线/换乘）+ lines[].stations（同线相邻）。
+    rail = 正常行车边；feedback = 与 stage_order 反向的回边；constraint = 同一叙事时刻上的横向约束。
+  rail: ["F1->B1", "F2->B2", "F3->B5", "F4->FRAGMENT", "B2->CARD", "B4->G3"]
+  feedback: ["B5->CARD", "F5->FRAGMENT", "G5->B1"]
+  constraint: ["G1->FRAGMENT", "G2->F4", "G3->F5", "G5->B6"]
+  stage_check: >-
+    feedback 三条均为 stage 递减（B5 5→CARD 4、F5 6→FRAGMENT 5、G5 6→B1 2）；
+    constraint 四条均为 stage 相等（G1 5→FRAGMENT 5、G2 5→F4 5、G3 6→F5 6、G5 6→B6 6）。
 
 lines:
   - id: narrative
@@ -90,10 +88,10 @@ interchanges:
     table: ts_narrative_card
     stage_order: 4
     why: "识别路径与地标现建路径在此合流；加入手账、投递都以它为单位"
-    incoming: [B2, B5, F2]
+    incoming: [B2, B5]
     outgoing: [F3, F4]
     evidence_continuation: "证据线：B2（组装）进站，续出到 B4（碎片存储）；B5 是证据线回读端。"
-    transfer_note: "B2（组装）与 B5（手账回读）从证据线进站，F2（取得切面集）从叙事线进站；F3/F4 从卡片出发。识别 B1 是卡片的输入来源之一，属 B1→CARD 方向，本文件的边集不再重复画它。"
+    transfer_note: "B2（组装）与 B5（手账回读）从证据线进站；F3/F4 从卡片出发。F2 是读取动作（GET /api/narrative/card/{id} → latest_card），卡片仍由 B2 产出，故 F2 不列为 CARD 的入边。"
   - id: FRAGMENT
     name: "匿名碎片（换乘站）"
     kind: transfer_hub
@@ -136,11 +134,12 @@ nodes:
       kind: api
       ref: "GET /api/narrative/card/{landmark_id}（真正返回切面字段的端点）"
     evidence:
-      - "backend/api/narrative.py::get_card（返回 as_card(): timeFragments/ragSnippets/geo/confidence/photo/…）"
-      - "backend/api/landmarks.py::spots（只提供地标入口 marker：坐标/热度，不含切面字段）"
+      - "backend/api/landmarks.py::spots（地标入口 marker：坐标/热度，不含切面字段）"
+      - "backend/api/narrative.py::get_card（读取路径：latest_card() → as_card()；无卡时现建）"
+      - "backend/services/narrative_service.py::latest_card"
       - "frontend/src/features/narrative/NarrativeHud.tsx（data-testid=narrative-landmark-entry）"
       - "frontend/src/stores/narrative.ts::enterLandmark"
-    next: [CARD]
+    next: [B2]
 
   - id: F3
     line: narrative
@@ -160,7 +159,7 @@ nodes:
   - id: F4
     line: narrative
     lane: front_stage
-    stage_order: 6
+    stage_order: 5
     name: "匿名投递到地标"
     description: "把手账中的一张卡片投递到某个地标，投递者身份不进入任何响应。"
     source:
@@ -170,7 +169,7 @@ nodes:
       - "backend/api/narrative.py::deliver"
       - "backend/services/narrative_service.py::deliver_fragment"
       - "ts_narrative_fragment"
-    next: [FRAGMENT, G1, G2]
+    next: [FRAGMENT]
 
   - id: F5
     line: narrative
@@ -182,10 +181,11 @@ nodes:
       kind: api
       ref: "GET /api/narrative/fragments/pick?landmark_id="
     evidence:
-      - "backend/api/narrative.py::pick"
-      - "backend/services/narrative_service.py::pick_fragment"
+      - "backend/api/narrative.py::pick（GET，只可能 404）"
+      - "backend/api/narrative.py::pick_by_id（POST /api/narrative/fragments/{id}/pick，重复拾取 409）"
+      - "backend/services/narrative_service.py::pick_fragment / pick_fragment_by_id"
       - "frontend/src/features/narrative/LandmarkNarrativePanel.tsx（data-testid=narrative-pick）"
-    next: [G3, FRAGMENT]
+    next: [FRAGMENT]
 
   # ----------------------------- 证据线（后台触点） -----------------------------
   - id: B1
@@ -201,7 +201,7 @@ nodes:
       - "backend/services/recognition_service.py::_build_result（confidence / low_confidence / candidates）"
       - "backend/services/retrieval_engine.py（引擎与索引装载）"
       - "runtime/index/landmarks.faiss + landmarks.meta.json"
-    next: [G5]
+    next: []
 
   - id: B3
     line: evidence
@@ -282,7 +282,7 @@ nodes:
       - "backend/apps/journals/models.py::Journal.STATUS"
       - "backend/api/journals.py::landmark_journals（is_public + status=approved 过滤）"
       - "backend/apps/narrative/models.py（四表均无 status 字段）"
-    next: [G5]
+    next: []
 
   # ----------------------------- 治理线（支持流程） -----------------------------
   - id: G1
@@ -370,9 +370,9 @@ failure_modes:
     where: "索引缺失或未识别出地标（业务失败不升级为 HTTP 错误）"
     evidence: "backend/services/recognition_service.py::recognize_image（return {'success': False, ...}）"
   - code: 401
-    at: [F3, F4, F5]
-    where: "未登录访问（五个叙事端点全部 @login_required，抛 HttpError(401)）"
-    evidence: "backend/apps/core/auth.py::login_required（raise HttpError(401, \"请先登录\")）；backend/api/narrative.py 五处 @login_required"
+    at: [F3, F4, F5, B5]
+    where: "未登录访问（add_card / my_journal / deliver / pick / pick_by_id 五个叙事端点 @login_required，抛 HttpError(401)；get_card 用 OptionalAuth，故 F2 不在 401 范围）"
+    evidence: "backend/apps/core/auth.py::login_required（raise HttpError(401, \"请先登录\")）；backend/api/narrative.py 五处 @login_required；get_card 为 auth=OptionalAuth()"
   - code: 404
     at: [F2, F3, F4, F5]
     where: "开关关闭（叙事端点一律 404；F2 的 spots 不受门控，但 F2 的 source GET /api/narrative/card/{id} 本身由 _gate 门控，故 F2 也在 404 范围）/ 地标不存在 / 卡片不存在 / 无可用碎片"

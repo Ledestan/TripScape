@@ -104,3 +104,15 @@ $env:DB_ENGINE='sqlite'
 | 未重构 §2 之外模块 | ✅（改动集中在新增叙事层 + `GlobeApp` 单点挂载 + 识别响应增量） |
 | 单文件 >300 行已写理由 | ✅（`narrative_service.py` 401 行，理由见 `PROGRESS.md` §1） |
 | artifact 零虚构路由/API/表/字段/史料 | ✅（四份 artifact 均经 Critic 独立 grep 核对，`fabrications` 为空或已修正） |
+
+## 7. 本次运行未触发的停止条件
+
+| 条件 | 是否触发 | 说明 |
+|---|---|---|
+| 同一测试修复 >3 次（BLOCKED.md） | 未触发 | S2 第 1 次修复即绿；S3 由红转绿 1 次；S1 e2e 修复 ≤3 次（登录步骤、预热/超时、返回路径），均在 3 次内达成 |
+| artifact 达 8 轮仍未达标（BLOCKED_CREATIVE.md） | 未触发 | A1 恰好用满 8 轮并在 R8 达标（4.30）；A2 6 轮、A3 7 轮、A4 7 轮均达标 |
+| 触发 §5 硬边界（ESCALATE.md） | 未触发 | 见 §6 自查表：无需改禁止文件、无需改既有测试、无需引入依赖 |
+
+> 因此本次运行没有生成 `BLOCKED.md` / `BLOCKED_CREATIVE.md` / `ESCALATE.md`；
+> 这三份文件的缺失本身就是"未触发停止条件"的证据。
+

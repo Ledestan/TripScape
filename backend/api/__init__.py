@@ -40,10 +40,12 @@ from api.auth import router as accounts_router
 from api.badges import router as badges_router
 from api.comments import router as comments_router
 from api.dashboard import router as dashboard_router
+from api.features import router as features_router
 from api.footprints import router as footprint_router
 from api.journals import router as journals_router
 from api.landmarks import router as landmarks_router
 from api.likes import router as likes_router
+from api.narrative import router as narrative_router
 from api.notifications import router as notifications_router
 from api.qa import router as qa_router
 from api.recognition import router as recognition_router
@@ -66,3 +68,6 @@ api.add_router("/shares", shares_router)
 api.add_router("/qa", qa_router)
 api.add_router("/recognition", recognition_router)
 api.add_router("/footprints", footprint_router)
+# TripScape 2.0：特性开关发现 + 叙事层（端点内部由 tripScape2 门控）
+api.add_router("", features_router)
+api.add_router("/narrative", narrative_router)

@@ -45,8 +45,14 @@ def _validate(file) -> bytes:
 
 
 @router.post("/recognize", summary="上传图片识别（同步）", auth=OptionalAuth())
-def recognize_sync(request, image: UploadedFile = None):
-    """同步图片识别（返回 top-3 与低置信度候选）。"""
+def recognize_sync(request, image: UploadedFile = None, photo_url: str = ""):
+    """同步图片识别（返回 top-3 与低置信度候选）。
+
+    tripScape2 开启时，成功响应额外携带叙事卡片字段（SPEC §2 S2）：
+        id / landmarkId / photo / title / geo / timeFragments /
+        ragSnippets / confidence / source
+    开关关闭时响应与既有行为完全一致（新增键不出现）。
+    """
     data = _validate(image)
     user = (
         request.auth
@@ -56,7 +62,31 @@ def recognize_sync(request, image: UploadedFile = None):
     result = recognizer.recognize_image(data, user=user)
     if not result.get("success"):
         return result
+    if getattr(settings, "TRIPSCAPE2_ENABLED", False):
+        _attach_narrative_card(result, user=user, photo_url=photo_url)
     return result
+
+
+def _attach_narrative_card(result: dict, *, user=None, photo_url: str = "") -> None:
+    """把叙事卡片字段并入识别响应（原地更新，失败不影响识别结果）。"""
+    from apps.landmarks.models import Landmark
+    from services import narrative_service
+
+    landmark = Landmark.objects.filter(id=result.get("landmark_id")).first()
+    if landmark is None:
+        return
+    try:
+        card = narrative_service.build_narrative_card(
+            landmark,
+            user=user,
+            photo=photo_url,
+            confidence=float(result.get("confidence") or 0.0),
+            source=str(result.get("engine") or "retrieval"),
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("叙事卡片组装失败（不影响识别）：%s", exc)
+        return
+    result.update(card.as_card())
 
 
 def _celery_available() -> bool:

@@ -1,0 +1,173 @@
+"""行旅识景 TripScape
+创建日期：2025-11-24
+
+叙事应用：TripScape 2.0（feature flag tripScape2）专属的数据单元。
+
+四个模型对应 SPEC §2 的三条能力：
+    NarrativeCard     —— S2 叙事卡片（识别成功后的结构化对象，只读持久化）
+    JournalCard       —— S1 卡片加入手账（用户 × 卡片唯一，只读）
+    NarrativeFragment —— S3 匿名投递到地标的叙事碎片
+    FragmentPickup    —— S3 单次拾取记录（碎片 × 用户唯一）
+
+约束：
+1. 全部新行为由 settings.TRIPSCAPE2_ENABLED 门控，默认关闭。
+2. 卡片图片只存 URL 引用，不复制文件。
+3. 碎片对外不暴露投递者身份（匿名性由 service 层的序列化保证）。
+"""
+
+from django.conf import settings
+from django.db import models
+
+from apps.landmarks.models import Landmark
+
+
+class NarrativeCard(models.Model):
+    """叙事卡片：一次地标识别的结构化结果（SPEC §2 S2）。
+
+    字段与 SPEC 固定字段集一一对应：
+        id              -> self.id
+        landmarkId      -> landmark_id
+        photo           -> photo（原图 URL 引用）
+        title           -> title
+        geo             -> geo（lat/lon/place/country/region）
+        timeFragments[] -> time_fragments（非空）
+        ragSnippets[]   -> rag_snippets（非空）
+        confidence      -> confidence（0–1）
+        source          -> source（来源标签）
+    """
+
+    landmark = models.ForeignKey(
+        Landmark,
+        verbose_name="地标",
+        on_delete=models.PROTECT,
+        related_name="narrative_cards",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="识别者",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="narrative_cards",
+    )
+    photo = models.CharField("照片 URL（引用，不复制文件）", max_length=512, blank=True, default="")
+    title = models.CharField("卡片标题", max_length=128)
+    geo = models.JSONField("地理坐标与归属", default=dict, blank=True)
+    time_fragments = models.JSONField("时间碎片", default=list, blank=True)
+    rag_snippets = models.JSONField("检索片段", default=list, blank=True)
+    confidence = models.FloatField("识别置信度", default=0.0)
+    source = models.CharField("来源标签", max_length=32, default="retrieval")
+    created_at = models.DateTimeField("创建时间", auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = "ts_narrative_card"
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["landmark", "-created_at"])]
+
+    def __str__(self):
+        return f"card:{self.id}·{self.title}"
+
+    def as_card(self):
+        """序列化为 SPEC §2 S2 的固定字段集（camelCase 与规格一致）。"""
+        return {
+            "id": self.id,
+            "landmarkId": self.landmark_id,
+            "photo": self.photo,
+            "title": self.title,
+            "geo": self.geo or {},
+            "timeFragments": self.time_fragments or [],
+            "ragSnippets": self.rag_snippets or [],
+            "confidence": float(self.confidence),
+            "source": self.source,
+            "createdAt": self.created_at.isoformat(),
+        }
+
+
+class JournalCard(models.Model):
+    """手账中的叙事卡片（S1）：只读，不可编辑（保留原始叙事快照）。"""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="手账归属用户",
+        on_delete=models.CASCADE,
+        related_name="narrative_journal_cards",
+    )
+    card = models.ForeignKey(
+        NarrativeCard,
+        verbose_name="叙事卡片",
+        on_delete=models.CASCADE,
+        related_name="journal_entries",
+    )
+    added_at = models.DateTimeField("加入时间", auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = "ts_narrative_journal_card"
+        unique_together = [("user", "card")]
+        ordering = ["-added_at"]
+
+    def __str__(self):
+        return f"{self.user_id}·card:{self.card_id}"
+
+
+class NarrativeFragment(models.Model):
+    """叙事碎片（S3）：某用户把一张手账卡片匿名投递到某地标。
+
+    匿名性：投递者只用于限额统计，不进入任何响应体（service 层负责剥离）。
+    """
+
+    card = models.ForeignKey(
+        NarrativeCard,
+        verbose_name="来源卡片",
+        on_delete=models.CASCADE,
+        related_name="fragments",
+    )
+    landmark = models.ForeignKey(
+        Landmark,
+        verbose_name="投递地标",
+        on_delete=models.CASCADE,
+        related_name="narrative_fragments",
+    )
+    delivered_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="投递者（仅用于限额，对外匿名）",
+        on_delete=models.CASCADE,
+        related_name="delivered_fragments",
+    )
+    created_at = models.DateTimeField("投递时间", auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = "ts_narrative_fragment"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["landmark", "-created_at"]),
+            models.Index(fields=["delivered_by", "landmark"]),
+        ]
+
+    def __str__(self):
+        return f"fragment:{self.id}@{self.landmark_id}"
+
+
+class FragmentPickup(models.Model):
+    """碎片拾取记录（S3）：同一碎片对同一用户只能拾取一次。"""
+
+    fragment = models.ForeignKey(
+        NarrativeFragment,
+        verbose_name="碎片",
+        on_delete=models.CASCADE,
+        related_name="pickups",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="拾取者",
+        on_delete=models.CASCADE,
+        related_name="fragment_pickups",
+    )
+    picked_at = models.DateTimeField("拾取时间", auto_now_add=True)
+
+    class Meta:
+        db_table = "ts_narrative_fragment_pickup"
+        unique_together = [("fragment", "user")]
+        ordering = ["-picked_at"]
+
+    def __str__(self):
+        return f"pickup:{self.fragment_id}->{self.user_id}"

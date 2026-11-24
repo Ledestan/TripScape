@@ -40,8 +40,26 @@
 
 ### S1 三层空间切换
 
-- 功能证据：`e2e/narrative-journal.spec.ts`
-- 结果：**待执行**
+- 功能证据：`e2e/narrative-journal.spec.ts`（仓库根 `e2e/`，配置 `frontend/playwright.narrative.config.ts`）
+- 证据命令：
+  - 构建：`frontend\node_modules\.bin\tsc.cmd -b` + `frontend\node_modules\.bin\vite.cmd build`
+    （`corepack pnpm` 在本机长时间无输出、节点进程空闲，改用本地二进制等价执行 `pnpm build` 的两步）
+  - 运行：`frontend\node_modules\.bin\playwright.cmd test -c playwright.narrative.config.ts`
+  - 服务：`$env:DB_ENGINE='sqlite'; $env:TRIPSCAPE2_ENABLED='true'; .venv\Scripts\python.exe backend\manage.py runserver 127.0.0.1:8000 --noreload`
+- 红（实现前）：`docs/competition/evidence/s1-e2e-red.log`
+  —— 用**实现前的 dist**（临时移除叙事层组件与 GlobeApp 挂载后重建）运行最终版测试：
+  `1 failed`，失败点 `expect(getByTestId("narrative-hud")).toBeVisible()` 超时（叙事层不存在）。
+- 绿（实现后）：`docs/competition/evidence/s1-e2e-green.log` —— `1 passed (25.5s)`。
+- 截图：`docs/competition/evidence/s1-journal-before-refresh.png`（刷新前）、
+  `s1-journal-after-refresh.png`（刷新后，卡片仍在）。
+- 实现要点：
+  - `frontend/src/stores/narrative.ts`：三层状态机（globe→landmark→journal，`back()` 逐层返回）
+  - `frontend/src/features/narrative/{NarrativeHud,LandmarkNarrativePanel,JournalCardsPanel}.tsx`
+  - `frontend/src/hooks/useFeatureFlag.ts`：运行期读取 `GET /api/features`
+  - `frontend/src/pages/GlobeApp.tsx`：单点挂载 `<NarrativeHud />`（开关关闭时组件返回 null）
+  - 持久化走后端：`POST /api/narrative/journal/cards` / `GET /api/narrative/journal`
+    （刷新后从服务端取回，证明的是持久化而非前端内存）
+- 状态：功能证据 **GREEN**；artifact A1 待 §4 循环。
 
 ### S3 叙事碎片投递与拾取
 

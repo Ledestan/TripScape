@@ -12,6 +12,8 @@ import ElasticLandmarkCard from "@/features/globe/ElasticLandmarkCard";
 import LandmarkDetailWindow from "@/pages/LandmarkDetail";
 import JournalEditWindow from "@/pages/JournalEditWindow";
 import { JournalViewWindow } from "@/layouts/JournalViewWindow";
+// TripScape 2.0 叙事层（tripScape2 关闭时组件自身返回 null）
+import NarrativeHud from "@/features/narrative/NarrativeHud";
 import { api } from "@/api/client";
 import { useViewport } from "@/hooks/useViewport";
 
@@ -151,6 +153,9 @@ export default function GlobeApp() {
       <div className="absolute bottom-0 right-0 z-20" style={{ padding: "var(--ui-pad)" }}>
         <GlobeControls compact={compact} narrow={narrow} />
       </div>
+
+      {/* 底部：TripScape 2.0 叙事层（globe → landmark → journal，开关内自渲染） */}
+      <NarrativeHud />
 
       {/* 弹性资料卡片（点光点弹出；拖动时收成小条） */}
       {selectedSpot && detailId === null && !journalOpen && (

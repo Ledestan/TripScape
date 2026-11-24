@@ -118,7 +118,7 @@ def main():
             },
         },
         "elapsed_ms": {
-            "first": elapsed[0] if elapsed else None,
+            "first": rows[0]["elapsed_ms"] if rows else None,
             "min": elapsed[0] if elapsed else None,
             "median": int(statistics.median(elapsed)) if elapsed else None,
             "max": elapsed[-1] if elapsed else None,

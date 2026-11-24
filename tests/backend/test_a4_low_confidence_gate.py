@@ -1,10 +1,13 @@
-"""A4 技术可信度证据 · 低置信度拒答闸门（SPEC §3.7）。
+"""A4 技术可信度证据 · 低置信度候选机制（SPEC §3.7）。
 
 这不是新能力的测试，而是对**既有识别闸门**的可运行证据：
     settings.RECOG_CONFIDENCE_THRESHOLD（默认 0.35）
     -> recognition_service._build_result 判定 low_confidence
-    -> 命中时返回 candidates（top-3 去掉 top-1）
-    -> 前端 MessageBar 据此展示候选列表而不是硬判一个结果
+    -> 命中时**附带** candidates（top-3 去掉 top-1）
+    -> 响应仍是 success=true、top-1 仍是默认结果；候选是附加区块
+    -> 前端 MessageBar 据此把候选渲染成可点列表
+
+注意：严格说这不是"拒答"——真正的拒答语义在问答侧（article_qa 的 UNKNOWN_ANSWER）。
 
 断言：
 1. 低于阈值：low_confidence=True，candidates 非空且字段完整，候选置信度均低于阈值；

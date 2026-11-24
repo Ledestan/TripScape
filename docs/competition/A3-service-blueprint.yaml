@@ -43,16 +43,25 @@ legend:
   timeline_note: >-
     stage_order 1–6 是跨线共享的叙事时刻：1 提供照片 → 2 定位地标 → 3 检索 →
     4 组装卡片 → 5 沉淀/投递 → 6 拾取/失败语义。
-    叙事线在 3/4 没有站点，因为这两步由证据线完成，用户侧只是等待——
-    "线跳过某个 stage" 表示该线在该时刻无事可做，不是缺站。
+    "线跳过某个 stage" 表示该线在该时刻无事可做，不是缺站：叙事线在 3/4 无站点（由证据线完成，
+    用户侧只是等待），证据线在 1 无站点（用户提供照片发生在识别之前），治理线在 1–3 无站点
+    （约束只在有动作可约束时才出现）。stage 5 站点较密（B4/B5/F3/FRAGMENT/G1/G2），
+    因为"沉淀 + 碎片池"是叙事真正离开作者的一刻；F4（投递，stage 6）必须在 F3（加入手账，stage 5）
+    之后——代码里未入账的卡片投递直接 403。展板可在此处做局部放大，而不是把整条线拉平。
 
 feedback_edges:
-  - {from: G5, to: B1, why: "失败语义回写识别状态（低置信度/成功假）"}
-  - {from: G5, to: B6, why: "治理线回边到审核治理"}
-  - {from: G2, to: F4, why: "额度约束回边到投递动作"}
-  - {from: G3, to: F5, why: "唯一性约束回边到拾取动作"}
-  - {from: G1, to: FRAGMENT, why: "匿名剥离发生在写入碎片池时"}
-  - {from: F5, to: FRAGMENT, why: "拾取动作回到碎片池取数（读取方向）"}
+  - {from: B5, to: CARD, why: "stage 5 回读到 stage 4 的卡片（读回方向）"}
+  - {from: F5, to: FRAGMENT, why: "拾取动作回到 stage 5 的碎片池取数（读取方向）"}
+  - {from: G5, to: B1, why: "stage 6 的失败语义回写 stage 2 的识别状态"}
+
+constraint_links:
+  - {from: G1, to: FRAGMENT, why: "同 stage 横向约束：匿名在写入时剥离"}
+  - {from: G2, to: F4, why: "同 stage 横向约束：额度约束投递"}
+  - {from: G3, to: F5, why: "同 stage 横向约束：唯一性约束拾取"}
+  - {from: G5, to: B6, why: "同 stage 横向约束：失败语义与审核治理同刻"}
+constraint_note: >-
+  这些不是回边（stage_order 相等），是同一叙事时刻上的横向约束；
+  展板用不同线型表示，避免被误读为行车方向。
 
 lines:
   - id: narrative
@@ -71,8 +80,8 @@ lines:
     name: "治理线（约束、匿名、失败语义）"
     color_role: "support"
     direction: "left_to_right"
-    stations: [G1, G2, G3, G4, G5]
-    note: "匿名 / 额度 / 单次拾取 / 坐标绑定 / 失败语义"
+    stations: [G4, G1, G2, G3, G5]
+    note: "匿名 / 额度 / 单次拾取 / 坐标绑定 / 失败语义（按 stage_order 单调排列：4,5,5,6,6）"
 
 interchanges:
   - id: CARD
@@ -81,9 +90,10 @@ interchanges:
     table: ts_narrative_card
     stage_order: 4
     why: "识别路径与地标现建路径在此合流；加入手账、投递都以它为单位"
-    incoming: [B2, B5]
+    incoming: [B2, B5, F2]
     outgoing: [F3, F4]
-    transfer_note: "证据线（B2 组装 / B5 手账回取）把卡片写进来；叙事线（F3 加入手账、F4 投递）从卡片出发。B1 是卡片的输入来源之一，属反向边，不列在 outgoing。"
+    evidence_continuation: "证据线：B2（组装）进站，续出到 B4（碎片存储）；B5 是证据线回读端。"
+    transfer_note: "B2（组装）与 B5（手账回读）从证据线进站，F2（取得切面集）从叙事线进站；F3/F4 从卡片出发。识别 B1 是卡片的输入来源之一，属 B1→CARD 方向，本文件的边集不再重复画它。"
   - id: FRAGMENT
     name: "匿名碎片（换乘站）"
     kind: transfer_hub
@@ -91,9 +101,11 @@ interchanges:
     pickup_table: ts_narrative_fragment_pickup
     stage_order: 5
     why: "叙事离开作者、进入陌生人拾取池的唯一出口"
-    incoming: [F4, G1, B4]
+    incoming: [F4, G1, F5]
     outgoing: [F5]
-    transfer_note: "F4（投递动作）、G1（响应层匿名）、B4（碎片与拾取记录）汇入碎片池；F5 从池中拾取。F4 -> FRAGMENT -> F5 是叙事线与证据线唯一的必经换乘。"
+    storage_writer: B4
+    evidence_continuation: "证据线：B4（碎片存储与拾取记录）与本站同 stage，故不画跨线入边，只作 storage_writer 声明。"
+    transfer_note: "F4（投递动作）、G1（响应层匿名）、F5（拾取时回读）三条边汇入本站；B4 是碎片表的写入方，与本站同 stage 供台。F4 -> FRAGMENT -> F5 是叙事线与证据线唯一的必经换乘。"
 
 nodes:
   # ----------------------------- 叙事线（前台行为） -----------------------------
@@ -148,7 +160,7 @@ nodes:
   - id: F4
     line: narrative
     lane: front_stage
-    stage_order: 5
+    stage_order: 6
     name: "匿名投递到地标"
     description: "把手账中的一张卡片投递到某个地标，投递者身份不进入任何响应。"
     source:
@@ -189,7 +201,7 @@ nodes:
       - "backend/services/recognition_service.py::_build_result（confidence / low_confidence / candidates）"
       - "backend/services/retrieval_engine.py（引擎与索引装载）"
       - "runtime/index/landmarks.faiss + landmarks.meta.json"
-    next: [B3, G5]
+    next: [G5]
 
   - id: B3
     line: evidence
@@ -203,7 +215,7 @@ nodes:
     evidence:
       - "backend/services/article_qa.py（K=60、RRF 融合）"
       - "runtime/index/qa_chunks.json（144 chunks / 26 地标 / 8 类章节）"
-    next: [B2]
+    next: []
 
   - id: B2
     line: evidence
@@ -357,10 +369,14 @@ failure_modes:
     at: [B1, F1]
     where: "索引缺失或未识别出地标（业务失败不升级为 HTTP 错误）"
     evidence: "backend/services/recognition_service.py::recognize_image（return {'success': False, ...}）"
-  - code: 404
+  - code: 401
     at: [F3, F4, F5]
-    where: "开关关闭（叙事端点一律 404；F2 的 GET /api/landmarks/spots 不受门控，但随后取卡片会 404）/ 地标不存在 / 卡片不存在 / 无可用碎片"
-    evidence: "backend/api/narrative.py::_gate / _landmark_or_404 / NarrativeError(404)；backend/api/landmarks.py::spots 未加 _gate"
+    where: "未登录访问（五个叙事端点全部 @login_required，抛 HttpError(401)）"
+    evidence: "backend/apps/core/auth.py::login_required（raise HttpError(401, \"请先登录\")）；backend/api/narrative.py 五处 @login_required"
+  - code: 404
+    at: [F2, F3, F4, F5]
+    where: "开关关闭（叙事端点一律 404；F2 的 spots 不受门控，但 F2 的 source GET /api/narrative/card/{id} 本身由 _gate 门控，故 F2 也在 404 范围）/ 地标不存在 / 卡片不存在 / 无可用碎片"
+    evidence: "backend/api/narrative.py::_gate / _landmark_or_404 / NarrativeError(404)；backend/api/narrative.py::get_card 首行 _gate()"
   - code: 403
     at: [F4]
     where: "投递的卡片不在自己的手账里"

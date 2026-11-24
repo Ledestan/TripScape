@@ -11,9 +11,9 @@
 | 能力 | 功能证据 | 结果 | artifact | artifact 状态 | 总状态 |
 |---|---|---|---|---|---|
 | S2 叙事卡片结构化 | `tests/backend/test_s2_card_contract.py` | 红→绿（`2 passed`） | A2 叙事切面矩阵 | 6 轮，最终 **4.00（4/4/4/4）通过** | **VERIFIED** |
-| S1 三层空间切换 | `e2e/narrative-journal.spec.ts` | 红→绿（`1 passed`）+ 开关关闭负向对照 | A1 叙事动线图 | 待填（R5 待评） | 待填 |
-| S3 碎片投递与拾取 | `tests/backend/test_s3_fragment_delivery.py` + `test_s3_fragment_pickup.py` | 红→绿（`6 passed`）+ 手动 curl | A3 服务蓝图 | 待填（R5 待评） | 待填 |
-| 跨能力 | （依赖 S1–S3，均已 GREEN） | — | A4 技术可信度页 | 待填（R4 待评） | 待填 |
+| S1 三层空间切换 | `e2e/narrative-journal.spec.ts` | 红→绿（`1 passed`）+ 开关关闭负向对照（含 404/401 实测） | A1 叙事动线图 | 8 轮（达上限），最终 **4.30（5/4/4/4）通过** | **VERIFIED** |
+| S3 碎片投递与拾取 | `tests/backend/test_s3_fragment_delivery.py` + `test_s3_fragment_pickup.py` | 红→绿（`6 passed`）+ 手动 curl | A3 服务蓝图 | 7 轮，最终 **4.30（5/4/4/4）通过** | **VERIFIED** |
+| 跨能力 | （依赖 S1–S3，均已 GREEN） | — | A4 技术可信度页 | 7 轮，最终 **4.00（4/4/4/4）通过** | **VERIFIED** |
 
 ## 2. 功能证据（可复现命令与日志）
 
@@ -52,10 +52,10 @@
 
 | artifact | 路径 | 轮次 | 最终四维 | 加权 | 结论 |
 |---|---|---|---|---|---|
-| A1 叙事动线图 | `docs/competition/A1-narrative-flow.md` | 待填 | 待填 | 待填 | 待填 |
-| A2 叙事切面矩阵 | `docs/competition/A2-narrative-matrix.md`（+ `A2-card-schema.snapshot.json`） | 6 | 4 / 4 / 4 / 4 | **4.00** | 达标（≥3.5 且无维度 <2.5） |
-| A3 服务蓝图 | `docs/competition/A3-service-blueprint.yaml` | 待填 | 待填 | 待填 | 待填 |
-| A4 技术可信度页 | `docs/competition/A4-technical-credibility.md` | 待填 | 待填 | 待填 | 待填 |
+| A1 叙事动线图 | `docs/competition/A1-narrative-flow.md` | 8（达 §4.3 上限） | 5 / 4 / 4 / 4 | **4.30** | 达标（≥3.5 且无维度 <2.5） |
+| A2 叙事切面矩阵 | `docs/competition/A2-narrative-matrix.md`（+ `A2-card-schema.snapshot.json`） | 6 | 4 / 4 / 4 / 4 | **4.00** | 达标 |
+| A3 服务蓝图 | `docs/competition/A3-service-blueprint.yaml` | 7 | 5 / 4 / 4 / 4 | **4.30** | 达标 |
+| A4 技术可信度页 | `docs/competition/A4-technical-credibility.md` | 7 | 4 / 4 / 4 / 4 | **4.00** | 达标 |
 
 评分历史完整记录在 `PROGRESS.md` §3（每轮的四个维度、Critic 评语、下一轮计划、commit）。
 
@@ -71,6 +71,9 @@
 | R6 | 既有 e2e 4 个失败（升级前漂移） | 见上 | 按 §5 禁止改既有测试，未修 |
 | R7 | 特征开关默认关闭；本轮所有证据均在 `DB_ENGINE=sqlite` + `TRIPSCAPE2_ENABLED=true` 下采集 | 命令见 §2 | 已记录，默认行为未变（开关关闭有专门用例与浏览器级负向对照） |
 | R8 | A2 最终轮（R6）留下的 3 条**措辞级**编辑建议未纳入最终版本：M7 两格注记应说明 `anonymous` 只在拾取响应里、M8 fragment 格应标"跨用户拒绝裁决"、§1 M2 承载物应补 `RS.text` | `PROGRESS.md` §3 的 A2 R6 行 | 不改变达标结论（加权 4.00、无维度 <2.5）；留给人工制版时一并处理 |
+| R9 | A1 在 §4.3 的 8 轮上限处收尾，仍留 8 条措辞/标注级残留：线型二分规则不互斥（读/回显/拒绝也画实线）、N4 标签 `{id}` 应为 `{landmark_id}`、N15⇢N15 的 409 归因应写"服务层显式检查"而非唯一约束、匿名 401 应归 `GlobalAuth`（正文 `Unauthorized` 已佐证）、§5.5"UI 能看到 409"实为 curl 证据、N9→N14 图标签缺"同用户"、N8⇢N1 箭头与"无因果"表述相左、④ 子图缺会话边界标注 | `PROGRESS.md` §3 的 A1 R8 行 | **不得再开新轮**（已达上限）；这些是制版时的措辞修正，不影响功能证据与达标结论 |
+| R10 | A3 在 R7 达标，残留 5 条制版层问题：换乘站缺 `lane`/纵深放置、rail 与 constraint 判据未写成互斥规则（stage 相等的 rail 三条）、403 的 `at` 与 `where` 口径不一、"唯一必经换乘"属过度声明、`G5→B1` 缺语义解释 | `PROGRESS.md` §3 的 A3 R7 行 | 不影响达标；制版时按 Critic 建议补 `visibility_line` 带与段落说明 |
+| R11 | A4 在 R7 达标，残留 4 条指针/措辞问题：§8 的 RRF 指针应指向 §5 与 A2 快照、I2 行号应落 `retrieval_engine.py:69-77`、confidence 的"0–1"应写"实测 0.936–0.999984（无截断，理论区间 [-1,1]）"、FRAG 标题括注易读成"只有三个端点受控" | `PROGRESS.md` §3 的 A4 R7 行 | 不影响达标；人工制版时修正指针即可 |
 
 ## 5. 回滚命令
 

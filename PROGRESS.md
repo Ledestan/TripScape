@@ -50,9 +50,13 @@
 
 ## 3. artifact 评分历史（§4）
 
+> Critic 为独立子代理（独立上下文，不共享 Creator 的生成上下文），按 §4.2 量规打分，
+> 并自行打开 artifact 与代码核对（不得凭 Creator 自述）。达标线：加权 ≥ 3.5 且无维度 < 2.5。
+
 | artifact | 轮次 | 原创性(0.30) | 工艺完整度(0.25) | 叙事清晰度(0.25) | 可追溯性(0.20) | 加权 | Critic 核心评语 | Creator 下轮计划 | commit |
 |---|---|---|---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — | 尚未启动（等待功能证据） | — | — |
+| A2 | R1 | 3 | 3 | 3 | 3 | 3.00 | 数据底盘与端点零虚构，但行轴是字段清单转置（M1/M2 同源同真同假）；fragment 列 M1/M2 声称 year/section 进入碎片层属虚构（payload 无该键）；"陌生人续写"过度声明（碎片表无正文字段）；快照 fieldOrder 漏 createdAt；图例 TT/SRC/JR 全文未用；RRF 上限写成 0.05（实为 2/(60+1)≈0.0328） | ①把行轴改成"独立数据源"切面：把 M2 章节改为基于 `ragSnippets[].section`（8 类章节），与 timeFragments 解耦；②fragment 列标题改"陌生人拾取（匿名）"，M1/M2 改 `—` 并注明 payload 无 year/section；③新增两条真实机制切面：匿名性（`fragment_payload.anonymous`）、单次拾取与 3 条额度（`FragmentPickup` unique_together + `fragment_limit()`）；④修正 RRF 上界；⑤图例只保留正文实际使用的符号；⑥快照补 `extensionFields`（createdAt）并在矩阵中区分必需/扩展字段 | e675f75 后的 A2-R1 commit |
+
 
 ## 4. commit 记录
 

@@ -21,9 +21,9 @@ project: "TripScape 2.0"
 feature_flag: "tripScape2（settings.TRIPSCAPE2_ENABLED，默认 false）"
 reading_order: "left_to_right（stage_order 越小越靠左）"
 edge_semantics: >-
-  nodes[*].next 只表示**跨线 rail 与换乘**（例如 F4 -> FRAGMENT、B2 -> CARD）；
-  同一条线内部的相邻关系由 lines[].stations 的顺序给出，不重复写成 next，
-  避免同一关系在边集里出现两遍、或出现"同线自环"。
+  nodes[*].next 收三类**跨线**边——rail（跨泳道行车）、feedback（stage 递减的回边）、
+  constraint（同 stage 的横向约束），分类见 edge_kinds；同一条线内部的相邻关系由
+  lines[].stations 的顺序给出，不写成 next，避免同一关系在边集里出现两遍或形成同线自环。
 axis_note: >-
   line 与 lane 在本层恰好 1:1（每条线只落在对应泳道），这是设计选择而非冗余：
   line 给"叙事/证据/治理"三条轨道（供地铁图配色与命名），lane 给服务蓝图的
@@ -40,6 +40,7 @@ legend:
     - {id: transfer_hub, shape: "双环圆", meaning: "换乘站（CARD / FRAGMENT）"}
     - {id: station, shape: "实心圆", meaning: "普通站点"}
     - {id: feedback, shape: "虚线箭头（反向）", meaning: "与 stage_order 反向的回边（见 edge_kinds.feedback）"}
+    - {id: rail, shape: "实线箭头（颜色取出发线；跨泳道时取 front_stage 侧线色）", meaning: "跨线行车边（见 edge_kinds.rail）"}
     - {id: constraint, shape: "横向无箭头虚线", meaning: "同一 stage 的横向约束（G1->FRAGMENT / G2->F4 / G3->F5 / G5->B6 / G4->B2）"}
   bands:
     - {lane: front_stage, order: 1, visibility: "用户可见"}
@@ -109,7 +110,7 @@ interchanges:
     why: "叙事离开作者、进入陌生人拾取池的唯一出口"
     incoming: [F4, G1, F5]
     outgoing: []
-    outgoing_semantics: "拾取动作 F5 是本站的出站动作，但它的 rail 边写作 F5->FRAGMENT（动作→池），已在 next 中，故不在 outgoing 重复；避免与 feedback 的 FRAGMENT 反边画成双向箭头。"
+    outgoing_semantics: "拾取动作 F5 是本站的出站动作，但它的 feedback 边写作 F5->FRAGMENT（见 edge_kinds.feedback：拾取时回池读取，stage 6→5）；为避免与 outgoing 重复画成双向箭头，此处不重复列出。"
     storage_writer: B4
     evidence_continuation: "证据线：B4（碎片存储与拾取记录）与本站同 stage，故不画跨线入边，只作 storage_writer 声明。"
     transfer_note: "F4（投递动作）、G1（响应层匿名）、F5（拾取时回读）三条边汇入本站；B4 是碎片表的写入方，与本站同 stage 供台。F4 -> FRAGMENT -> F5 是叙事线与证据线唯一的必经换乘。"
@@ -387,17 +388,19 @@ failure_modes:
     where: "已登录但开关关闭（叙事端点 404；匿名调用会先在 @login_required 处得到 401，到不了 _gate）/ 地标不存在 / 卡片不存在 / 无可用碎片"
     evidence: "backend/api/narrative.py::_gate / _landmark_or_404 / NarrativeError(404)；get_card 首行 _gate()；装饰器顺序 login_required 在 _gate 外层"
   - code: 403
-    at: [F4]
-    where: "投递的卡片不在自己的手账里"
-    evidence: "backend/services/narrative_service.py::deliver_fragment（JournalCard 校验）"
+    at: [F4, F1, F2]
+    where: >-
+      (a) 投递的卡片不在自己的手账里（服务层）；(b) 账号被封禁/限登时，认证层直接 403，
+      该 403 可出现在任何已登录/可选认证节点（含 F1 拍照上传与 F2 取卡片）。
+    evidence: "backend/services/narrative_service.py::deliver_fragment（403）；backend/apps/core/auth.py::check_account_status / GlobalAuth / OptionalAuth（raise HttpError(403, reason)）"
   - code: 409
     at: [F4, B4, F5]
     where: "同地标第 4 条投递 / 同一碎片二次拾取"
     evidence: "backend/services/narrative_service.py::deliver_fragment / pick_fragment_by_id"
   - code: 422
-    at: [F3, F4]
-    where: "请求体字段不合法（Ninja Schema 校验）"
-    evidence: "backend/api/narrative.py::AddCardIn / DeliverIn"
+    at: [F3, F4, F5]
+    where: "请求体/查询参数校验失败（AddCardIn / DeliverIn 的字段；F5 缺或非法 landmark_id 同样 422）"
+    evidence: "backend/api/narrative.py::AddCardIn / DeliverIn；backend/api/narrative.py::pick（landmark_id: int）"
 
 known_gaps:
   - id: K1
@@ -419,8 +422,9 @@ known_gaps:
       后端 deliver_fragment 只校验"卡片存在 / 地标存在 / 卡片在该用户手账 / 该用户在该地标额度"，
       不校验 card.landmark_id == landmark_id；跨地标投递在 API 层是允许的
       （s3-manual-curl.log 中源卡片 landmarkId=1、投递到 landmark 8 即为例证）。
-      前端只在调用点传卡片自身的 landmarkId（JournalCardsPanel onDeliver），
-      属 UI 约定而非实现约束；本轮不新增校验（超出 §2 范围）。
+      前端两个调用点行为不同：手账层传卡片自身的 landmarkId（JournalCardsPanel onDeliver），
+      地标层传当前进入的 landmark_id（NarrativeHud deliver.mutate），两者都不是服务层约束；
+      本轮不新增校验（超出 §2 范围）。
   - id: K5
     text: >-
       两个换乘站（CARD/FRAGMENT）是结构抽象，不对应独立进程或服务；它们就是两张表

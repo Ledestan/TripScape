@@ -10,12 +10,14 @@
 flowchart LR
   subgraph RECO["识别链（照片 → 卡片）"]
     I1["image（PNG/JPG）<br/>api/recognition.py::_validate"]
-    I2["DINOv2 ViT-S/14<br/>services/retrieval_engine.py:50（本地权重 models/dinov2/）"]
-    I3["FAISS 索引 351 条<br/>runtime/index/landmarks.faiss（约 527 KB）"]
+    I2["DINOv2 ViT-S/14<br/>services/retrieval_engine.py:49（本地权重 models/dinov2/）"]
+    I3["FAISS 索引 351 条<br/>runtime/index/landmarks.faiss（539181 B）"]
     I4["注册图元数据 351 条 / 磁盘缺失 333 条<br/>runtime/index/landmarks.meta.json"]
-    I5["top-3 + 阈值 0.35<br/>recognition_service.py::_build_result<br/>confidence = 余弦相似度"]
-    I6["响应 success=true<br/>候选为附加区块（非拒答）"]
-    I7["MessageBar 候选列表<br/>frontend/src/features/qa/MessageBar.tsx:83"]
+    I5["并行装载并互校<br/>retrieval_engine.py（ntotal == len(meta)）"]
+    I6["target_id → Landmark 解析<br/>解析失败即丢弃（recognition_service.py:61-67）"]
+    I7["top-3 + 阈值 0.35<br/>_build_result<br/>confidence = 余弦相似度"]
+    I8["响应 success=true<br/>候选为附加区块（非拒答）"]
+    I9["MessageBar 候选列表<br/>frontend/src/features/qa/MessageBar.tsx:83"]
   end
   subgraph FRAG["碎片链（卡片 → 陌生人）"]
     F1["JournalCard<br/>ts_narrative_journal_card"]
@@ -24,13 +26,20 @@ flowchart LR
     F4["pick（_unpicked_queryset 排除自投）<br/>GET .../pick（无可用 404）"]
     F5["FragmentPickup<br/>unique_together=(fragment,user)"]
   end
-  I1 --> I2 --> I3 --> I4 --> I5 --> I6 --> I7
-  I5 -->|"tripScape2 开启：_attach_narrative_card"| CARD["NarrativeCard<br/>ts_narrative_card"]
-  CARD --> F1 --> F2 --> F3 --> F4 --> F5
+  I1 --> I2
+  I2 --> I3
+  I2 --> I4
+  I3 --> I5
+  I4 --> I5
+  I5 --> I6 --> I7 --> I8 --> I9
+  I7 -->|"tripScape2 开启：_attach_narrative_card"| CARD["NarrativeCard<br/>ts_narrative_card"]
+  CARD -->|"POST /api/narrative/journal/cards<br/>add_card_to_journal（get_or_create）"| F1
+  F1 --> F2 --> F3 --> F4 --> F5
 ```
 
-**读法**：左链解释"系统凭什么说这是某地标"（含阈值与候选），右链解释"叙事离开作者后
-凭什么只被一个人接住"（含匿名剥离点与唯一约束）。两条链在 `NarrativeCard` 上相接。
+**读法**：左链解释"系统凭什么说这是某地标"（含阈值、候选、解析失败丢弃），右链解释
+"叙事离开作者后凭什么只被一个人接住"（含匿名剥离点与唯一约束）。两条链在 `NarrativeCard` 上相接。
+注意 I3/I4 是**并列装载并互校**（`ntotal == len(meta)`），不是上下游产出关系。
 
 ## 1. 识别置信度：定义、来源、自评、局限
 
@@ -53,7 +62,8 @@ flowchart LR
 
 评测协议（由 `scripts/recognition_selfcheck.py` 自动统计）：每个地标取 `data/<target_id>/`
 下按文件名排序的第 1 张，共 **26 张**；其中 **3 张**（`HeavenTemple_1` / `Petra_1` / `Stonehenge_1`）
-与索引注册图同名，**23 张是索引外照片**。本页**只有这一张表承载实测数字**，其它小节不再重复。
+与索引注册图同名，**23 张是索引外照片**。**本节表是本页实测数字的权威出处**；
+§0 图中的索引/元数据条数、§7 的耗时口径都是同一数据集的引用值，凡与本节冲突一律以本节为准。
 
 | 指标 | 数值 |
 |---|---|
@@ -155,12 +165,12 @@ RECOG_CONFIDENCE_THRESHOLD (默认 0.35，作用在余弦相似度上)
 - 不声称文化解释的正确性（只保证"无数据不编"，并如实标注模板兜底句）。
 - 不声称审核治理已覆盖叙事层（K2 明示缺口）。
 
-## 8. 本页的写法纪律（原 §0，移文末，不含任何数字）
+## 8. 本页的写法纪律
 
 | 允许写 | 禁止写 |
 |---|---|
-| "在本机、对 26 张地标图（其中 23 张不在索引内），top-1 命中 26/26" | "识别准确率 100%" |
-| "RRF 分数理论上界 2/61 ≈ 0.032787，实测触及 0.032787" | "检索效果业界领先" |
-| "低于 0.35 时附带候选列表，但仍以 top-1 为默认结果" | "低置信度会拒答（没说什么算低）" |
+| "在本机对自评集，top-1 全部命中（具体数字以 §1.2 为准）" | "识别准确率 100%" |
+| "RRF 分数有理论上界，实测可触及（数值见 §1.2 与快照）" | "检索效果业界领先" |
+| "低于阈值时附带候选列表，但仍以 top-1 为默认结果" | "低置信度会拒答（没说什么算低）" |
 | "碎片在 (fragment, user) 上唯一" | "保证不会被重复拾取（没有约束）" |
 | "confidence 是余弦相似度" | "置信度就是概率" |

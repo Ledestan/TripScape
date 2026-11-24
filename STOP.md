@@ -69,7 +69,8 @@
 | R4 | 识别自评非泛化：26 张评测图中 23 张在索引外；索引 351 条路径 333 条磁盘缺失 | `a4-recognition-selfcheck.json` | 已在 A4 §1.2 明示，不作准确率宣传 |
 | R5 | 拾取的 409 只经 `POST /api/narrative/fragments/{id}/pick`；前端走 GET（可见拒绝 404） | `backend/api/narrative.py`；`NarrativeHud.tsx` | 已在 A1/A2 标注，未改前端 |
 | R6 | 既有 e2e 4 个失败（升级前漂移） | 见上 | 按 §5 禁止改既有测试，未修 |
-| R7 | 特征开关默认关闭；本轮所有证据均在 `DB_ENGINE=sqlite` + `TRIPSCAPE2_ENABLED=true` 下采集 | 命令见 §2 | 已记录，默认行为未变（开关关闭有专门用例断言 404/无新字段） |
+| R7 | 特征开关默认关闭；本轮所有证据均在 `DB_ENGINE=sqlite` + `TRIPSCAPE2_ENABLED=true` 下采集 | 命令见 §2 | 已记录，默认行为未变（开关关闭有专门用例与浏览器级负向对照） |
+| R8 | A2 最终轮（R6）留下的 3 条**措辞级**编辑建议未纳入最终版本：M7 两格注记应说明 `anonymous` 只在拾取响应里、M8 fragment 格应标"跨用户拒绝裁决"、§1 M2 承载物应补 `RS.text` | `PROGRESS.md` §3 的 A2 R6 行 | 不改变达标结论（加权 4.00、无维度 <2.5）；留给人工制版时一并处理 |
 
 ## 5. 回滚命令
 

@@ -62,6 +62,11 @@ FIELD_DOC = {
     "source": ("string", "卡片来源标签（识别引擎名 / landmark）"),
 }
 
+# SPEC 必需字段之外、实现额外返回的字段（不得混入 fieldOrder）
+EXTENSION_DOC = {
+    "createdAt": "ISO 时间戳（ts_narrative_card.created_at）；M9 时间刻度切面使用，不属 SPEC 必需字段",
+}
+
 
 def _trim(value):
     """深拷贝并截断长文本（只截断，不改写）。"""
@@ -134,6 +139,10 @@ def main():
         },
         "fieldOrder": CARD_FIELDS,
         "fields": fields,
+        "extensionFields": {
+            name: {"doc": doc, "present": name in data}
+            for name, doc in EXTENSION_DOC.items()
+        },
         "constraints": [
             "timeFragments 与 ragSnippets 必须为非空数组",
             "confidence 必须为 0–1 数值",

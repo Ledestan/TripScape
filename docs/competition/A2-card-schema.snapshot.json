@@ -1,6 +1,6 @@
 {
   "artifact": "A2-card-schema.snapshot",
-  "generatedAt": "2026-11-24T15:48:57+00:00",
+  "generatedAt": "2026-11-24T16:05:15+00:00",
   "spec": "SPEC.md §2 S2（固定字段集）/ §3.3（契约测试 + 字段快照）",
   "source": {
     "endpoint": "GET /api/narrative/card/{landmark_id}",
@@ -104,6 +104,12 @@
       "type": "string",
       "required": true,
       "doc": "卡片来源标签（识别引擎名 / landmark）"
+    }
+  },
+  "extensionFields": {
+    "createdAt": {
+      "doc": "ISO 时间戳（ts_narrative_card.created_at）；M9 时间刻度切面使用，不属 SPEC 必需字段",
+      "present": true
     }
   },
   "constraints": [

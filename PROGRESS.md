@@ -63,8 +63,23 @@
 
 ### S3 叙事碎片投递与拾取
 
-- 功能证据：`tests/backend/test_s3_fragment_delivery.py`、`tests/backend/test_s3_fragment_pickup.py`
-- 结果：**待执行**
+- 功能证据：
+  - 投递侧：`tests/backend/test_s3_fragment_delivery.py`（3 个用例：前 3 次成功+第 4 次 409、非手账卡片 403、开关关闭 404）
+  - 拾取侧：`tests/backend/test_s3_fragment_pickup.py`（3 个用例：来源卡片摘要+二次拾取 409、自投不可拾取、开关关闭 404）
+- 证据命令：`$env:DB_ENGINE='sqlite'; .venv\Scripts\python.exe -m pytest tests/backend/test_s3_fragment_delivery.py tests/backend/test_s3_fragment_pickup.py -v`
+- 红：`docs/competition/evidence/s3-functional-red.log` —— `4 failed, 2 passed`
+  （2 个 passed 是"开关关闭 → 404"的门控用例，本就应通过）
+  **红的复现方式（诚实记录）**：S3 的服务与路由与 S2 同批落地，早于本测试编写。
+  为满足 default-FAIL 门控，红证据在**临时移除 `/api/narrative/fragments*` 三个路由**的状态下采集：
+  投递/拾取全部 404，断言失败于 `assert 200 == 404`；恢复实现后转绿。
+- 绿：`docs/competition/evidence/s3-functional-green.log` —— `6 passed`。
+- 手动证据：`docs/competition/evidence/s3-manual-curl.log`
+  （demo 账号第 4 次投递 409「同一地标最多投递 3 条叙事碎片，你已投递 3 条」；
+  另一账号拾取 200 含 `sourceCard` 摘要；按 ID 二次拾取 409「该碎片已被你拾取过，不能重复拾取」）
+- 实现要点：`NarrativeFragment`（投递）/`FragmentPickup`（`unique_together=(fragment,user)`）/
+  `narrative_service.deliver_fragment|pick_fragment|pick_fragment_by_id`；
+  匿名性由 `fragment_payload` 保证（响应不含投递者字段）。
+- 状态：功能证据 **GREEN**；artifact A3 待 §4 循环。
 
 ## 3. artifact 评分历史（§4）
 

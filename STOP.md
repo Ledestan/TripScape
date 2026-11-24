@@ -10,10 +10,10 @@
 
 | 能力 | 功能证据 | 结果 | artifact | artifact 状态 | 总状态 |
 |---|---|---|---|---|---|
-| S2 叙事卡片结构化 | `tests/backend/test_s2_card_contract.py` | 红→绿（`2 passed`） | A2 叙事切面矩阵 | R5 待填 | 待填 |
-| S1 三层空间切换 | `e2e/narrative-journal.spec.ts` | 红→绿（`1 passed`） | A1 叙事动线图 | R3 待填 | 待填 |
-| S3 碎片投递与拾取 | `tests/backend/test_s3_fragment_delivery.py` + `test_s3_fragment_pickup.py` | 红→绿（`6 passed`）+ 手动 curl | A3 服务蓝图 | R3 待填 | 待填 |
-| 跨能力 | （依赖 S1–S3） | — | A4 技术可信度页 | R2 待填 | 待填 |
+| S2 叙事卡片结构化 | `tests/backend/test_s2_card_contract.py` | 红→绿（`2 passed`） | A2 叙事切面矩阵 | 6 轮，最终 **4.00（4/4/4/4）通过** | **VERIFIED** |
+| S1 三层空间切换 | `e2e/narrative-journal.spec.ts` | 红→绿（`1 passed`）+ 开关关闭负向对照 | A1 叙事动线图 | 待填（R5 待评） | 待填 |
+| S3 碎片投递与拾取 | `tests/backend/test_s3_fragment_delivery.py` + `test_s3_fragment_pickup.py` | 红→绿（`6 passed`）+ 手动 curl | A3 服务蓝图 | 待填（R5 待评） | 待填 |
+| 跨能力 | （依赖 S1–S3，均已 GREEN） | — | A4 技术可信度页 | 待填（R4 待评） | 待填 |
 
 ## 2. 功能证据（可复现命令与日志）
 
@@ -27,7 +27,9 @@
 - 前置：`frontend\node_modules\.bin\tsc.cmd -b` + `vite.cmd build`；后端 `TRIPSCAPE2_ENABLED=true` 起在 `127.0.0.1:8000`
 - 命令：`frontend\node_modules\.bin\playwright.cmd test -c playwright.narrative.config.ts`
 - 红：`docs/competition/evidence/s1-e2e-red.log`（实现前 dist：`narrative-hud` 不存在）
-- 绿：`docs/competition/evidence/s1-e2e-green.log`（`1 passed (25.5s)`）
+- 绿：`docs/competition/evidence/s1-e2e-green.log`（`1 passed`，最近一次 25.3s）
+- 负向对照：`docs/competition/evidence/s1-flag-off-negative-control.{log,md}`
+  （开关关闭时同一份 dist 不渲染 HUD、`/api/narrative/card/8` 返回 404）
 - 截图：`s1-journal-before-refresh.png`、`s1-journal-after-refresh.png`
 
 ### S3
@@ -50,10 +52,10 @@
 
 | artifact | 路径 | 轮次 | 最终四维 | 加权 | 结论 |
 |---|---|---|---|---|---|
-| A1 叙事动线图 | `docs/competition/A1-narrative-flow.md` | 3 | 待填 | 待填 | 待填 |
-| A2 叙事切面矩阵 | `docs/competition/A2-narrative-matrix.md`（+ `A2-card-schema.snapshot.json`） | 5 | 待填 | 待填 | 待填 |
-| A3 服务蓝图 | `docs/competition/A3-service-blueprint.yaml` | 3 | 待填 | 待填 | 待填 |
-| A4 技术可信度页 | `docs/competition/A4-technical-credibility.md` | 2 | 待填 | 待填 | 待填 |
+| A1 叙事动线图 | `docs/competition/A1-narrative-flow.md` | 待填 | 待填 | 待填 | 待填 |
+| A2 叙事切面矩阵 | `docs/competition/A2-narrative-matrix.md`（+ `A2-card-schema.snapshot.json`） | 6 | 4 / 4 / 4 / 4 | **4.00** | 达标（≥3.5 且无维度 <2.5） |
+| A3 服务蓝图 | `docs/competition/A3-service-blueprint.yaml` | 待填 | 待填 | 待填 | 待填 |
+| A4 技术可信度页 | `docs/competition/A4-technical-credibility.md` | 待填 | 待填 | 待填 | 待填 |
 
 评分历史完整记录在 `PROGRESS.md` §3（每轮的四个维度、Critic 评语、下一轮计划、commit）。
 

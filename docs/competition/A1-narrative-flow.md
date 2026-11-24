@@ -29,6 +29,9 @@ globe（未被讲述） → 点叙事轨道里的地标入口 → landmark（正
 - **术语边界**：本图的"手账"= `layer=journal` 与 `ts_narrative_journal_card`（叙事卡片的手账）；
   产品里另有一个既有的**手账编辑器浮窗** `JournalEditWindow`（`/journal_edit`，地标详情的"写手账"入口，
   写的是 `ts_journal`），两者不是同一个东西，展板绘制时不要画串。
+- **开关前置**：本图所有叙事端点与 `NarrativeHud` 都受 `tripScape2` 门控——
+  开关关闭时组件返回 `null`、`/api/narrative/*` 一律 404。因此这张图画的是
+  **"开关开启态"**，展板应标注该前提（关闭态见 `s1-flag-off-negative-control.md`）。
 - ④ **不是第四个 layer**，而是**跨用户异步流**：碎片写入 `ts_narrative_fragment`，
   另一个会话在同一个地标层里读取它。图上把 ④ 画成"池 + 另一个会话"，
   而不是画成第四条平行轨道——否则会把"同步状态切换"和"异步跨用户投递"混为一谈。
@@ -80,17 +83,20 @@ flowchart LR
   N9 -->|"写入·同地标 ≤3<br/>fragment_limit()"| N14
   N14 -->|"点『拾取碎片』时才读取<br/>只取他人投递且本人未拾取"| N10
   N10 -->|"随机拾取<br/>pick.mutate()"| N11
-  N10 -.->|"按 ID 拾取（**仅后端可达**，前端零调用）"| N15
+  N10 -.->|"按 ID 拾取（仅后端可达，前端零调用）"| N15
   N15 -.->|"二次拾取 409<br/>FragmentPickup 唯一约束"| N15
   N11 -->|"来源卡片摘要回落地标层"| N3
   N7 -->|"点手账卡片标题<br/>onWake → enterLandmark()"| N3
   N3 -->|"返回<br/>back()"| N1
   N7 -->|"返回（landmarkId 存在时）<br/>back()"| N3
+  linkStyle 15,16 stroke-dasharray:6 3 2 3
 ```
 
 **线型约定（供展板绘制）**：实线 = 正常写入/切层；虚线 = 只刷新视图、不写库、不切层的回执
 （`N6⇢N3`、`N8⇢N1`）；点划线 = **仅后端可达的复核分支**（`N10⇢N15`、`N15⇢N15`：
 `POST /api/narrative/fragments/{id}/pick` 在 `frontend/src` 零调用，只被测试与 curl 使用）。
+Mermaid 没有原生点划线箭头，图上用 `linkStyle 15,16 stroke-dasharray:6 3 2 3` 表达；
+展板绘制时请把这两条画成点划线，与虚线的"回执"语义区分开。
 子图内节点声明顺序不影响语义，Mermaid 会自动布局；如需完全避免交叉，可把 JOURNAL 子图改为从上到下排列，
 并把 N12/N13 移入独立的旁路子图。
 
@@ -132,7 +138,7 @@ flowchart LR
 | N3→N9 | 点"投递到此处"（就地投递，**有前置门**） | `data-testid="narrative-deliver"` → `onDeliver(card.id)` → `deliver.mutate()` → `deliver_fragment()` **先校验** `JournalCard.objects.filter(user=user, card=card).exists()`；未入账 → 403「只能投递手账中的叙事卡片」，不写库 | 仅当 N3→N6 已成立才写 `ts_narrative_fragment` |
 | N9→N14 | 投递写入碎片池 | `deliver_fragment()`（同用户同地标 ≤3，`fragment_limit()`） | `ts_narrative_fragment` |
 | N14→N10 | 他人在地标层点"拾取碎片"（`data-testid="narrative-pick"`）**时**才读取碎片池（进入地标层本身不读） | `pick.mutate()` → `pick_fragment()` → `_unpicked_queryset()`：`exclude(delivered_by=user)` + `exclude(已拾取)` | 内存（拾取视图） |
-| N10→N11 | 点"拾取碎片"（随机池） | `pick.mutate()` → `GET .../pick?landmark_id=`（该端点只可能 404，不会 409） | `ts_narrative_fragment_pickup` |
+| N10→N11 | 点"拾取碎片"（随机池） | `pick.mutate()` → `GET .../pick?landmark_id=`（无可用碎片 404；另计未登录 401、缺参 422；不会 409） | `ts_narrative_fragment_pickup` |
 | N10→N15 | 按 ID 拾取（复核入口） | `POST /api/narrative/fragments/{id}/pick` | `ts_narrative_fragment_pickup` |
 | N15→N15 | 二次拾取 | `pick_fragment_by_id()` → 409「该碎片已被你拾取过，不能重复拾取」 | 无写库（拒绝） |
 | N11→N3 | 拾取结果展示 | `picked` 状态 → `data-testid="narrative-picked-fragment"` | 内存（来源卡片摘要；N10 与 N3 是同一组件的两个会话实例） |
@@ -147,8 +153,9 @@ flowchart LR
 1. **同一 URL 上叠着三层**：`/` 这一个路由里，`globe / landmark / journal` 是 `useNarrativeStore`
    的三个状态值，不是三个页面。图上的横向移动在浏览器里是**零跳转**的；
    ④ 的跨用户流动则**必须**跨会话，二者不能画在同一条轨道上。
-2. **刷新会重置视点，但不会重置内容**：`layer` 回到 `globe`，而 `ts_narrative_journal_card`
-   里的卡片仍在（N7→N8→N7），这是"叙事沉淀"与"界面状态"的分离。
+2. **刷新会重置视点，但不会重置内容**：刷新后 `layer` 回到 `globe`（`stores/narrative.ts` 初值），
+   而服务端 `ts_narrative_journal_card` 里的卡片仍在（N7→N8 取回；视点走 N8⇢N1，再按 N1→N3→N7 才回手账层），
+   这是"叙事沉淀"与"界面状态"的分离。
 3. **两种"来源"合流到同一张卡片**：识别（N12）与地标现建（N4）都落到 N5，
    因此卡片既可以来自一张照片，也可以来自一次"我先看看这里有什么"。
 4. **碎片池是"卡片引用 + 投递者"三层记录**：N14 记录 `card_id`、`landmark_id` 与投递者

@@ -5,7 +5,9 @@
 > 数据底盘：`runtime/index/qa_chunks.json`（144 chunks / 26 地标 / 8 类章节）、
 > `ts_landmark`、`ts_narrative_card`、`ts_narrative_journal_card`、
 > `ts_narrative_fragment`、`ts_narrative_fragment_pickup`。
-> （`ts_recognition` 只在识别时写入、被 A4 用于运行期分布，本矩阵不引用它，故不列底盘。）
+> （`ts_recognition` 只在识别时写入（`recognition_service.py::_build_result`），
+> 本矩阵与 A4 都不读这张表：A4 的置信度分桶来自 `scripts/recognition_selfcheck.py` 的评测集，
+> 不是 `ts_recognition` 的运行期记录，故不列底盘。）
 
 ## 0. 矩阵怎么读
 
@@ -17,14 +19,18 @@
 2. 同一语义簇的多个字段（如卡片身份 `id/landmarkId/title/source`、地理 `lat/lon/place/country/region`）
    合并为一行并标 **[复合行]**。
 3. 一行内并列**同簇但不同来源**的条目（如三级降级、两个影像来源、三个时间列）必须显式标 **[复合行]**。
-4. **机制行（M7/M8/M9）的 `●` 判据 = 该层界面上存在触发该机制的动作控件**（值不一定在 payload 里）；
-   若该层没有可触发控件则为 `—`。这条规则专门用来避免"机制行判定看心情"。
+4. **机制行的判定按列的性质分两种**：
+   - **作者侧三列（globe/landmark/journal）** 判 `●` 的判据 = **该层界面上存在触发该机制的动作控件**
+     （值不一定在 payload 里）。例：landmark 与 journal 都有投递控件，故 M9 在这两列是 `●`。
+   - **fragment 是非 layer 的跨用户通道，没有独立控件**，其判定按**响应值**：
+     `anonymous` 字段、`sourceCard` 字段、`remaining` 回报等。
+   这条规则专门用来避免"机制行判定看心情"。
 
 | 轴 | 含义 |
 |---|---|
 | 行（切面） | 10 个切面：4 个单一来源/机制行（M4/M7/M8/M9）+ 1 个"一记录两标签"行（M2）+ 5 个复合行（M1/M3/M5/M6/M10） |
 | 列（叙事通道） | **三个叙事层**：globe（未被讲述）/ landmark（正在被讲述）/ journal（已沉淀）；**外加一个非 layer 的通道**：fragment（陌生人拾取·匿名）。代码里 `NarrativeLayer` 只有三值，fragment 是跨用户异步通道，不是第四层 |
-| 格（判定） | `●` 该层**直接承载**该切面（payload 给出值，或该层的动作/控件被该机制直接裁决） / `◐` 只给出部分或派生值 / `—` 不承载 |
+| 格（判定） | `●` 该层**直接承载**该切面（payload 给出值，或该层的动作/控件被该机制直接裁决） / `◐` 只给出部分或派生值 / `—` 不承载。**只有结构化字段计入承载**：正文里的偶发数字（例如 `snippet` 恰好含年份）不算 M1 承载 |
 
 > 机制行（M7/M8/M9）的值不一定是 payload 字段：它们的"直接承载"体现在**该层有动作控件**
 > 且该动作被约束裁决（例如地标层面板有拾取按钮，拾取写入受唯一约束；
@@ -52,7 +58,7 @@
 |---|---|---|---|---|
 | M1 | 纪年 **[复合行：三级回落]** | `TF.year` | `_time_fragments` ← 文章库历史沿革/概述/前言句 → 地标简介 → 兜底句 | 整数年份（公元前为负）/ `null`（句无年份）；索引/文章缺失时回退 `db:ts_landmark.intro`；再无则代码生成句（`source=db:ts_landmark`，非史料） |
 | M2 | 文章库检索上下文 **[一记录两标签]** | `RS.section` + `RS.score` | `ArticleIndex.search`（向量 + BM25 → RRF，k=60） | 章节名（8 类）；索引不可用时 `section="intro"`、`score=null`；无简介时 `section="landmark"`、`score=null`；`score` 理论上界 `2/61 = 0.032787` |
-| M3 | 地理 **[复合行：五个键同源]** | `GEO.lat/lon/place/country/region` | `_geo` ← `ts_landmark.lat/lon/country/region` | 十进制度 + 地区标签（无 country/region 时为空串） |
+| M3 | 地理 **[复合行：五个键同源]** | `GEO.lat/lon/place/country/region` | `_geo` ← `ts_landmark.lat/lon/country/region`；`place`←`ts_landmark.name` | 十进制度 + 地区标签（无 country/region 时为空串） |
 | M4 | 确信度 | `CF` | `_attach_narrative_card()`（`api/recognition.py`）把 `_build_result` 的置信度传入 `build_narrative_card(confidence=…)` | 0–1 浮点；地标现建的卡片为 `0.0`（未识别即不宣称确信） |
 | M5 | 影像 **[复合行：两个来源]** | `PH` | ① 上传原图 URL（`photo_url` 参数）② 无上传 URL 时 `ts_landmark.image_url` | URL 字符串（只存引用，不复制文件） |
 | M6 | 卡片身份与命名 **[复合行]** | `id` + `landmarkId` + `title` + `source` | `NarrativeCard.as_card()`；`title`←`_title`（地标名｜国家）；`source`←识别引擎名或 `landmark` | 整数 / 整数 / 字符串 / 字符串 |
@@ -71,17 +77,16 @@
 | **M4 确信度** | `—` 光点只给坐标/热度，没有识别置信度 | `●` CF（卡片 payload 直接给出） | `●` CF（`as_card()` 同层给出） | `●` `SC.confidence`（与 photo 同层） |
 | **M5 影像** | `◐` 地标百科图（非卡片 photo） | `●` PH（上传 URL 或地标图） | `●` PH | `●` `SC.photo`（与 confidence 同层） |
 | **M6 身份与命名** | `◐` 地标 id/name，非卡片身份 | `●` ID（id/landmarkId/title/source） | `●` ID | `◐` `SC.id` + `SC.title` + `SC.landmarkId`，**缺 card `source`** |
-| **M7 匿名性** | `—` 尚未投递，没有"作者"可言 | `—` 投递按钮尚未触发，匿名尚未生效 | `—` 手账是署名内容（卡片不带 anonymous） | `●` ANON（响应固定 `anonymous=true`） |
-| **M8 单次拾取** | `—` 无拾取入口 | `●` PICK（地标层面板有 `narrative-pick` → `GET .../pick`，写入受唯一约束；**该 GET 只可能 404**，409 只经 `POST /api/narrative/fragments/{id}/pick` 触发且前端未接线） | `—` 手账面板没有拾取入口 | `●` PICK（同上，拾取者为陌生人会话；拒绝可见形式是 404） |
+| **M7 匿名性** | `—` 尚未投递，没有"作者"可言 | `●` ANON（投递控件 `narrative-deliver` 存在；投递后响应固定 `anonymous=true`） | `●` ANON（手账面板有"匿名投递"控件；投递响应同样剥离身份） | `●` ANON（响应值判定：payload 固定 `anonymous=true`） |
+| **M8 单次拾取** | `—` 无拾取入口 | `●` PICK（地标层面板有 `narrative-pick` → `GET .../pick`：写入由"未拾取"过滤裁决，重复拾取不可见；**409 只经 `POST /api/narrative/fragments/{id}/pick`**，前端未接线） | `—` 手账面板没有拾取入口 | `●` PICK（响应值 + 唯一约束：同碎片第二次拾取在 POST 路径被 409 拒绝，GET 路径靠未拾取过滤） |
 | **M9 投递额度** | `—` 无投递入口 | `●` QUOTA（地标层面板有"投递到此处"，额度在此结算） | `●` QUOTA（手账面板有"匿名投递"，额度在此结算） | `●` QUOTA（投递响应回报 `deliveredCount/remaining`） |
 | **M10 时间刻度** | `—` 光点无时间戳 | `●` TS.createdAt（扩展字段） | `●` TS.addedAt（+ 卡片 createdAt） | `●` TS.fragment.createdAt |
 
 **读法**：从左到右，格子由空到密——空间先"被点名"（M3/M5），再"被讲述"（M1/M2/M4/M6），
 再"被沉淀"（journal 列几乎全满），最后"被陌生人接住"（M2/M6 降为部分值，M4/M5/M7/M8/M9/M10 直接承载）。
-三处 **刻意留空** 是设计边界而不是数据缺失：
+两处 **刻意留空** 是设计边界而不是数据缺失：
 - M1/M3 在 fragment 通道留空——匿名碎片不给纪年、不给坐标（只给来源卡片的 `landmarkId` 主键）；
-- M7 在作者侧三列留空——匿名只在"投递"这一刻生效，此前没有可匿的对象；
-- M8 在 globe/journal 留空——这两层没有拾取入口（按钮只在地标层面板里）。
+- M8 在 globe/journal 留空——拾取入口只在地标层面板里，globe 与 journal 没有拾取控件。
 
 ## 3. 机制切面（数据库级证据，供展板做"可信度"小图）
 

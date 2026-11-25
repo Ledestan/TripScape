@@ -77,6 +77,19 @@ export default function NarrativeHud() {
     retry: 1,
   });
 
+  // 故事文档（stories/*.md）由后端读取；缺少文档时前端只展示卡片材料，不补写故事
+  const { data: story } = useQuery({
+    queryKey: ["narrative", "story", landmarkId],
+    queryFn: async () =>
+      (await api.get(`/narrative/story/${landmarkId}`)).data.data as {
+        title: string;
+        markdown: string;
+        filename: string;
+      },
+    enabled: layer === "landmark" && landmarkId !== null,
+    retry: 0,
+  });
+
   const { data: journal = [] } = useQuery({
     queryKey: ["narrative", "journal"],
     queryFn: async () => (await api.get("/narrative/journal")).data.data as JournalEntry[],
@@ -206,6 +219,7 @@ export default function NarrativeHud() {
             errorText={cardError instanceof Error ? cardError.message : ""}
             onRetry={() => refetchCard()}
             landmarkName={landmarkName}
+            storyMarkdown={story?.markdown || ""}
             adding={addToJournal.isPending}
             onAdd={() => card && addToJournal.mutate(card.id)}
             picking={pick.isPending}

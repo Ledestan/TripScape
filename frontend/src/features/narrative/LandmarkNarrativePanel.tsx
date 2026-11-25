@@ -26,6 +26,8 @@ import { cn } from "@/utils/cn";
 
 import type { NarrativeCardData, PickedFragment } from "./types";
 
+import StoryDocument from "./StoryDocument";
+
 /** 年份未知的片段排在最后，避免未记年内容打断时间感 */
 function sortByYear<T extends { year: number | null }>(items: T[]): T[] {
   return [...items].sort((a, b) => {
@@ -43,6 +45,7 @@ export default function LandmarkNarrativePanel({
   errorText,
   onRetry,
   landmarkName,
+  storyMarkdown,
   onAdd,
   adding,
   onPick,
@@ -57,6 +60,7 @@ export default function LandmarkNarrativePanel({
   errorText: string;
   onRetry: () => void;
   landmarkName: string;
+  storyMarkdown: string;
   onAdd: () => void;
   adding: boolean;
   onPick: () => void;
@@ -147,10 +151,25 @@ export default function LandmarkNarrativePanel({
 
         {!loading && !failed && card && (
           <div className="space-y-3.5">
+            {/* 故事正文：一个地标一篇，来自 stories/*.md */}
+            {storyMarkdown && (
+              <section data-testid="narrative-story" className="rounded-xl bg-background/40 p-3">
+                <StoryDocument markdown={storyMarkdown} />
+              </section>
+            )}
+
+            {/* 材料区：故事背后的可核对字段 */}
+            <div className="flex items-center gap-1.5 border-b border-border/50 pb-1">
+              <span className="text-[10.5px] font-semibold tracking-wide text-muted-foreground">
+                材料与出处
+              </span>
+              <span className="text-[10px] text-muted-foreground/70">
+                {fragments.length} 条纪年 · {(card.ragSnippets || []).length} 段文献
+              </span>
+            </div>
+
             {/* 一句话说明这段叙事的构成（全部是可核对的事实计数） */}
             <p className="text-[11px] leading-relaxed text-muted-foreground">
-              下面这段讲述由 {fragments.length} 条纪年记录与{" "}
-              {(card.ragSnippets || []).length} 段文献摘录拼成。
               {card.source === "landmark"
                 ? "这张卡片按地标资料现建，没有经过照片识别。"
                 : `识别置信度 ${(card.confidence * 100).toFixed(0)}%${

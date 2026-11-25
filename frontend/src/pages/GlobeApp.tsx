@@ -8,7 +8,6 @@ import DynamicIslandSearch from "@/features/search/DynamicIslandSearch";
 import FloatingDock from "@/layouts/FloatingDock";
 import MessageBar from "@/features/qa/MessageBar";
 import GlobeControls from "@/features/globe/GlobeControls";
-import ElasticLandmarkCard from "@/features/globe/ElasticLandmarkCard";
 import { JournalViewWindow } from "@/layouts/JournalViewWindow";
 // TripScape 2.0 叙事层（2.0 本体，无开关）
 import NarrativeHud from "@/features/narrative/NarrativeHud";
@@ -18,17 +17,14 @@ import { useViewport } from "@/hooks/useViewport";
 
 /**
  * 主页：全屏地球 + 四角浮层。
- * - 点光点：弹出弹性资料卡（预览）；"查看叙事"进入 2.0 地标叙事层
- * - "ts:open-detail"（消息卡/搜索结果/资料卡）：直接进入地标叙事层
- * - 1.0 的地标详情浮窗与写手账浮窗已移除（2.0 用叙事层取代）
+ * - 点光点：直接进入该地标的叙事档案（故事文档 + 卡片材料），不再弹中间层浮窗
+ * - "ts:open-detail"（消息卡/搜索结果）：同样直接进入叙事档案
  */
 export default function GlobeApp() {
   const { compact, narrow } = useViewport();
   const routeParams = useParams();
 
-  const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   const [highlightIds, setHighlightIds] = useState<Set<number> | undefined>(undefined);
-  const [cardDocked, setCardDocked] = useState(false);
 
   const enterLandmark = useNarrativeStore((s) => s.enterLandmark);
   const resetNarrative = useNarrativeStore((s) => s.reset);
@@ -60,16 +56,7 @@ export default function GlobeApp() {
   // 离开页面时复位叙事层（避免下次进入仍停在旧地标）
   useEffect(() => () => resetNarrative(), [resetNarrative]);
 
-  // 拖动地球 -> 资料卡片收成小条
-  useEffect(() => {
-    const onMove = () => {
-      if (window.__tsDragging) setCardDocked(true);
-    };
-    window.addEventListener("pointermove", onMove);
-    return () => window.removeEventListener("pointermove", onMove);
-  }, []);
-
-  // 消息卡/搜索结果/资料卡"查看"事件 -> 进入地标叙事层
+  // 消息卡/搜索结果"查看"事件 -> 进入地标叙事层
   useEffect(() => {
     const onOpenDetail = (e: Event) => {
       const id = (e as CustomEvent<number>).detail;
@@ -102,13 +89,7 @@ export default function GlobeApp() {
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
-      <Globe
-        onSpotClick={(s) => {
-          setSelectedSpot(s);
-          setCardDocked(false);
-        }}
-        highlightIds={highlightIds}
-      />
+      <Globe onSpotClick={(s) => openNarrative(s.id)} highlightIds={highlightIds} />
 
       {/* 上下渐隐 vignette：增强空间纵深（不拦截交互） */}
       <div className="globe-vignette pointer-events-none absolute inset-0 z-[5]" />
@@ -161,17 +142,6 @@ export default function GlobeApp() {
 
       {/* 底部：TripScape 2.0 叙事层（globe → landmark → journal） */}
       <NarrativeHud />
-
-      {/* 弹性资料卡片（点光点弹出；拖动时收成小条） */}
-      {selectedSpot && (
-        <ElasticLandmarkCard
-          spot={selectedSpot}
-          onClose={() => setSelectedSpot(null)}
-          narrow={narrow}
-          forceDocked={cardDocked}
-          onOpenDetail={() => openNarrative(selectedSpot.id)}
-        />
-      )}
 
       {/* 全局搜索浮窗（"显示更多"打开，带上搜索词） */}
       {searchOpen && (

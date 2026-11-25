@@ -7,14 +7,15 @@
 主页是一颗全屏 3D 地球（react-three-fiber 渲染，不转动地球、由相机环绕）：
 
 - **地球交互**——远看时地标按区域聚合成带国旗与计数的气泡，拉近自动散开成光点；
-  悬停显示名称，点击飞过去并打开详情浮窗；搜索命中时目标高亮、其余变暗。
-- **四角浮层**——左上：Logo 与灵动岛搜索框（地标/用户/手账三类，结果满 5 条出现"显示更多"进入全局搜索浮窗）；
-  右上：昼夜切换与登录/头像菜单（个人主页、设置、管理后台）；
+  悬停显示名称，**点击直接进入该地标的叙事档案**（故事正文 + 纪年 + 文献材料）；搜索命中时目标高亮、其余变暗。
+- **四角浮层**——左上：Logo、灵动岛搜索框与「故事胶片」（26 个地点的横向胶片）；
+  右上：昼夜切换与登录/头像菜单（个人主页、**旅行手记**、设置、管理后台）；
   左下：智能问答与通知中心（消息条，未读时拉长为预览条）；
   右下：Google-Earth 风格控件排（重置 / 方向角即纬度视角 / 分体式缩放 / 全屏）。
-- **全部功能浮窗化**——登录注册、地标详情（评论/手账双 Tab）、手账编辑与查看、
-  个人主页（足迹/手账/评论/收藏/徽章五 Tab）、他人公开主页、全局搜索、举报、
-  管理后台（七个 Tab）均为叠加式小浮窗，无页面跳转。
+- **叙事档案（2.0）**——点任意地标或光点，从右侧展开一张档案：封面、坐标、故事正文、
+  时间刻度、文献摘录与三个动作（收进手记 / 拾取碎片 / 匿名留在此处）；层间不跳转、可逐层返回。
+- **全部功能浮窗化**——登录注册、个人主页（足迹/手账/评论/收藏/徽章五 Tab）、他人公开主页、
+  全局搜索、举报、管理后台（七个 Tab）均为叠加式小浮窗，无页面跳转。
 - **视觉**——日间明亮 / 夜间深空蓝渐变 + 星空启动页；细边框 + 分层阴影表达层次；
   夜间图标与文字纯白。
 
@@ -49,8 +50,9 @@ pnpm build                               # 构建后由 Django 提供 SPA；开�
 > **提示**：首次运行 reset_all 会下载 DINOv2 权重（84MB，走 hf-mirror 镜像），
 > 之后缓存在用户目录不再下载；索引构建约 1 分钟。
 
-一键重测：`python scripts/reset_all.py --with-frontend --with-tests`
-（重置数据库 + 构建前端 + 跑后端测试）。
+一键重置（恢复初始状态）：`python reset_project.py`（清 runtime → 重建数据库与种子 → 重建前端；
+`--yes` 免确认、`--no-frontend` 跳过构建、`--with-tests` 重置后跑测试）。
+旧命令 `python scripts/reset_all.py` 保留为转发入口，两者等价。
 
 桌面应用（免命令行）：`python desktop.py`（pywebview 窗口内嵌 Django 服务）。
 
@@ -62,6 +64,21 @@ pnpm build                               # 构建后由 Django 提供 SPA；开�
 | demo | demo123456 | 普通用户（演示用，含示例足迹与手账可自行创建） |
 
 管理员功能全部在地球页右上角头像菜单的"管理后台"浮窗内，无独立后台页面。
+
+## 地标故事（一个地标一篇）
+
+```text
+stories/                      # 26 篇，与地标一一对应（01-阿布辛贝神庙.md …）
+scripts/build_landmark_stories.py   # 由文章库摘编生成，可重复执行
+GET /api/narrative/story/{id}       # 前端叙事档案读取的正文接口
+```
+
+- 生成：`python scripts/build_landmark_stories.py`（`--check` 只比对不写盘）。
+- 内容：只摘编 `runtime/index/qa_chunks.json` 里该地标的正文章节（概述/历史沿革/基本参数/地理位置/参观信息），
+  按「它是谁、时间怎么走、站在现场看见什么」排成故事，**不改写句意、不新增史实**。
+- 出处：每篇末尾列出所用章节与来源；文化内容的最终解释权归人。
+
+> 提示：百度百科对脚本请求返回 403（安全验证），故故事来源是仓库内可离线核对的文章库。
 
 ## 目录结构
 
@@ -141,7 +158,8 @@ TripScape/
 ├─ data/                                 # 精选注册图（26 类 × 15 张，约 75MB，git 不入库随发布包分发）
 ├─ models/                               # bge-small-zh 向量模型（约 92MB，git 不入库随发布包分发）
 ├─ scripts/
-│  ├─ reset_all.py                       # 一键重置重测（runtime + MySQL + 种子 + 双索引，可选前端与测试）
+│  ├─ reset_all.py                       # 旧重置入口（转发到根目录 reset_project.py）
+│  ├─ build_landmark_stories.py          # 由文章库摘编生成 stories/（一个地标一篇）
 │  ├─ register_landmarks.py              # 识别索引构建（注册图 → DINOv2 → FAISS，幂等）
 │  ├─ build_qa_index.py                  # 问答索引构建
 │  └─ db/                                # 全部种子数据（新增数据只改文件、不改代码）
@@ -150,13 +168,25 @@ TripScape/
 │     ├─ seed_sensitive_words.sql        #   敏感词基线（运行期可在后台增删）
 │     ├─ register_images.json            #   识别注册图清单（指纹缓存，可手工增删）
 │     └─ articles/                       #   地标文章库（每地标一篇章节式 markdown）
+├─ stories/                              # 26 篇地标故事（01-阿布辛贝神庙.md …，叙事档案正文来源）
 ├─ tests/backend/                        # pytest-django 后端测试
 ├─ docker/                               # Dockerfile.backend / Dockerfile.frontend、nginx.conf、mysql/my.cnf
 ├─ desktop.py                            # 桌面应用入口（pywebview）
+├─ reset_project.py                      # 一键重置：清 runtime → 重建库与种子 → 重建前端
 ├─ docker-compose.yml                    # Web/Celery/Beat/MySQL/Redis/Meilisearch/MinIO/Nginx/备份
 ├─ .env.example / .gitignore / LICENSE / requirements.txt / pytest.ini
 └─ README.md
 ```
+
+### 叙事层文件（2.0 本体，集中四层）
+
+| 层 | 文件 |
+| --- | --- |
+| 数据 | `backend/apps/narrative/models.py`（ts_narrative_card / journal_card / fragment / fragment_pickup） |
+| 服务 | `backend/services/narrative_service.py`（卡片组装、投递与拾取）、`narrative_story.py`（故事文档读取） |
+| 接口 | `backend/api/narrative.py`（card / story / journal / fragments 共 7 个端点） |
+| 界面 | `frontend/src/features/narrative/`（胶片、档案、手记、故事渲染）、`stores/narrative.ts`（三层状态） |
+| 内容 | `stories/*.md`（一篇一个地标，生成脚本 `scripts/build_landmark_stories.py`） |
 
 ## 数据库表（MySQL `tripscape`，业务表统一 `ts_` 前缀、蛇形命名）
 

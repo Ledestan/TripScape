@@ -75,6 +75,9 @@ env = environ.Env(
     # ---------------- JWT ----------------
     JWT_SECRET=(str, "tripscape-jwt-dev-secret"),
     JWT_EXPIRE_HOURS=(int, 72),
+    # ------ 叙事层（TripScape 2.0 本体，2026-11 起默认启用） ------
+    # 同一用户对同一地标的碎片投递上限（SPEC §2 S3）
+    NARRATIVE_MAX_FRAGMENTS_PER_LANDMARK=(int, 3),
 )
 
 # 优先读取仓库根 .env（存在即读）
@@ -112,6 +115,8 @@ LOCAL_APPS = [
     "apps.shares",
     "apps.dashboard",
     "apps.admin_panel",
+    # TripScape 2.0 叙事层（2.0 本体，默认启用，无开关）
+    "apps.narrative",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + LOCAL_APPS
@@ -248,6 +253,9 @@ os.environ.setdefault("HF_ENDPOINT", env("HF_ENDPOINT"))
 
 JWT_SECRET = env("JWT_SECRET")
 JWT_EXPIRE_HOURS = env("JWT_EXPIRE_HOURS")
+
+# 叙事层参数（TripScape 2.0 本体，默认启用）
+NARRATIVE_MAX_FRAGMENTS_PER_LANDMARK = env("NARRATIVE_MAX_FRAGMENTS_PER_LANDMARK")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

@@ -8,30 +8,26 @@ import DynamicIslandSearch from "@/features/search/DynamicIslandSearch";
 import FloatingDock from "@/layouts/FloatingDock";
 import MessageBar from "@/features/qa/MessageBar";
 import GlobeControls from "@/features/globe/GlobeControls";
-import ElasticLandmarkCard from "@/features/globe/ElasticLandmarkCard";
-import LandmarkDetailWindow from "@/pages/LandmarkDetail";
-import JournalEditWindow from "@/pages/JournalEditWindow";
 import { JournalViewWindow } from "@/layouts/JournalViewWindow";
+// TripScape 2.0 叙事层（2.0 本体，无开关）
+import NarrativeHud from "@/features/narrative/NarrativeHud";
+import { useNarrativeStore } from "@/stores/narrative";
 import { api } from "@/api/client";
 import { useViewport } from "@/hooks/useViewport";
 
 /**
  * 主页：全屏地球 + 四角浮层。
- * - 详情浮窗在地球上打开（点光点/路由直达）
- * - 详情内点"写手账" -> 隐藏详情、开手账浮窗；手账关闭后详情回来
+ * - 点光点：直接进入该地标的叙事档案（故事文档 + 卡片材料），不再弹中间层浮窗
+ * - "ts:open-detail"（消息卡/搜索结果）：同样直接进入叙事档案
  */
 export default function GlobeApp() {
   const { compact, narrow } = useViewport();
   const routeParams = useParams();
 
-  const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   const [highlightIds, setHighlightIds] = useState<Set<number> | undefined>(undefined);
-  const [detailId, setDetailId] = useState<number | null>(
-    routeParams.id ? Number(routeParams.id) : null
-  );
-  const [journalLandmarkId, setJournalLandmarkId] = useState<number | null>(null);
-  const [journalOpen, setJournalOpen] = useState(false);
-  const [cardDocked, setCardDocked] = useState(false);
+
+  const enterLandmark = useNarrativeStore((s) => s.enterLandmark);
+  const resetNarrative = useNarrativeStore((s) => s.reset);
 
   const { data: spots } = useQuery({
     queryKey: ["landmarks", "spots"],
@@ -43,35 +39,33 @@ export default function GlobeApp() {
     globeBus.flyTo(s.lat, s.lon, s.id);
   };
 
-  // 拖动地球 -> 资料卡片收成小条
-  useEffect(() => {
-    const onMove = () => {
-      if (window.__tsDragging) setCardDocked(true);
-    };
-    window.addEventListener("pointermove", onMove);
-    return () => window.removeEventListener("pointermove", onMove);
-  }, []);
+  /** 进入地标叙事层（名字优先取光点数据，取不到时留空由面板回填） */
+  const openNarrative = (id: number) => {
+    const spot = (spots || []).find((x) => x.id === id);
+    if (spot) flyToSpot(spot);
+    enterLandmark(id, spot?.name ?? "");
+  };
 
-  // 菜单"写手账"事件 -> 在地球上打开手账浮窗（可带 landmark_id 预选）
+  // 路由直达 /landmarks/:id -> 进入该地标叙事层
   useEffect(() => {
-    const onOpenJournal = (e: Event) => {
-      const lmId = (e as CustomEvent<number>).detail;
-      if (lmId) setJournalLandmarkId(lmId);
-      setJournalOpen(true);
-    };
-    window.addEventListener("ts:open-journal", onOpenJournal);
-    return () => window.removeEventListener("ts:open-journal", onOpenJournal);
-  }, []);
+    const id = Number(routeParams.id || 0);
+    if (id) openNarrative(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeParams.id, spots]);
 
-  // 消息卡"详情"事件 -> 打开地标详情浮窗
+  // 离开页面时复位叙事层（避免下次进入仍停在旧地标）
+  useEffect(() => () => resetNarrative(), [resetNarrative]);
+
+  // 消息卡/搜索结果"查看"事件 -> 进入地标叙事层
   useEffect(() => {
     const onOpenDetail = (e: Event) => {
       const id = (e as CustomEvent<number>).detail;
-      if (id) setDetailId(id);
+      if (id) openNarrative(id);
     };
     window.addEventListener("ts:open-detail", onOpenDetail);
     return () => window.removeEventListener("ts:open-detail", onOpenDetail);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spots]);
 
   // 搜索结果"查看手账"事件
   const [viewJournalId, setViewJournalId] = useState<number | null>(null);
@@ -95,13 +89,7 @@ export default function GlobeApp() {
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
-      <Globe
-        onSpotClick={(s) => {
-          setSelectedSpot(s);
-          setCardDocked(false);
-        }}
-        highlightIds={highlightIds}
-      />
+      <Globe onSpotClick={(s) => openNarrative(s.id)} highlightIds={highlightIds} />
 
       {/* 上下渐隐 vignette：增强空间纵深（不拦截交互） */}
       <div className="globe-vignette pointer-events-none absolute inset-0 z-[5]" />
@@ -123,9 +111,9 @@ export default function GlobeApp() {
           spots={spots || []}
           onHighlightChange={setHighlightIds}
           onPickLandmark={(s) => {
-            // 搜索选中：飞行 + 打开详情浮窗
+            // 搜索选中：飞行 + 进入地标叙事层
             flyToSpot(s);
-            setDetailId(s.id);
+            enterLandmark(s.id, s.name);
           }}
           narrow={narrow}
         />
@@ -152,42 +140,8 @@ export default function GlobeApp() {
         <GlobeControls compact={compact} narrow={narrow} />
       </div>
 
-      {/* 弹性资料卡片（点光点弹出；拖动时收成小条） */}
-      {selectedSpot && detailId === null && !journalOpen && (
-        <ElasticLandmarkCard
-          spot={selectedSpot}
-          onClose={() => setSelectedSpot(null)}
-          narrow={narrow}
-          forceDocked={cardDocked}
-          onOpenDetail={() => setDetailId(selectedSpot.id)}
-        />
-      )}
-
-      {/* 详情浮窗（写手账时叠加在上，不隐藏详情） */}
-      {detailId !== null && (
-        <LandmarkDetailWindow
-          landmarkId={detailId}
-          onClose={() => {
-            setDetailId(null);
-            setSelectedSpot(null);
-          }}
-          onWriteJournal={(lmId) => {
-            setJournalLandmarkId(lmId);
-            setJournalOpen(true);
-          }}
-        />
-      )}
-
-      {/* 手账浮窗（可叠加在详情/个人主页之上） */}
-      {(journalLandmarkId !== null || journalOpen) && (
-        <JournalEditWindow
-          presetLandmarkId={journalLandmarkId ?? undefined}
-          onClose={() => {
-            setJournalLandmarkId(null);
-            setJournalOpen(false);
-          }}
-        />
-      )}
+      {/* 底部：TripScape 2.0 叙事层（globe → landmark → journal） */}
+      <NarrativeHud />
 
       {/* 全局搜索浮窗（"显示更多"打开，带上搜索词） */}
       {searchOpen && (
@@ -196,7 +150,7 @@ export default function GlobeApp() {
         </Suspense>
       )}
 
-      {/* 搜索结果手账查看浮窗 */}
+      {/* 搜索结果手账查看浮窗（仍可查看 1.0 已发布的手账） */}
       {viewJournalId !== null && (
         <JournalViewWindow journalId={viewJournalId} onClose={() => setViewJournalId(null)} />
       )}
@@ -207,7 +161,7 @@ export default function GlobeApp() {
           className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-full border border-border/70 bg-card px-4 py-1 text-[var(--ui-fs-sm)] text-muted-foreground"
           style={{ bottom: "calc(var(--ui-pad) + 6px)" }}
         >
-          拖动旋转 · 滚轮缩放 · 点击看百科
+          拖动旋转 · 滚轮缩放 · 点击看叙事
         </div>
       )}
     </div>

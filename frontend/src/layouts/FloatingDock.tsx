@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { toast } from "sonner";
 
-import { User, Moon, Sun, LogOut, LayoutDashboard, MapPin, LogIn, Settings } from "lucide-react";
+import { User, Moon, Sun, LogOut, LayoutDashboard, MapPin, LogIn, Settings, BookOpen } from "lucide-react";
 
 
 
@@ -177,6 +177,22 @@ export default function FloatingDock() {
                     setMenuOpen(false);
 
                     setProfileOpen(true);
+
+                  }}
+
+                />
+
+                <MenuItem
+
+                  icon={<BookOpen className="h-3.5 w-3.5" />}
+
+                  label="旅行手记"
+
+                  onClick={() => {
+
+                    setMenuOpen(false);
+
+                    window.dispatchEvent(new CustomEvent("ts:open-journal"));
 
                   }}
 

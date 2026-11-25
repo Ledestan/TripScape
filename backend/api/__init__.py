@@ -20,6 +20,7 @@ Django Ninja API 聚合。
     /api/dashboard/...   运营看板
     /api/exports/...     数据导出
     /api/uploads/...     文件上传
+    /api/narrative/...   叙事层（卡片 / 手账 / 碎片投递与拾取，2.0 本体）
     /api/docs            自动生成的 OpenAPI 文档
 """
 
@@ -44,6 +45,7 @@ from api.footprints import router as footprint_router
 from api.journals import router as journals_router
 from api.landmarks import router as landmarks_router
 from api.likes import router as likes_router
+from api.narrative import router as narrative_router
 from api.notifications import router as notifications_router
 from api.qa import router as qa_router
 from api.recognition import router as recognition_router
@@ -66,3 +68,5 @@ api.add_router("/shares", shares_router)
 api.add_router("/qa", qa_router)
 api.add_router("/recognition", recognition_router)
 api.add_router("/footprints", footprint_router)
+# TripScape 2.0 叙事层（2.0 本体，无特性开关）
+api.add_router("/narrative", narrative_router)

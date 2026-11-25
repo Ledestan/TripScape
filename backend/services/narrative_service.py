@@ -13,7 +13,7 @@
     需求文件: requirements.txt
     依赖库:
         Django==5.2
-        sentence-transformers / rank-bm25 / jieba（经 article_qa 间接使用）
+        仅 Django（页面内容全部来自预置文件，不在此处调用分词与向量检索）
 
 用法:
     from services import narrative_service as narrative
@@ -21,7 +21,7 @@
 
 注意:
     1. 文化内容只取仓库内真实数据：文章库句子与 ts_landmark.intro，不编造年份。
-    2. 索引缺失时走降级分支，最末级兜底是明确的"尚无纪年史料登记"声明，不是史料。
+    2. 页面文件缺失时降级到 ts_landmark.intro，最末级兜底是明确的"尚无纪年史料登记"声明。
     3. 碎片对外不暴露投递者身份，库内保留为额度统计与自投排除。
 """
 
@@ -49,7 +49,6 @@ _YEAR_RE = re.compile(r"(公元前)?\s*(\d{3,4})\s*年")
 _MAX_FRAGMENTS_PER_LANDMARK = 3
 
 # 检索片段按地标缓存（卡片高频创建，避免重复 encode）
-_snippet_cache: dict = {}
 
 
 class NarrativeError(Exception):
@@ -108,47 +107,26 @@ def _geo(landmark) -> dict:
 
 
 # ======================================================================
-# S2：时间碎片
+# S2：页面材料（预置文件，绝不在这里分词）
 # ======================================================================
-def _article_index():
-    """文章索引单例（不可用返回 None，不抛给上层）。"""
-    try:
-        from services.article_qa import get_index
+def _page(landmark):
+    """读取预置的页面文件；没有就返回 None（由上层降级，不现场分词）。"""
+    from services import landmark_pages
 
-        return get_index()
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("叙事卡片：文章索引不可用（降级到地标简介）：%s", exc)
-        return None
+    return landmark_pages.page_for(landmark)
 
 
 def _time_fragments(landmark) -> list:
-    """构造非空的时间碎片数组（按年份升序，无年份者置后）。
+    """时间碎片：直接取预置文件，按年份升序、无年份置后。
 
     返回：
         list of dict：{text, year, section, targetId, source}
     """
-    idx = _article_index()
-    picked = []
-    if idx is not None:
-        for chunk in idx.chunks:
-            if chunk.get("target_id") != landmark.target_id:
-                continue
-            section = chunk.get("section", "")
-            if section not in TIME_SECTIONS:
-                continue
-            for sent in _sentences(chunk.get("text", "")):
-                picked.append(
-                    {
-                        "text": sent,
-                        "year": _extract_year(sent),
-                        "section": section,
-                        "targetId": landmark.target_id,
-                        "source": "article:runtime/index/qa_chunks.json",
-                    }
-                )
+    page = _page(landmark)
+    picked = list(page.get("time_fragments", [])) if page else []
 
-    dated = sorted([f for f in picked if f["year"] is not None], key=lambda f: f["year"])
-    undated = [f for f in picked if f["year"] is None]
+    dated = sorted([f for f in picked if f.get("year") is not None], key=lambda f: f["year"])
+    undated = [f for f in picked if f.get("year") is None]
     fragments = (dated + undated)[:_MAX_FRAGMENTS_PER_LANDMARK]
 
     if not fragments:
@@ -178,35 +156,16 @@ def _time_fragments(landmark) -> list:
 
 
 # ======================================================================
-# S2：RAG 检索片段
+# S2：文献摘录（预置文件，不走向量检索）
 # ======================================================================
 def _rag_snippets(landmark, top_k: int = 3) -> list:
-    """构造非空的检索片段数组（真实混合检索结果，按地标缓存）。
+    """文献摘录：取预置文件里的段落；缺失时降级到地标简介。
 
     返回：
         list of dict：{text, section, targetId, score, source}
     """
-    cache_key = (landmark.id, landmark.target_id, (landmark.intro or "")[:80])
-    if cache_key in _snippet_cache:
-        return _snippet_cache[cache_key]
-
-    snippets = []
-    idx = _article_index()
-    if idx is not None:
-        query = f"{landmark.name} {landmark.intro[:60]}".strip()
-        try:
-            for hit in idx.search(query, top_k=top_k, target_id=landmark.target_id):
-                snippets.append(
-                    {
-                        "text": (hit.get("text") or "")[:240],
-                        "section": hit.get("section", ""),
-                        "targetId": hit.get("target_id", landmark.target_id),
-                        "score": round(float(hit.get("rrf", 0.0)), 6),
-                        "source": "article:ArticleIndex.search(vec+bm25+rrf)",
-                    }
-                )
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("叙事卡片：RAG 检索失败（降级到地标简介）：%s", exc)
+    page = _page(landmark)
+    snippets = list(page.get("snippets", []))[:top_k] if page else []
 
     if not snippets:
         for sent in _sentences(landmark.intro or "")[:top_k]:
@@ -229,8 +188,6 @@ def _rag_snippets(landmark, top_k: int = 3) -> list:
                 "source": "db:ts_landmark",
             }
         )
-
-    _snippet_cache[cache_key] = snippets
     return snippets
 
 

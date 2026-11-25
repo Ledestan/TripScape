@@ -1,0 +1,93 @@
+{
+  "landmark": "奇琴伊察",
+  "target_id": "ChichenItza",
+  "title": "奇琴伊察｜墨西哥",
+  "country": "墨西哥",
+  "region": "北美洲",
+  "photo": "/lmimg/ChichenItza.jpg",
+  "geo": {
+    "lat": 20.683,
+    "lon": -88.567,
+    "place": "奇琴伊察",
+    "country": "墨西哥",
+    "region": "北美洲"
+  },
+  "intro": "玛雅文明最著名的城邦遗址，位于墨西哥尤卡坦半岛。库库尔坎金字塔在春秋分时会形成“羽蛇神下凡”的光影奇观，1988年列入世界文化遗产。奇琴伊察是玛雅文明最辉煌的城邦之一，金字塔\"库库尔坎\"是其心跳。这座30米高的神殿以极其精确的天文历法设计：四面各91级台阶，加上顶部平台正好365级，代表一年；",
+  "timeline": [
+    {
+      "year": 1221,
+      "text": "1221年的起义和内战，如考古发现的烧毁的建筑所显示，导致了奇琴伊察的衰落，统制中心也转移到了玛雅潘。"
+    },
+    {
+      "year": 1531,
+      "text": "西班牙征服者弗朗西斯科·德·蒙泰乔曾在1531年短期占领过这里。"
+    },
+    {
+      "year": 1988,
+      "text": "库库尔坎金字塔在春秋分时会形成“羽蛇神下凡”的光影奇观，1988年列入世界文化遗产。"
+    }
+  ],
+  "sections": [
+    {
+      "heading": "站在这里",
+      "items": [
+        "位于墨西哥尤卡坦半岛。"
+      ]
+    },
+    {
+      "heading": "补记",
+      "items": [
+        "奇琴伊察（；",
+        "犹加敦马雅语：，意即「在伊察的水井口」）是一处庞大的前哥伦布时期的考古遗址。"
+      ]
+    }
+  ],
+  "time_fragments": [
+    {
+      "text": "在从公元前6世纪到玛雅古典时期（公元2世纪到10世纪早期）的时间里，奇琴伊察是玛雅的主要城市，而在中部低地及南方的城市衰败后，奇琴伊察更到达了其发展和影响力的顶峰。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "ChichenItza",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "到了后古典时期，奇琴伊察的建筑主题中明显增加了中部墨西哥托尔特克的风格。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "ChichenItza",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "Barbachanos家族从19世纪早期就是犹加敦地区最有影响力的家族之一。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "ChichenItza",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    }
+  ],
+  "snippets": [
+    {
+      "text": "位于墨西哥尤卡坦半岛。",
+      "section": "地理位置",
+      "targetId": "ChichenItza",
+      "score": null,
+      "source": "preset:地理位置"
+    },
+    {
+      "text": "奇琴伊察是玛雅文明最辉煌的城邦之一，金字塔\"库库尔坎\"是其心跳。",
+      "section": "更多介绍",
+      "targetId": "ChichenItza",
+      "score": null,
+      "source": "preset:更多介绍"
+    },
+    {
+      "text": "这座30米高的神殿以极其精确的天文历法设计：四面各91级台阶，加上顶部平台正好365级，代表一年；",
+      "section": "更多介绍",
+      "targetId": "ChichenItza",
+      "score": null,
+      "source": "preset:更多介绍"
+    }
+  ],
+  "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）",
+  "built_at": "2026-11-25T19:01:35"
+}

@@ -1,0 +1,96 @@
+{
+  "landmark": "安赫尔瀑布",
+  "target_id": "AngelFalls",
+  "title": "安赫尔瀑布｜委内瑞拉",
+  "country": "委内瑞拉",
+  "region": "南美洲",
+  "photo": "/lmimg/AngelFalls.jpg",
+  "geo": {
+    "lat": 5.967,
+    "lon": -62.536,
+    "place": "安赫尔瀑布",
+    "country": "委内瑞拉",
+    "region": "南美洲"
+  },
+  "intro": "世界上落差最大的瀑布，总落差979米，位于委内瑞拉圭亚那高原的奥扬特普伊山。以飞行员吉米·安赫尔命名，藏身于原始雨林之中，雨季水量充沛时气势磅礴。安赫尔瀑布藏身于委内瑞拉东南部的卡奈马国家公园，落差高达979米，是全世界落差最大的瀑布。水流从奥扬特普伊山的平顶边缘倾泻而下，在撞击崖壁的瞬间化为漫天白雾，远看宛如天使的羽翼，因此得名\"天使瀑布\"。",
+  "timeline": [
+    {
+      "year": null,
+      "text": "水流从高处倾泻，水雾弥漫，远望如天使羽翼，因此得名。"
+    },
+    {
+      "year": null,
+      "text": "因落差极大，大部分水珠在半空中就已蒸发成云雾，形成独特奇观。"
+    }
+  ],
+  "sections": [
+    {
+      "heading": "站在这里",
+      "items": [
+        "位于委内瑞拉玻利瓦尔州卡奈马国家公园。",
+        "通常需乘小飞机和独木舟深入原始丛林才能到达。"
+      ]
+    },
+    {
+      "heading": "尺度与参数",
+      "items": [
+        "落差高达979米，是世界上落差最大的瀑布。"
+      ]
+    },
+    {
+      "heading": "补记",
+      "items": [
+        "安赫尔瀑布（；",
+        "：Körepakupai Vená，其中「Vená」意为「巨大瀑布」），又译安琪尔瀑布，有时依字义译为天使瀑布，是一座位于委内瑞拉玻利瓦尔州圭亚那高原、卡罗尼河流域的瀑布。"
+      ]
+    }
+  ],
+  "time_fragments": [
+    {
+      "text": "水流从高处倾泻，水雾弥漫，远望如天使羽翼，因此得名。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "AngelFalls",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "因落差极大，大部分水珠在半空中就已蒸发成云雾，形成独特奇观。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "AngelFalls",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "世界上落差最大的瀑布，总落差979米，位于委内瑞拉圭亚那高原的奥扬特普伊山。",
+      "year": null,
+      "section": "概述",
+      "targetId": "AngelFalls",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    }
+  ],
+  "snippets": [
+    {
+      "text": "落差高达979米，是世界上落差最大的瀑布。",
+      "section": "基本参数",
+      "targetId": "AngelFalls",
+      "score": null,
+      "source": "preset:基本参数"
+    },
+    {
+      "text": "位于委内瑞拉玻利瓦尔州卡奈马国家公园。",
+      "section": "地理位置",
+      "targetId": "AngelFalls",
+      "score": null,
+      "source": "preset:地理位置"
+    },
+    {
+      "text": "通常需乘小飞机和独木舟深入原始丛林才能到达。",
+      "section": "地理位置",
+      "targetId": "AngelFalls",
+      "score": null,
+      "source": "preset:地理位置"
+    }
+  ],
+  "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）",
+  "built_at": "2026-11-25T19:01:35"
+}

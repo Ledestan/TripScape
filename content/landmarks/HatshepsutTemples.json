@@ -1,0 +1,90 @@
+{
+  "landmark": "哈特谢普苏特神庙",
+  "target_id": "HatshepsutTemples",
+  "title": "哈特谢普苏特神庙｜埃及",
+  "country": "埃及",
+  "region": "非洲",
+  "photo": "/lmimg/HatshepsutTemples.jpg",
+  "geo": {
+    "lat": 25.738,
+    "lon": 32.606,
+    "place": "哈特谢普苏特神庙",
+    "country": "埃及",
+    "region": "非洲"
+  },
+  "intro": "古埃及女法老哈特谢普苏特的陵庙，三层柱廊式建筑依山而建，气势恢宏，位于卢克索尼罗河西岸。哈特谢普苏特神庙是古埃及最独特的葬祭殿，如同一座现代三层露台嵌入代尔巴哈里悬崖绝壁之下。女法老哈特谢普苏特为彰显统治合法性，采用层层退台的柱廊设计，长坡道缓缓上升，与垂直崖壁形成雄浑的几何对话。",
+  "timeline": [
+    {
+      "year": 1737,
+      "text": "c. 2051–2000 BC, c. 2055–2004 BC, c. 2010–1998 BC, c. 1897–1887 BC.}} 1737 年，来自英国的理查德·波科克发现了哈特谢普苏特神庙遗址。"
+    },
+    {
+      "year": 1893,
+      "text": "1893年至1906年间，由领导的对神庙遗址进行全面挖掘。"
+    }
+  ],
+  "sections": [
+    {
+      "heading": "站在这里",
+      "items": [
+        "位于埃及卢克索。",
+        "位于埃及卢克索尼罗河西岸的代尔巴哈里悬崖下。"
+      ]
+    },
+    {
+      "heading": "补记",
+      "items": [
+        "|image = Hatshetsup-temple-1by7.jpg |alt = partially reconstructed limestone temple |caption = 哈特谢普苏特神庙 |map_type = Egypt |map_alt = location of the temple displayed on a map |relief = yes |location = |region = 代尔埃尔巴哈里 |coordinates = |type = |length = (Temple) (Causeway) |width = |area = |height = |builder = Unclear, possibly: <br> , Overseer of Works <br> 哈布森尼布, High Priest |material = Limestone, sandstone, granite |built = c. 15th century BC |epochs = 青铜时代 I |cultures = 古埃及, 科普特人 |excavations = 1827–present |archaeologists = |condition = Reconstructed |ownership = |management = |public_access = Limited |website = |notes = }}哈特谢普苏特神庙（埃及语：Ḏsr-ḏsrw）是埃及第十八王朝法老哈特谢普苏特统治时期的第七年至第二十年之间建造的 c. 1498–1483 BC, c. 1479–1458 BC, c. 1473–1458 BC, c. 1472–1457 BC.}}。",
+        "它位于卢克索附近。"
+      ]
+    }
+  ],
+  "time_fragments": [
+    {
+      "text": "因其独特的三层悬崖嵌入设计和女法老的传奇故事。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "HatshepsutTemples",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "由古埃及女法老哈特谢普苏特为自己建造。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "HatshepsutTemples",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "由古埃及女法老哈特谢普苏特为自己建造的葬祭殿。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "HatshepsutTemples",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    }
+  ],
+  "snippets": [
+    {
+      "text": "位于埃及卢克索。",
+      "section": "地理位置",
+      "targetId": "HatshepsutTemples",
+      "score": null,
+      "source": "preset:地理位置"
+    },
+    {
+      "text": "位于埃及卢克索尼罗河西岸的代尔巴哈里悬崖下。",
+      "section": "地理位置",
+      "targetId": "HatshepsutTemples",
+      "score": null,
+      "source": "preset:地理位置"
+    },
+    {
+      "text": "哈特谢普苏特神庙是古埃及最独特的葬祭殿，如同一座现代三层露台嵌入代尔巴哈里悬崖绝壁之下。",
+      "section": "更多介绍",
+      "targetId": "HatshepsutTemples",
+      "score": null,
+      "source": "preset:更多介绍"
+    }
+  ],
+  "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）",
+  "built_at": "2026-11-25T19:01:35"
+}

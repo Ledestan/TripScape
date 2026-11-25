@@ -1,0 +1,101 @@
+{
+  "landmark": "泰姬陵",
+  "target_id": "TajMahal",
+  "title": "泰姬陵｜印度",
+  "country": "印度",
+  "region": "亚洲",
+  "photo": "/lmimg/TajMahal.jpg",
+  "geo": {
+    "lat": 27.175,
+    "lon": 78.042,
+    "place": "泰姬陵",
+    "country": "印度",
+    "region": "亚洲"
+  },
+  "intro": "莫卧儿皇帝沙贾汗为爱妻泰姬·玛哈尔修建的白色大理石陵墓，1653年建成。对称布局与宝石镶嵌工艺登峰造极。泰姬陵是莫卧儿皇帝沙贾汗为爱妻玛穆塔兹倾国之力修建的白色大理石陵墓，被誉为\"永恒之泪\"。整个建筑群对称完美，中央穹顶高73米，四座宣礼塔微微外倾以防倒塌时伤及主殿。",
+  "timeline": [
+    {
+      "year": 1632,
+      "text": "泰姬陵大约在1632年开始建造，在1653年左右完工，使用了成千上万的工匠，耗资甚巨。"
+    },
+    {
+      "year": 1653,
+      "text": "莫卧儿皇帝沙贾汗为爱妻泰姬·玛哈尔修建的白色大理石陵墓，1653年建成。"
+    },
+    {
+      "year": 1983,
+      "text": "1983年，联合国教科文组织将泰姬陵列为世界遗产，称其为“印度穆斯林艺术的瑰宝奇葩”、“世界遗产中令世人赞叹的经典杰作之一”。"
+    }
+  ],
+  "sections": [
+    {
+      "heading": "站在这里",
+      "items": [
+        "位于印度阿格拉市。",
+        "位于印度北方邦阿格拉市。"
+      ]
+    },
+    {
+      "heading": "到访之前",
+      "items": [
+        "其中，波斯建筑师拉合里一般被认为是首席设计师。",
+        "1983年，联合国教科文组织将泰姬陵列为世界遗产，称其为“印度穆斯林艺术的瑰宝奇葩”、“世界遗产中令世人赞叹的经典杰作之一”。"
+      ]
+    },
+    {
+      "heading": "补记",
+      "items": [
+        "泰姬陵（波斯语、；",
+        "），是位于印度北方邦阿格拉的一座用白色大理石建造的陵墓，是印度知名度最高的古迹之一。"
+      ]
+    }
+  ],
+  "time_fragments": [
+    {
+      "text": "作为爱情象征，其白色大理石建筑和宝石镶嵌工艺举世闻名。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "TajMahal",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "由莫卧儿皇帝沙贾汗为纪念爱妻玛穆塔兹而下令修建。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "TajMahal",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "莫卧儿皇帝沙贾汗为爱妻泰姬·玛哈尔修建的白色大理石陵墓，1653年建成。",
+      "year": 1653,
+      "section": "概述",
+      "targetId": "TajMahal",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    }
+  ],
+  "snippets": [
+    {
+      "text": "位于印度阿格拉市。",
+      "section": "地理位置",
+      "targetId": "TajMahal",
+      "score": null,
+      "source": "preset:地理位置"
+    },
+    {
+      "text": "位于印度北方邦阿格拉市。",
+      "section": "地理位置",
+      "targetId": "TajMahal",
+      "score": null,
+      "source": "preset:地理位置"
+    },
+    {
+      "text": "泰姬陵是莫卧儿皇帝沙贾汗为爱妻玛穆塔兹倾国之力修建的白色大理石陵墓，被誉为\"永恒之泪\"。",
+      "section": "更多介绍",
+      "targetId": "TajMahal",
+      "score": null,
+      "source": "preset:更多介绍"
+    }
+  ],
+  "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）",
+  "built_at": "2026-11-25T19:01:35"
+}

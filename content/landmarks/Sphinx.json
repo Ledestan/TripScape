@@ -1,0 +1,96 @@
+{
+  "landmark": "狮身人面像",
+  "target_id": "Sphinx",
+  "title": "狮身人面像｜埃及",
+  "country": "埃及",
+  "region": "非洲",
+  "photo": "/lmimg/Sphinx.jpg",
+  "geo": {
+    "lat": 29.975,
+    "lon": 31.138,
+    "place": "狮身人面像",
+    "country": "埃及",
+    "region": "非洲"
+  },
+  "intro": "位于吉萨金字塔群旁，高20米长73米，狮身人面，相传面部按法老哈夫拉雕刻。是世界上最著名的纪念雕像之一。吉萨的狮身人面像是人类艺术史上最硕大的谜题，全长73.5米，高20米，以整块石灰岩直接雕成。它有着法老哈夫拉的头颅和雄狮的身躯，象征智慧与力量，面朝东方守护金字塔已逾4500年。",
+  "timeline": [
+    {
+      "year": -2558,
+      "text": "狮身人面像是现今已知最古老的纪念雕像，一般相信是在法老卡夫拉统治期内（约公元前2558年至2532年）建成。"
+    },
+    {
+      "year": 4500,
+      "text": "它有着法老哈夫拉的头颅和雄狮的身躯，象征智慧与力量，面朝东方守护金字塔已逾4500年。"
+    }
+  ],
+  "sections": [
+    {
+      "heading": "站在这里",
+      "items": [
+        "位于埃及吉萨高原。",
+        "位于埃及吉萨高原，守护着吉萨金字塔群。"
+      ]
+    },
+    {
+      "heading": "尺度与参数",
+      "items": [
+        "全长73.5米，高20米。"
+      ]
+    },
+    {
+      "heading": "补记",
+      "items": [
+        "人面狮身像（；",
+        "，；"
+      ]
+    }
+  ],
+  "time_fragments": [
+    {
+      "text": "确切原因尚无定论，传闻可能因风化、人为破坏或拿破仑炮击所致。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "Sphinx",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "狮身人面像是现今已知最古老的纪念雕像，一般相信是在法老卡夫拉统治期内（约公元前2558年至2532年）建成。",
+      "year": -2558,
+      "section": "历史沿革",
+      "targetId": "Sphinx",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "由于狮身人面像无论是年代、外型，甚至是建造者是谁都充满争议，所以这些问题被世人称作「狮身人面像之谜」，但与希腊神话中的史芬克斯之谜仍有些许不同。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "Sphinx",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    }
+  ],
+  "snippets": [
+    {
+      "text": "全长73.5米，高20米。",
+      "section": "基本参数",
+      "targetId": "Sphinx",
+      "score": null,
+      "source": "preset:基本参数"
+    },
+    {
+      "text": "位于埃及吉萨高原。",
+      "section": "地理位置",
+      "targetId": "Sphinx",
+      "score": null,
+      "source": "preset:地理位置"
+    },
+    {
+      "text": "位于埃及吉萨高原，守护着吉萨金字塔群。",
+      "section": "地理位置",
+      "targetId": "Sphinx",
+      "score": null,
+      "source": "preset:地理位置"
+    }
+  ],
+  "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）",
+  "built_at": "2026-11-25T19:01:35"
+}

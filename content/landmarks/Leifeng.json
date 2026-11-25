@@ -1,0 +1,94 @@
+{
+  "landmark": "雷峰塔",
+  "target_id": "Leifeng",
+  "title": "雷峰塔｜中国",
+  "country": "中国",
+  "region": "亚洲",
+  "photo": "/lmimg/Leifeng.jpg",
+  "geo": {
+    "lat": 30.233,
+    "lon": 120.151,
+    "place": "雷峰塔",
+    "country": "中国",
+    "region": "亚洲"
+  },
+  "intro": "位于杭州西湖夕照山，因《白蛇传》中法海镇压白娘子的传说而闻名。原塔1924年倒塌，2002年在原址重建。雷峰塔因《白蛇传》白娘子被镇压的传说而家喻户晓，给这座古塔添了一层浪漫悲情的滤镜。它原本是北宋吴越国王为供奉佛舍利而建，却在1924年轰然倒塌。",
+  "timeline": [
+    {
+      "year": 977,
+      "text": "原塔建于公元977年，2002年重建。"
+    },
+    {
+      "year": 1924,
+      "text": "原塔1924年倒塌，2002年在原址重建。"
+    },
+    {
+      "year": 2002,
+      "text": "现在的塔是2002年采用钢架重建的现代建筑，以铜瓦覆顶，巧妙地将原塔遗址保护在基座内，游客可透过玻璃地板直视千年塔基。"
+    }
+  ],
+  "sections": [
+    {
+      "heading": "站在这里",
+      "items": [
+        "位于浙江杭州西湖边。",
+        "位于杭州西湖边夕照山。"
+      ]
+    },
+    {
+      "heading": "补记",
+      "items": [
+        "雷峰塔原名皇妃塔，文献及民间亦名黄妃塔、王妃塔、黄皮塔，原为五代吴越王钱俶所建供养舍利的佛塔（功德塔），位于今中华人民共和国浙江省杭州市西湖区西湖南岸净慈寺前雷峰之上，与北岸宝石山上的保俶塔南北对峙、遥相呼应。",
+        "原塔于1924年坍塌，仅存遗址，2002年在原址重建新塔。"
+      ]
+    }
+  ],
+  "time_fragments": [
+    {
+      "text": "因《白蛇传》白娘子被镇压的传说而闻名。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "Leifeng",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "雷峰塔因《白蛇传》的传说而闻名于世。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "Leifeng",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "原塔建于公元977年，2002年重建。",
+      "year": 977,
+      "section": "历史沿革",
+      "targetId": "Leifeng",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    }
+  ],
+  "snippets": [
+    {
+      "text": "位于浙江杭州西湖边。",
+      "section": "地理位置",
+      "targetId": "Leifeng",
+      "score": null,
+      "source": "preset:地理位置"
+    },
+    {
+      "text": "位于杭州西湖边夕照山。",
+      "section": "地理位置",
+      "targetId": "Leifeng",
+      "score": null,
+      "source": "preset:地理位置"
+    },
+    {
+      "text": "雷峰塔因《白蛇传》白娘子被镇压的传说而家喻户晓，给这座古塔添了一层浪漫悲情的滤镜。",
+      "section": "更多介绍",
+      "targetId": "Leifeng",
+      "score": null,
+      "source": "preset:更多介绍"
+    }
+  ],
+  "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）",
+  "built_at": "2026-11-25T19:01:35"
+}

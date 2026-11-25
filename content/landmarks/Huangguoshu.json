@@ -1,0 +1,85 @@
+{
+  "landmark": "黄果树瀑布",
+  "target_id": "Huangguoshu",
+  "title": "黄果树瀑布｜中国",
+  "country": "中国",
+  "region": "亚洲",
+  "photo": "/lmimg/Huangguoshu.jpg",
+  "geo": {
+    "lat": 25.993,
+    "lon": 105.666,
+    "place": "黄果树瀑布",
+    "country": "中国",
+    "region": "亚洲"
+  },
+  "intro": "中国最大的瀑布，位于贵州安顺，高77.8米，宽101米。瀑布后的水帘洞可从洞内观瀑，徐霞客曾盛赞其“珠帘钩不卷”。黄果树瀑布是亚洲最大的瀑布，近百米宽的水幕从77.8米高的悬崖轰鸣而下，水量充沛时气势如万马奔腾。最绝的是瀑布背后藏着一条134米长的水帘洞，游人可穿行其中，隔着水帘感受震耳欲聋的冲击力——这正是《西游记》水帘洞的灵感源头。",
+  "timeline": [
+    {
+      "year": 2007,
+      "text": "2007年5月，黄果树瀑布景区成为首批中国国家5A级旅游景区。"
+    }
+  ],
+  "sections": [
+    {
+      "heading": "站在这里",
+      "items": [
+        "位于中国贵州省安顺市。",
+        "其中黄菓树大瀑布是黄菓树瀑布群中最为壮观的瀑布。"
+      ]
+    },
+    {
+      "heading": "尺度与参数",
+      "items": [
+        "高77.8米，宽101米。"
+      ]
+    },
+    {
+      "heading": "补记",
+      "items": [
+        "黄菓树瀑布号称“亚洲第一大瀑布”。",
+        "虽然其一级主瀑布实际上以流量和宽度计算不及老挝的孔恩瀑布，与中国境内瀑布相比也在流量次于黄河壶口瀑布，和宽度次于广西德天瀑布。"
+      ]
+    }
+  ],
+  "time_fragments": [
+    {
+      "text": "中国最大的瀑布，位于贵州安顺，高77.8米，宽101米。",
+      "year": null,
+      "section": "概述",
+      "targetId": "Huangguoshu",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "瀑布后的水帘洞可从洞内观瀑，徐霞客曾盛赞其“珠帘钩不卷”。",
+      "year": null,
+      "section": "概述",
+      "targetId": "Huangguoshu",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    }
+  ],
+  "snippets": [
+    {
+      "text": "高77.8米，宽101米。",
+      "section": "基本参数",
+      "targetId": "Huangguoshu",
+      "score": null,
+      "source": "preset:基本参数"
+    },
+    {
+      "text": "位于中国贵州省安顺市。",
+      "section": "地理位置",
+      "targetId": "Huangguoshu",
+      "score": null,
+      "source": "preset:地理位置"
+    },
+    {
+      "text": "其中黄菓树大瀑布是黄菓树瀑布群中最为壮观的瀑布。",
+      "section": "地理位置",
+      "targetId": "Huangguoshu",
+      "score": null,
+      "source": "preset:地理位置"
+    }
+  ],
+  "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）",
+  "built_at": "2026-11-25T19:01:35"
+}

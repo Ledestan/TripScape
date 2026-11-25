@@ -1,0 +1,100 @@
+{
+  "landmark": "布达拉宫",
+  "target_id": "Potala",
+  "title": "布达拉宫｜中国",
+  "country": "中国",
+  "region": "亚洲",
+  "photo": "/lmimg/Potala.jpg",
+  "geo": {
+    "lat": 29.658,
+    "lon": 91.117,
+    "place": "布达拉宫",
+    "country": "中国",
+    "region": "亚洲"
+  },
+  "intro": "坐落于拉萨红山之上的宫堡式建筑群，始建于公元7世纪松赞干布时期。红宫与白宫依山垒砌，是藏传佛教的圣地。布达拉宫仿佛从拉萨红山上生长出来的巨大宫殿，红白相间，直入云端。它最早是吐蕃赞普松赞干布为迎娶文成公主而建，17世纪又由五世达赖喇嘛重建，成为历代达赖的冬宫和政教中枢。",
+  "timeline": [
+    {
+      "year": 1961,
+      "text": "1961年被中华人民共和国国务院列入第一批全国重点文物保护单位。"
+    },
+    {
+      "year": 1994,
+      "text": "这座\"世界屋脊上的明珠\"1994年成为世界文化遗产，是西藏最璀璨的人文符号。"
+    },
+    {
+      "year": 2013,
+      "text": "2013年获评5A级景区。"
+    }
+  ],
+  "sections": [
+    {
+      "heading": "站在这里",
+      "items": [
+        "位于中国西藏拉萨市。",
+        "| module = }} 布达拉宫（）坐落在中华人民共和国西藏自治区首府拉萨市区西北的玛布日山（红山）上，是一座规模宏大的宫殿式建筑群，最初是吐蕃王朝赞普松赞干布兴建。"
+      ]
+    },
+    {
+      "heading": "尺度与参数",
+      "items": [
+        "布达拉宫依山而建，高200余米。"
+      ]
+    },
+    {
+      "heading": "到访之前",
+      "items": [
+        "目前，该处也是对公众开放的重要文化旅游景点。",
+        "2013年获评5A级景区。"
+      ]
+    }
+  ],
+  "time_fragments": [
+    {
+      "text": "整座宫殿具有鲜明的藏族风格，依山而建，气势雄伟。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "Potala",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "布达拉宫建筑内保存有大量珍贵的文物、雕塑、壁画及各类艺术品，具有很高的历史、艺术与科学价值。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "Potala",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "1961年被中华人民共和国国务院列入第一批全国重点文物保护单位。",
+      "year": 1961,
+      "section": "历史沿革",
+      "targetId": "Potala",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    }
+  ],
+  "snippets": [
+    {
+      "text": "布达拉宫依山而建，高200余米。",
+      "section": "基本参数",
+      "targetId": "Potala",
+      "score": null,
+      "source": "preset:基本参数"
+    },
+    {
+      "text": "位于中国西藏拉萨市。",
+      "section": "地理位置",
+      "targetId": "Potala",
+      "score": null,
+      "source": "preset:地理位置"
+    },
+    {
+      "text": "| module = }} 布达拉宫（）坐落在中华人民共和国西藏自治区首府拉萨市区西北的玛布日山（红山）上，是一座规模宏大的宫殿式建筑群，最初是吐蕃王朝赞普松赞干布兴建。",
+      "section": "地理位置",
+      "targetId": "Potala",
+      "score": null,
+      "source": "preset:地理位置"
+    }
+  ],
+  "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）",
+  "built_at": "2026-11-25T19:01:35"
+}

@@ -261,18 +261,17 @@ class Command(BaseCommand):
                 picked += 1
         self.stdout.write(f"   已为 {picked} 个地标挑选百科图片")
 
-        # ------ 地标故事（预设内容，前端档案直接读库） ------
-        self.stdout.write("8) 预置地标故事（ts_landmark_story）...")
+        # ------ 地标页面（预置文件，前端档案直接读 JSON） ------
+        self.stdout.write("8) 生成地标页面文件（content/landmarks/*.json）...")
         try:
-            from services import narrative_story
+            from services import landmark_pages
 
-            stats = narrative_story.refresh_stories()
+            stats = landmark_pages.build_pages()
             self.stdout.write(
-                f"   新增 {stats['created']} 篇 / 更新 {stats['updated']} 篇"
-                f" / 无跳过 {stats['skipped']} 篇"
+                f"   生成 {stats['written']} 个页面文件 / 跳过 {stats['skipped']} 个"
             )
         except FileNotFoundError as exc:
-            # 语料没生成时不要让初始化失败：地标与账号已经可用，故事可稍后补
-            self.stdout.write(self.style.WARNING(f"   跳过地标故事：{exc}"))
+            # 语料没生成时不要让初始化失败：地标与账号已经可用，页面可稍后补
+            self.stdout.write(self.style.WARNING(f"   跳过地标页面：{exc}"))
 
         self.stdout.write(self.style.SUCCESS("init_tripscape 完成。"))

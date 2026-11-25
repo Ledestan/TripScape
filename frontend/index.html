@@ -36,21 +36,23 @@
         overflow: hidden;
       }
       .boot-loading .stars {
+        /* 背景图比容器大一圈，缩放到任意窗口都不露出黑边 */
         position: absolute;
-        inset: 0;
-        background: url("/stars.jpg") cover no-repeat top right;
+        inset: -8%;
+        background: #000 url("/stars.jpg") no-repeat center center;
         background-size: cover;
-        background-position: top right;
         opacity: 0.7;
       }
       .boot-loading .arc {
+        /* 地球弧线按窗口宽度等比缩放：宽屏拉满、窄屏收窄，都不裁掉弧顶 */
         position: absolute;
-        left: 0;
-        right: 0;
+        left: 50%;
         bottom: 0;
-        height: 46%;
+        width: 100%;
+        height: min(46vh, 420px);
+        transform: translateX(-50%);
         background: url("/earth-arc.jpg") no-repeat bottom center;
-        background-size: 1280px auto;
+        background-size: 100% auto;
         -webkit-mask-image: linear-gradient(to top, black 55%, transparent 100%);
         mask-image: linear-gradient(to top, black 55%, transparent 100%);
       }
@@ -109,7 +111,7 @@
         line-height: 1.6;
         color: rgba(255, 255, 255, 0.86);
       }
-      /* 小屏与矮屏自适应：启动页不裁切提示文字 */
+      /* 小屏 / 矮屏 / 超宽屏：三档自适应，提示文字与背景都不裁切 */
       @media (max-width: 640px) {
         .boot-loading {
           gap: 18px;
@@ -120,7 +122,10 @@
           height: 64px;
         }
         .boot-loading .arc {
-          background-size: 900px auto;
+          height: min(40vh, 300px);
+        }
+        .boot-loading .bar {
+          width: 140px;
         }
       }
       @media (max-height: 560px) {
@@ -130,6 +135,14 @@
         .boot-loading .orbit {
           width: 56px;
           height: 56px;
+        }
+        .boot-loading .arc {
+          height: 34vh;
+        }
+      }
+      @media (min-aspect-ratio: 21/9) {
+        .boot-loading .arc {
+          height: 44vh;
         }
       }
       @keyframes spin { to { transform: rotate(360deg); } }

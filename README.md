@@ -65,19 +65,20 @@ pnpm build                               # 构建后由 Django 提供 SPA；开�
 
 管理员功能全部在地球页右上角头像菜单的"管理后台"浮窗内，无独立后台页面。
 
-## 地标故事（预置在数据库，不读文件）
+## 地标页面（一个地标一个文件，打开即读，不分词）
 
 ```text
-backend/apps/narrative/models.py::LandmarkStory   # ts_landmark_story：整体介绍 + 时间轴 + 分节材料
-backend/services/narrative_story.py               # 从语料组装、幂等写入、按地标读取
-backend/apps/narrative/management/commands/seed_stories.py   # python backend/manage.py seed_stories
-GET /api/narrative/story/{id}                     # 档案接口（读库，单次查询）
+content/landmarks/<target_id>.json    # 预生成：整体介绍 / 时间轴 / 分节材料 / 卡片材料
+scripts/build_landmark_pages.py       # 从文章库一次性生成（幂等）
+backend/manage.py seed_landmark_pages # 同上的管理命令（init_tripscape 第 8 步自动调用）
+GET /api/narrative/story/{id}         # 档案接口：只读该 JSON
+GET /api/narrative/card/{id}          # 卡片接口：材料同样来自该 JSON
 ```
 
-- 预置：`init_tripscape` 的第 8 步会自动写入；也可单独执行 `python backend/manage.py seed_stories`。
-- 结构：`intro`（整体介绍）→ `timeline`（按年份升序的 `[{year, text}]`）→ `sections`（站在这里 / 尺度与参数 / 到访之前 / 补记）。
+- 内容顺序固定：`intro`（整体介绍）→ `timeline`（年份升序，无年份的句子标「未记年」）→ `sections`（站在这里 / 尺度与参数 / 到访之前 / 补记）。
+- **打开地标不触发分词**：jieba 与向量索引只服务问答（`/api/qa`）；地标页在毫秒级读文件返回。
+- 文件缺失时接口返回 404 并提示 `python scripts/build_landmark_pages.py`，不会现场建索引。
 - 来源：只摘编 `runtime/index/qa_chunks.json` 里该地标的文章章节，**不改写句意、不新增史实**，页面末尾标注出处。
-- 接口不再读磁盘：故事在种子里就写好，请求只查一张表。
 
 > 提示：百度百科对脚本请求返回 403（安全验证），故内容来源是仓库内可离线核对的文章库。
 
@@ -169,6 +170,7 @@ TripScape/
 │     ├─ seed_sensitive_words.sql        #   敏感词基线（运行期可在后台增删）
 │     ├─ register_images.json            #   识别注册图清单（指纹缓存，可手工增删）
 │     └─ articles/                       #   地标文章库（每地标一篇章节式 markdown）
+├─ content/landmarks/                    # 26 个地标页面 JSON（打开地标直接读，不触发分词）
 ├─ tests/backend/                        # pytest-django 后端测试
 ├─ docker/                               # Dockerfile.backend / Dockerfile.frontend、nginx.conf、mysql/my.cnf
 ├─ desktop.py                            # 桌面应用入口（pywebview）
@@ -186,7 +188,7 @@ TripScape/
 | 服务 | `backend/services/narrative_service.py`（卡片组装、投递与拾取）、`narrative_story.py`（故事文档读取） |
 | 接口 | `backend/api/narrative.py`（card / story / journal / fragments 共 7 个端点） |
 | 界面 | `frontend/src/features/narrative/`（胶片、档案、手记、故事渲染）、`stores/narrative.ts`（三层状态） |
-| 内容 | `ts_landmark_story`（预置故事：整体介绍 + 时间轴 + 分节材料，种子命令 `seed_stories`） |
+| 内容 | `content/landmarks/*.json`（预生成：整体介绍 + 时间轴 + 分节材料，命令 `seed_landmark_pages`） |
 
 ## 数据库表（MySQL `tripscape`，业务表统一 `ts_` 前缀、蛇形命名）
 

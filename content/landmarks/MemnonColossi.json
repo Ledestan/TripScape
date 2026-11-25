@@ -1,0 +1,96 @@
+{
+  "landmark": "门农巨像",
+  "target_id": "MemnonColossi",
+  "title": "门农巨像｜埃及",
+  "country": "埃及",
+  "region": "非洲",
+  "photo": "/lmimg/MemnonColossi.jpg",
+  "geo": {
+    "lat": 25.719,
+    "lon": 32.612,
+    "place": "门农巨像",
+    "country": "埃及",
+    "region": "非洲"
+  },
+  "intro": "两座高18米的巨型石像，原是新王国法老阿蒙霍特普三世祭庙前的雕像。罗马时期清晨会发出鸣响，被称为“会唱歌的门农”。门农巨像是两尊高达18米的石像，端坐在卢克索尼罗河西岸的旷野中，实际代表的是法老阿蒙霍特普三世，身后本是其宏伟的葬祭殿，今已湮灭。传说地震损坏北侧巨像后，石像在黎明时分会发出类似竖琴弦断的鸣响，希腊人浪漫地认为是特洛伊英雄门农在向母亲曙光女神厄俄斯哭泣。",
+  "timeline": [
+    {
+      "year": -1350,
+      "text": "自公元前1350年建成时，便为古希腊人、古罗马人、旅行者和埃及学家所熟知。"
+    },
+    {
+      "year": 250,
+      "text": "两座巨像上面留有107个罗马时代的希腊文和拉丁文铭文，这些铭文可以追溯到公元20年至250年之间；"
+    }
+  ],
+  "sections": [
+    {
+      "heading": "站在这里",
+      "items": [
+        "位于埃及卢克索。",
+        "位于埃及卢克索尼罗河西岸的旷野中。"
+      ]
+    },
+    {
+      "heading": "尺度与参数",
+      "items": [
+        "两尊石像均高达18米。"
+      ]
+    },
+    {
+      "heading": "补记",
+      "items": [
+        "门农巨像（ 或es-Salamat）是古埃及第十八王朝法老阿蒙霍特普三世的两座巨大石像，它们矗立在底比斯墓地群最大的神庙阿蒙霍特普三世神庙遗迹上。",
+        "自公元前1350年建成时，便为古希腊人、古罗马人、旅行者和埃及学家所熟知。"
+      ]
+    }
+  ],
+  "time_fragments": [
+    {
+      "text": "希腊人因传说认为是特洛伊英雄门农而命名。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "MemnonColossi",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "两座巨像上面留有107个罗马时代的希腊文和拉丁文铭文，这些铭文可以追溯到公元20年至250年之间；",
+      "year": 250,
+      "section": "历史沿革",
+      "targetId": "MemnonColossi",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "北面巨像上的许多铭文都提到了希腊神话中的国王门农，以至于当时人们错误地认为这座巨像的原型就是他。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "MemnonColossi",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    }
+  ],
+  "snippets": [
+    {
+      "text": "两尊石像均高达18米。",
+      "section": "基本参数",
+      "targetId": "MemnonColossi",
+      "score": null,
+      "source": "preset:基本参数"
+    },
+    {
+      "text": "位于埃及卢克索。",
+      "section": "地理位置",
+      "targetId": "MemnonColossi",
+      "score": null,
+      "source": "preset:地理位置"
+    },
+    {
+      "text": "位于埃及卢克索尼罗河西岸的旷野中。",
+      "section": "地理位置",
+      "targetId": "MemnonColossi",
+      "score": null,
+      "source": "preset:地理位置"
+    }
+  ],
+  "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）",
+  "built_at": "2026-11-25T19:01:35"
+}

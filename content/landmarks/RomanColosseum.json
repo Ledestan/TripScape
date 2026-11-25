@@ -1,0 +1,85 @@
+{
+  "landmark": "罗马斗兽场",
+  "target_id": "RomanColosseum",
+  "title": "罗马斗兽场｜意大利",
+  "country": "意大利",
+  "region": "欧洲",
+  "photo": "/lmimg/RomanColosseum.jpg",
+  "geo": {
+    "lat": 41.89,
+    "lon": 12.492,
+    "place": "罗马斗兽场",
+    "country": "意大利",
+    "region": "欧洲"
+  },
+  "intro": "古罗马最大的圆形角斗场，公元80年落成，可容纳约5万观众。混凝土与拱券技术的巅峰之作，1980年列入世界文化遗产。罗马斗兽场是古罗马帝国残酷娱乐的巅峰剧场，最多可容纳8万观众，通过80个拱门快速疏散，设计至今影响现代体育场。三层环形拱廊分别采用多立克、爱奥尼和科林斯柱式，堪称古典柱式教科书。",
+  "timeline": [
+    {
+      "year": 1980,
+      "text": "混凝土与拱券技术的巅峰之作，1980年列入世界文化遗产。"
+    }
+  ],
+  "sections": [
+    {
+      "heading": "站在这里",
+      "items": [
+        "位于意大利罗马市中心。"
+      ]
+    },
+    {
+      "heading": "补记",
+      "items": [
+        "thumb|百度翻译的中文 罗马竞技场（，又译作罗马-{}-斗兽场、罗马大角斗场、科洛西姆或哥罗塞姆；",
+        "原名弗莱文圆形剧场，）是古罗马时期最大的椭圆形角斗场，建于公元72年-82年间，现仅存遗迹位于现今义大利罗马市的中心。"
+      ]
+    }
+  ],
+  "time_fragments": [
+    {
+      "text": "作为古罗马最大竞技场，是世界新七大奇迹之一。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "RomanColosseum",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "公元80年建成。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "RomanColosseum",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "罗马斗兽场也列名在中古世界七大奇迹及世界新七大奇迹中。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "RomanColosseum",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    }
+  ],
+  "snippets": [
+    {
+      "text": "位于意大利罗马市中心。",
+      "section": "地理位置",
+      "targetId": "RomanColosseum",
+      "score": null,
+      "source": "preset:地理位置"
+    },
+    {
+      "text": "罗马斗兽场是古罗马帝国残酷娱乐的巅峰剧场，最多可容纳8万观众，通过80个拱门快速疏散，设计至今影响现代体育场。",
+      "section": "更多介绍",
+      "targetId": "RomanColosseum",
+      "score": null,
+      "source": "preset:更多介绍"
+    },
+    {
+      "text": "三层环形拱廊分别采用多立克、爱奥尼和科林斯柱式，堪称古典柱式教科书。",
+      "section": "更多介绍",
+      "targetId": "RomanColosseum",
+      "score": null,
+      "source": "preset:更多介绍"
+    }
+  ],
+  "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）",
+  "built_at": "2026-11-25T19:01:35"
+}

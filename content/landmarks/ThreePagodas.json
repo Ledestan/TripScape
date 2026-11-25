@@ -1,0 +1,100 @@
+{
+  "landmark": "崇圣寺三塔",
+  "target_id": "ThreePagodas",
+  "title": "崇圣寺三塔｜中国",
+  "country": "中国",
+  "region": "亚洲",
+  "photo": "/lmimg/ThreePagodas.jpg",
+  "geo": {
+    "lat": 25.708,
+    "lon": 100.147,
+    "place": "崇圣寺三塔",
+    "country": "中国",
+    "region": "亚洲"
+  },
+  "intro": "位于云南大理苍山脚下，主塔千寻塔高69.13米，为唐代密檐式砖塔。三塔鼎立，是大理的标志性建筑。大理崇圣寺三塔是大理最经典的封面照。主塔千寻塔高近70米，像一根直刺苍穹的巨型石笋，旁边两座小塔如忠诚护卫。",
+  "timeline": [
+    {
+      "year": 1925,
+      "text": "大理地处地震带，可千百年来历经多次大地震（包括1925年7级强震），三塔始终\"晃而不倒\"，足见古代白族工匠对抗震设计的超凡理解。"
+    },
+    {
+      "year": 1961,
+      "text": "它们曾是南诏、大理国的皇家寺院遗珍，如今寺院虽已不存，三塔依然静静守护着苍山洱海，1961年被列入首批全国重点文保。"
+    },
+    {
+      "year": 1978,
+      "text": "三塔在明清两代曾多次修缮，中华人民共和国成立后于1978年至1981年彻底大修，将三塔基本恢复原状，并从塔中出土了大量文物。"
+    }
+  ],
+  "sections": [
+    {
+      "heading": "站在这里",
+      "items": [
+        "崇圣寺三塔位于云南大理。",
+        "崇圣寺三塔，位于中国云南省大理白族自治州大理市大理古城西北的崇圣寺中，是三座南诏末期修建的砖质佛塔。"
+      ]
+    },
+    {
+      "heading": "尺度与参数",
+      "items": [
+        "主塔千寻塔高69.6米。"
+      ]
+    },
+    {
+      "heading": "补记",
+      "items": [
+        "三塔在明清两代曾多次修缮，中华人民共和国成立后于1978年至1981年彻底大修，将三塔基本恢复原状，并从塔中出土了大量文物。",
+        "1961年，崇圣寺三塔被列为第一批全国重点文物保护单位。"
+      ]
+    }
+  ],
+  "time_fragments": [
+    {
+      "text": "因古代白族工匠出色的抗震设计，历经多次大地震依然不倒。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "ThreePagodas",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "位于云南大理苍山脚下，主塔千寻塔高69.13米，为唐代密檐式砖塔。",
+      "year": null,
+      "section": "概述",
+      "targetId": "ThreePagodas",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "三塔鼎立，是大理的标志性建筑。",
+      "year": null,
+      "section": "概述",
+      "targetId": "ThreePagodas",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    }
+  ],
+  "snippets": [
+    {
+      "text": "主塔千寻塔高69.6米。",
+      "section": "基本参数",
+      "targetId": "ThreePagodas",
+      "score": null,
+      "source": "preset:基本参数"
+    },
+    {
+      "text": "崇圣寺三塔位于云南大理。",
+      "section": "地理位置",
+      "targetId": "ThreePagodas",
+      "score": null,
+      "source": "preset:地理位置"
+    },
+    {
+      "text": "崇圣寺三塔，位于中国云南省大理白族自治州大理市大理古城西北的崇圣寺中，是三座南诏末期修建的砖质佛塔。",
+      "section": "地理位置",
+      "targetId": "ThreePagodas",
+      "score": null,
+      "source": "preset:地理位置"
+    }
+  ],
+  "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）",
+  "built_at": "2026-11-25T19:01:35"
+}

@@ -48,9 +48,7 @@ export default function NarrativeHud() {
   /** 未登录时的统一出口：先提示再打开登录浮窗，不把 401 当业务错误抛给用户 */
   const requireLogin = (action: string): boolean => {
     if (token) return true;
-    toast.error(`请先登录后再${action}`, {
-      description: "点右上角「登录」即可，登录后本页状态不会丢",
-    });
+    toast.error(`请先登录后再${action}`);
     window.dispatchEvent(new CustomEvent("ts:open-login"));
     return false;
   };

@@ -1,0 +1,104 @@
+{
+  "landmark": "哈利法塔",
+  "target_id": "BurjKhalifa",
+  "title": "哈利法塔｜阿联酋",
+  "country": "阿联酋",
+  "region": "亚洲",
+  "photo": "/lmimg/BurjKhalifa.jpg",
+  "geo": {
+    "lat": 25.197,
+    "lon": 55.274,
+    "place": "哈利法塔",
+    "country": "阿联酋",
+    "region": "亚洲"
+  },
+  "intro": "世界第一高楼，高828米，共163层，位于迪拜。2010年落成，外观如沙漠之花蜘蛛兰的对称结构，拥有世界最高的观景台。哈利法塔是人类建筑野心直插云霄的宣言，总高828米，以近乎不可思议的姿态把\"世界最高\"纪录推向了新高度。整座大楼灵感源自沙漠之花蜘蛛兰的几何对称，采用Y形楼层布局，如一把利剑刺向波斯湾的天空。",
+  "timeline": [
+    {
+      "year": 2004,
+      "text": "哈利法塔的建设于2004年9月21日开始动工，并于2007年初开始安装玻璃帷幕，金属外墙于同年6月施装，最后于2010年1月4日正式完工启用，总共用了5年的时间建成。"
+    },
+    {
+      "year": 2008,
+      "text": "以感谢建造时正逢2008年金融危机，阿布扎比和阿联酋政府则向迪拜借款以偿还债务，杜拜塔才得以顺利完工。"
+    },
+    {
+      "year": 2009,
+      "text": "自2009年封顶以来一直是世界上最高的建筑，打破了多项高度记录。"
+    },
+    {
+      "year": 2010,
+      "text": "2010年落成，外观如沙漠之花蜘蛛兰的对称结构，拥有世界最高的观景台。"
+    }
+  ],
+  "sections": [
+    {
+      "heading": "站在这里",
+      "items": [
+        "位于阿联酋迪拜。",
+        "位于阿拉伯联合酋长国迪拜谢赫扎耶德路1号。"
+      ]
+    },
+    {
+      "heading": "尺度与参数",
+      "items": [
+        "总高828米，是目前世界最高建筑。"
+      ]
+    },
+    {
+      "heading": "补记",
+      "items": [
+        "{zh-hans:哈利法;zh-hant:哈里发;}-塔（），在落成前称为杜拜塔，是一座位于阿拉伯联合大公国杜拜境内的摩天大楼，为当前世界第一高楼与人工构造物，高度为，楼层总数163层，造价达15亿美元。",
+        "自2009年封顶以来一直是世界上最高的建筑，打破了多项高度记录。"
+      ]
+    }
+  ],
+  "time_fragments": [
+    {
+      "text": "2010年正式建成开放。",
+      "year": 2010,
+      "section": "历史沿革",
+      "targetId": "BurjKhalifa",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "世界第一高楼，高828米，共163层，位于迪拜。",
+      "year": null,
+      "section": "概述",
+      "targetId": "BurjKhalifa",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "2010年落成，外观如沙漠之花蜘蛛兰的对称结构，拥有世界最高的观景台。",
+      "year": 2010,
+      "section": "概述",
+      "targetId": "BurjKhalifa",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    }
+  ],
+  "snippets": [
+    {
+      "text": "总高828米，是目前世界最高建筑。",
+      "section": "基本参数",
+      "targetId": "BurjKhalifa",
+      "score": null,
+      "source": "preset:基本参数"
+    },
+    {
+      "text": "位于阿联酋迪拜。",
+      "section": "地理位置",
+      "targetId": "BurjKhalifa",
+      "score": null,
+      "source": "preset:地理位置"
+    },
+    {
+      "text": "位于阿拉伯联合酋长国迪拜谢赫扎耶德路1号。",
+      "section": "地理位置",
+      "targetId": "BurjKhalifa",
+      "score": null,
+      "source": "preset:地理位置"
+    }
+  ],
+  "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）",
+  "built_at": "2026-11-25T19:01:35"
+}

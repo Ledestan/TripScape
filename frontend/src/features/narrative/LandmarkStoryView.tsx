@@ -58,7 +58,11 @@ export default function LandmarkStoryView({ story }: { story: LandmarkStoryData 
               <li key={`${item.year}-${index}`} className="relative">
                 <span className="absolute -left-[15px] top-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
                 <div className="mb-0.5 text-[10.5px] font-semibold tabular-nums text-primary">
-                  {item.year === null ? "未记年" : `${item.year} 年`}
+                  {item.year === null
+                    ? "未记年"
+                    : item.year < 0
+                      ? `公元前 ${-item.year} 年`
+                      : `${item.year} 年`}
                 </div>
                 <p className="text-[11.5px] leading-relaxed text-foreground/80">{item.text}</p>
               </li>

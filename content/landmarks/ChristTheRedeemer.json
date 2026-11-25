@@ -1,0 +1,76 @@
+{
+  "landmark": "救世基督像",
+  "target_id": "ChristTheRedeemer",
+  "title": "救世基督像｜巴西",
+  "country": "巴西",
+  "region": "南美洲",
+  "photo": "/lmimg/ChristTheRedeemer.jpg",
+  "geo": {
+    "lat": -22.951,
+    "lon": -43.211,
+    "place": "救世基督像",
+    "country": "巴西",
+    "region": "南美洲"
+  },
+  "intro": "矗立于里约热内卢科尔科瓦多山顶的巨型基督雕像，高38米，双臂展开28米，1931年落成，是里约最著名的地标与巴西的象征。",
+  "timeline": [
+    {
+      "year": 1931,
+      "text": "矗立于里约热内卢科尔科瓦多山顶的巨型基督雕像，高38米，双臂展开28米，1931年落成，是里约最著名的地标与巴西的象征。"
+    },
+    {
+      "year": 2007,
+      "text": "|500px 救世基督像（），又名耶稣像，是一座装饰艺术风格的大型耶稣基督雕像，位于巴西的里约热内卢，是该市的标志，也是世界最闻名的纪念雕塑之一，2007年入选世界新七大奇迹。"
+    }
+  ],
+  "sections": [
+    {
+      "heading": "尺度与参数",
+      "items": [
+        "基督像落成于1931年，总高38米，站立在里约热内卢国家森林公园中高710米的驼背山顶，俯瞰着整个城市。",
+        "张开双臂欢迎来自世界各地的游客，是巴西人民热情接纳和宽阔胸怀的象征。"
+      ]
+    },
+    {
+      "heading": "补记",
+      "items": [
+        "里约热内卢驼背山\nthumb|里约热内卢救世基督像。",
+        "|500px 救世基督像（），又名耶稣像，是一座装饰艺术风格的大型耶稣基督雕像，位于巴西的里约热内卢，是该市的标志，也是世界最闻名的纪念雕塑之一，2007年入选世界新七大奇迹。"
+      ]
+    }
+  ],
+  "time_fragments": [
+    {
+      "text": "矗立于里约热内卢科尔科瓦多山顶的巨型基督雕像，高38米，双臂展开28米，1931年落成，是里约最著名的地标与巴西的象征。",
+      "year": 1931,
+      "section": "概述",
+      "targetId": "ChristTheRedeemer",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    }
+  ],
+  "snippets": [
+    {
+      "text": "基督像落成于1931年，总高38米，站立在里约热内卢国家森林公园中高710米的驼背山顶，俯瞰着整个城市。",
+      "section": "基本参数",
+      "targetId": "ChristTheRedeemer",
+      "score": null,
+      "source": "preset:基本参数"
+    },
+    {
+      "text": "张开双臂欢迎来自世界各地的游客，是巴西人民热情接纳和宽阔胸怀的象征。",
+      "section": "基本参数",
+      "targetId": "ChristTheRedeemer",
+      "score": null,
+      "source": "preset:基本参数"
+    },
+    {
+      "text": "里约热内卢驼背山\nthumb|里约热内卢救世基督像。",
+      "section": "百科补充",
+      "targetId": "ChristTheRedeemer",
+      "score": null,
+      "source": "preset:百科补充"
+    }
+  ],
+  "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）",
+  "built_at": "2026-11-25T19:01:35"
+}

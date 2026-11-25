@@ -29,8 +29,8 @@ from ninja.errors import HttpError
 
 from apps.core.auth import login_required, OptionalAuth
 from apps.landmarks.models import Landmark
+from services import landmark_pages
 from services import narrative_service as narrative
-from services import narrative_story
 
 router = Router()
 
@@ -61,12 +61,12 @@ def get_card(request, landmark_id: int):
 
 @router.get("/story/{landmark_id}", summary="地标故事（整体介绍 + 时间轴 + 分节材料）", auth=OptionalAuth())
 def get_story(request, landmark_id: int):
-    """读预置在数据库里的地标故事；没有预置时返回 404，不临时拼内容。"""
+    """读预置的地标页面文件；没有预置时返回 404，不现场分词拼内容。"""
     lm = _landmark_or_404(landmark_id)
-    story = narrative_story.story_for_landmark(lm)
-    if story is None:
-        raise HttpError(404, "该地标还没有故事内容")
-    return {"success": True, "data": story.as_payload()}
+    payload = landmark_pages.story_payload(lm)
+    if payload is None:
+        raise HttpError(404, "该地标还没有预置内容，请运行 seed_landmark_pages")
+    return {"success": True, "data": payload}
 
 @router.post("/journal/cards", summary="叙事卡片加入手账")
 @login_required

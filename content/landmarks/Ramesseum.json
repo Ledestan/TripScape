@@ -1,0 +1,89 @@
+{
+  "landmark": "拉美西姆神庙",
+  "target_id": "Ramesseum",
+  "title": "拉美西姆神庙｜埃及",
+  "country": "埃及",
+  "region": "非洲",
+  "photo": "/lmimg/Ramesseum.jpg",
+  "geo": {
+    "lat": 25.727,
+    "lon": 32.611,
+    "place": "拉美西姆神庙",
+    "country": "埃及",
+    "region": "非洲"
+  },
+  "intro": "法老拉美西斯二世的祭庙，位于卢克索西岸。曾矗立着重达约1000吨的拉美西斯二世巨型坐像碎片。拉美西姆神庙是拉美西斯二世的葬祭殿，也是诗人雪莱笔下《奥兹曼迪亚斯》的灵感来源。走进遗址，横亘在地的巨大花岗岩雕像残骸震撼人心，原高17米的坐像倒塌后化为碎片，脚趾都比人高，印证了法老渴望万世不朽的野心。",
+  "timeline": [
+    {
+      "year": null,
+      "text": "是法老拉美西斯二世的葬祭殿。"
+    },
+    {
+      "year": null,
+      "text": "法老拉美西斯二世的祭庙，位于卢克索西岸。"
+    }
+  ],
+  "sections": [
+    {
+      "heading": "站在这里",
+      "items": [
+        "位于埃及卢克索。",
+        "位于埃及卢克索尼罗河西岸。"
+      ]
+    },
+    {
+      "heading": "尺度与参数",
+      "items": [
+        "原高17米的拉美西斯二世坐像已倒塌，仅脚趾就比人高。"
+      ]
+    }
+  ],
+  "time_fragments": [
+    {
+      "text": "是法老拉美西斯二世的葬祭殿。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "Ramesseum",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "法老拉美西斯二世的祭庙，位于卢克索西岸。",
+      "year": null,
+      "section": "概述",
+      "targetId": "Ramesseum",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "曾矗立着重达约1000吨的拉美西斯二世巨型坐像碎片。",
+      "year": null,
+      "section": "概述",
+      "targetId": "Ramesseum",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    }
+  ],
+  "snippets": [
+    {
+      "text": "原高17米的拉美西斯二世坐像已倒塌，仅脚趾就比人高。",
+      "section": "基本参数",
+      "targetId": "Ramesseum",
+      "score": null,
+      "source": "preset:基本参数"
+    },
+    {
+      "text": "位于埃及卢克索。",
+      "section": "地理位置",
+      "targetId": "Ramesseum",
+      "score": null,
+      "source": "preset:地理位置"
+    },
+    {
+      "text": "位于埃及卢克索尼罗河西岸。",
+      "section": "地理位置",
+      "targetId": "Ramesseum",
+      "score": null,
+      "source": "preset:地理位置"
+    }
+  ],
+  "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）",
+  "built_at": "2026-11-25T19:01:35"
+}

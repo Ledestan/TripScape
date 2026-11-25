@@ -1,0 +1,99 @@
+{
+  "landmark": "阿布辛贝神庙",
+  "target_id": "AbuSimbelTemples",
+  "title": "阿布辛贝神庙｜埃及",
+  "country": "埃及",
+  "region": "非洲",
+  "photo": "/lmimg/AbuSimbelTemples.jpg",
+  "geo": {
+    "lat": 22.337,
+    "lon": 31.626,
+    "place": "阿布辛贝神庙",
+    "country": "埃及",
+    "region": "非洲"
+  },
+  "intro": "古埃及法老拉美西斯二世的惊世之作，直接在尼罗河西岸的整座山体中开凿而成。正面是四尊高达20米的法老坐像，每年2月22日和10月22日初升太阳会穿过60米深的殿堂照亮神龛，即著名的“太阳节”奇观。阿布辛贝神庙是古埃及法老拉美西斯二世的惊世之作，直接在尼罗河西岸的整座山体中开凿而成。神庙正面是四尊高达20米的法老坐像，宛如巨神守护入口。",
+  "timeline": [
+    {
+      "year": -1264,
+      "text": "约公元前1264年，由拉美西斯二世下令建造。"
+    },
+    {
+      "year": 1960,
+      "text": "1960年代因阿斯旺大坝建设整体切割搬迁至高处。"
+    },
+    {
+      "year": 1964,
+      "text": "1964年开始至1968年间，因兴建阿斯旺水坝而整体迁移至高出河床水位60余米的后山上，是世界文物建筑保护方式的成功尝试。"
+    }
+  ],
+  "sections": [
+    {
+      "heading": "站在这里",
+      "items": [
+        "阿布辛贝神庙位于埃及阿斯旺省，纳赛尔湖西岸。"
+      ]
+    },
+    {
+      "heading": "尺度与参数",
+      "items": [
+        "正面四尊拉美西斯二世坐像，每尊高达20米。"
+      ]
+    },
+    {
+      "heading": "补记",
+      "items": [
+        "神庙由依崖凿建的牌楼门、巨型拉美西斯二世摩崖雕像、前后柱殿及神堂等组成。",
+        "阿布·辛拜勒神庙和它下游至菲莱岛的许多遗迹一起作为努比亚遗址，被联合国教科文组织指定为世界遗产。"
+      ]
+    }
+  ],
+  "time_fragments": [
+    {
+      "text": "为兴建阿斯旺大坝免遭淹没，1960年代整座神庙被切割搬迁至高处。",
+      "year": 1960,
+      "section": "历史沿革",
+      "targetId": "AbuSimbelTemples",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "约公元前1264年，由拉美西斯二世下令建造。",
+      "year": -1264,
+      "section": "历史沿革",
+      "targetId": "AbuSimbelTemples",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "由古埃及法老拉美西斯二世建造，约公元前1264年。",
+      "year": -1264,
+      "section": "历史沿革",
+      "targetId": "AbuSimbelTemples",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    }
+  ],
+  "snippets": [
+    {
+      "text": "正面四尊拉美西斯二世坐像，每尊高达20米。",
+      "section": "基本参数",
+      "targetId": "AbuSimbelTemples",
+      "score": null,
+      "source": "preset:基本参数"
+    },
+    {
+      "text": "阿布辛贝神庙位于埃及阿斯旺省，纳赛尔湖西岸。",
+      "section": "地理位置",
+      "targetId": "AbuSimbelTemples",
+      "score": null,
+      "source": "preset:地理位置"
+    },
+    {
+      "text": "阿布辛贝神庙是古埃及法老拉美西斯二世的惊世之作，直接在尼罗河西岸的整座山体中开凿而成。",
+      "section": "更多介绍",
+      "targetId": "AbuSimbelTemples",
+      "score": null,
+      "source": "preset:更多介绍"
+    }
+  ],
+  "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）",
+  "built_at": "2026-11-25T19:01:35"
+}

@@ -1,12 +1,12 @@
 """
-行旅识景 TripScape / 地标故事测试
+行旅识景 TripScape / 地标页面预置测试
 创建日期: 2026-11-25
 
-校验预设地标故事（ts_landmark_story）的生成与读取，覆盖:
-    1. 语料能组装出「整体介绍 + 时间轴 + 分节材料」，时间轴按年份升序
-    2. 26 个地标都有预置故事（数量与语料覆盖一致）
-    3. GET /api/narrative/story/{landmark_id} 返回结构化内容
-    4. 地标不存在 / 没有预置故事时返回 404
+校验「一个地标一个页面文件」的生成与读取，覆盖:
+    1. 页面文件结构（整体介绍 / 时间轴升序 / 分节材料 / 卡片材料）
+    2. content/landmarks 覆盖了文章库里的全部地标
+    3. GET /api/narrative/story/{id} 与 /card/{id} 都只读文件，不触发分词与向量索引
+    4. 地标不存在 / 没有页面文件时返回 404
 
 依赖:
     Python: >=3.10
@@ -21,7 +21,7 @@
 
 注意:
     1. 只校验结构与顺序，不校验史实措辞（文化解释权归人）。
-    2. 需要 runtime/index/qa_chunks.json；缺失时相关用例跳过。
+    2. 「不触发分词」用的是故障注入：把问答索引替换成必抛异常的桩。
 """
 
 import json
@@ -30,12 +30,13 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
+PAGES_DIR = ROOT / "content" / "landmarks"
 QA_INDEX = ROOT / "runtime" / "index" / "qa_chunks.json"
 
 
 @pytest.fixture
-def story_landmark(db):
-    """造一个与语料同名同 target_id 的地标，用于验证接口。"""
+def page_landmark(db):
+    """造一个与已生成页面同 target_id 的地标，用于验证接口。"""
     from apps.landmarks.models import Landmark
 
     return Landmark.objects.create(
@@ -49,57 +50,35 @@ def story_landmark(db):
     )
 
 
-def test_corpus_builds_structured_story(db):
-    """build_payload 只摘编原句，并给出升序时间轴。"""
+def test_page_files_cover_corpus_targets():
+    """页面文件数量与文章库覆盖的地标数一致。"""
     if not QA_INDEX.exists():
         pytest.skip("文章库未生成，先运行 scripts/build_qa_index.py")
-    from services import narrative_story
-
-    chunks = narrative_story.group_chunks()["EiffelTower"]
-    payload = narrative_story.build_payload(None, chunks)
-
-    assert payload["intro"], "整体介绍不能为空"
-    assert payload["timeline"], "时间轴不能为空"
-    years = [item["year"] for item in payload["timeline"]]
-    assert years == sorted(years), "时间轴必须按年份升序"
-    assert all(isinstance(item["text"], str) and item["text"] for item in payload["timeline"])
-    assert any(section["items"] for section in payload["sections"])
-    assert payload["source"]
-
-
-@pytest.mark.django_db
-def test_all_landmarks_have_story():
-    """语料覆盖的每个地标都应能预置出故事（用测试库现造地标，不依赖种子命令）。"""
-    if not QA_INDEX.exists():
-        pytest.skip("文章库未生成")
-    from apps.landmarks.models import Landmark
-    from apps.narrative.models import LandmarkStory
-    from services import narrative_story
-
     chunks = json.loads(QA_INDEX.read_text(encoding="utf-8"))
-    targets = sorted({chunk["target_id"] for chunk in chunks})
-    names = {chunk["target_id"]: chunk.get("name", chunk["target_id"]) for chunk in chunks}
-    for target in targets:
-        Landmark.objects.create(
-            target_id=target,
-            name=names[target],
-            lat=0.0,
-            lon=0.0,
-            intro="测试用简介",
-        )
+    targets = {chunk["target_id"] for chunk in chunks}
+    files = list(PAGES_DIR.glob("*.json"))
+    assert len(files) == len(targets)
+    assert {path.stem for path in files} == targets
 
-    stats = narrative_story.refresh_stories()
-    assert stats["skipped"] == 0
-    assert LandmarkStory.objects.count() == len(targets)
+
+@pytest.mark.parametrize("path", sorted(PAGES_DIR.glob("*.json")), ids=lambda p: p.stem)
+def test_page_structure(path):
+    """每个页面文件都要有整体介绍、升序时间轴与出处。"""
+    page = json.loads(path.read_text(encoding="utf-8"))
+    assert page["landmark"], f"{path.name} 缺少地标名"
+    assert page["intro"].strip(), f"{path.name} 缺少整体介绍"
+    assert page["timeline"], f"{path.name} 缺少时间轴"
+    years = [item["year"] for item in page["timeline"] if item["year"] is not None]
+    assert years == sorted(years), f"{path.name} 时间轴未按年份升序"
+    assert all(item["text"] for item in page["timeline"])
+    assert page["source"], f"{path.name} 缺少出处"
+    assert page["snippets"], f"{path.name} 缺少文献摘录"
 
 
 @pytest.mark.django_db
-def test_story_endpoint_returns_structured_payload(api_client, story_landmark):
-    """接口返回整体介绍、时间轴与分节材料，而不是一段待解析的文本。"""
-    from services import narrative_story
-
-    narrative_story.refresh_stories()
-    resp = api_client.get(f"/api/narrative/story/{story_landmark.id}")
+def test_story_endpoint_returns_structured_payload(api_client, page_landmark):
+    """接口返回整体介绍、时间轴与分节材料，直接来自页面文件。"""
+    resp = api_client.get(f"/api/narrative/story/{page_landmark.id}")
     assert resp.status_code == 200, resp.content
     data = resp.json()["data"]
     assert data["title"] == "埃菲尔铁塔"
@@ -110,6 +89,24 @@ def test_story_endpoint_returns_structured_payload(api_client, story_landmark):
 
 
 @pytest.mark.django_db
+def test_card_endpoint_does_not_touch_qa_index(api_client, page_landmark, monkeypatch):
+    """卡片与故事都不应触发问答索引（jieba 分词只服务 /api/qa）。"""
+    from services import article_qa
+
+    def explode(*args, **kwargs):
+        raise AssertionError("打开地标不应构建问答索引（jieba 只用于问答）")
+
+    monkeypatch.setattr(article_qa, "get_index", explode)
+
+    card = api_client.get(f"/api/narrative/card/{page_landmark.id}")
+    assert card.status_code == 200, card.content
+    assert card.json()["data"]["ragSnippets"], "卡片应带预置文献摘录"
+
+    story = api_client.get(f"/api/narrative/story/{page_landmark.id}")
+    assert story.status_code == 200, story.content
+
+
+@pytest.mark.django_db
 def test_story_endpoint_404_for_unknown_landmark(api_client):
     """地标不存在时明确 404。"""
     resp = api_client.get("/api/narrative/story/999999")
@@ -117,7 +114,7 @@ def test_story_endpoint_404_for_unknown_landmark(api_client):
 
 
 @pytest.mark.django_db
-def test_story_endpoint_404_when_story_missing(api_client, landmark):
-    """地标存在但没有预置故事时同样 404（fixture 的「测试塔」没有语料）。"""
+def test_story_endpoint_404_when_page_missing(api_client, landmark):
+    """地标存在但没有页面文件时同样 404（fixture 的「测试塔」没有页面）。"""
     resp = api_client.get(f"/api/narrative/story/{landmark.id}")
     assert resp.status_code == 404

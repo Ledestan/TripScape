@@ -1,0 +1,100 @@
+{
+  "landmark": "埃菲尔铁塔",
+  "target_id": "EiffelTower",
+  "title": "埃菲尔铁塔｜法国",
+  "country": "法国",
+  "region": "欧洲",
+  "photo": "/lmimg/EiffelTower.jpg",
+  "geo": {
+    "lat": 48.858,
+    "lon": 2.294,
+    "place": "埃菲尔铁塔",
+    "country": "法国",
+    "region": "欧洲"
+  },
+  "intro": "建于1889年巴黎世界博览会的铁塔，高330米，由古斯塔夫·埃菲尔的公司设计建造。曾是世界最高建筑41年，现每年迎接数百万游客。埃菲尔铁塔，人称\"铁娘子\"，是巴黎当之无愧的超级地标。当年为迎接1889年世界博览会，设计师古斯塔夫·埃菲尔用18038个铁制构件和250万颗铆钉，像搭巨型积木一样，建起了这座当时全世界最高的人造建筑（含天线330米）。",
+  "timeline": [
+    {
+      "year": 1889,
+      "text": "建于1889年巴黎世界博览会的铁塔，高330米，由古斯塔夫·埃菲尔的公司设计建造。"
+    },
+    {
+      "year": 1931,
+      "text": "埃菲尔铁塔以312米的高度，占据世界最高人造建筑的位置长达四十年，直到1931年被位于纽约的克莱斯勒大厦超越。"
+    },
+    {
+      "year": 1986,
+      "text": "1986年美国土木工程师协会将该建筑列入国际土木工程历史古迹，1991年，艾菲尔铁塔连同巴黎塞纳河沿岸整座被列入世界遗产。"
+    }
+  ],
+  "sections": [
+    {
+      "heading": "站在这里",
+      "items": [
+        "位于法国巴黎市中心战神广场。"
+      ]
+    },
+    {
+      "heading": "尺度与参数",
+      "items": [
+        "高330米（含天线），是巴黎最高的建筑。",
+        "1986年美国土木工程师协会将该建筑列入国际土木工程历史古迹，1991年，艾菲尔铁塔连同巴黎塞纳河沿岸整座被列入世界遗产。"
+      ]
+    },
+    {
+      "heading": "补记",
+      "items": [
+        "埃菲尔铁塔建成于1889年，初名为“三百米塔”，后得名自其设计师古斯塔夫·埃菲尔。",
+        "铁塔是世界建筑史上的技术杰作，也是世界上最多人付费参观的名胜古迹，这个为了1889年世界博览会而落成的金属建筑，2011年约有698万人参观，是法国参观人数第二多的文化景点。"
+      ]
+    }
+  ],
+  "time_fragments": [
+    {
+      "text": "因由钢铁建成，且是法国象征，被称为\"铁娘子\"。",
+      "year": null,
+      "section": "历史沿革",
+      "targetId": "EiffelTower",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "1889年建成，为巴黎世界博览会而建。",
+      "year": 1889,
+      "section": "历史沿革",
+      "targetId": "EiffelTower",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    },
+    {
+      "text": "建于1889年，为世界博览会而建。",
+      "year": 1889,
+      "section": "历史沿革",
+      "targetId": "EiffelTower",
+      "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+    }
+  ],
+  "snippets": [
+    {
+      "text": "高330米（含天线），是巴黎最高的建筑。",
+      "section": "基本参数",
+      "targetId": "EiffelTower",
+      "score": null,
+      "source": "preset:基本参数"
+    },
+    {
+      "text": "1986年美国土木工程师协会将该建筑列入国际土木工程历史古迹，1991年，艾菲尔铁塔连同巴黎塞纳河沿岸整座被列入世界遗产。",
+      "section": "基本参数",
+      "targetId": "EiffelTower",
+      "score": null,
+      "source": "preset:基本参数"
+    },
+    {
+      "text": "埃菲尔铁塔以312米的高度，占据世界最高人造建筑的位置长达四十年，直到1931年被位于纽约的克莱斯勒大厦超越。",
+      "section": "基本参数",
+      "targetId": "EiffelTower",
+      "score": null,
+      "source": "preset:基本参数"
+    }
+  ],
+  "source": "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）",
+  "built_at": "2026-11-25T19:01:35"
+}

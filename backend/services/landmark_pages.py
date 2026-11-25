@@ -1,0 +1,263 @@
+"""
+行旅识景 TripScape / 地标页面预置内容
+创建日期: 2026-11-25
+
+把「地标页要显示的一切」预生成成文件，避免打开地标时再去分词/建索引，提供:
+    1. PAGES_DIR：content/landmarks/<target_id>.json 的固定位置
+    2. page_for：按地标读取页面文件（进程内缓存，按文件 mtime 失效）
+    3. build_pages：从文章库与地标表一次性生成全部页面文件（幂等）
+
+依赖:
+    需求文件: requirements.txt
+    依赖库:
+        Django==5.2
+
+用法:
+    from services import landmark_pages
+    landmark_pages.build_pages()               # 种子阶段调用
+    page = landmark_pages.page_for(landmark)   # 接口阶段调用
+
+注意:
+    1. 打开地标只读这一个 JSON，不触发 jieba 分词与向量检索（那些只服务问答）。
+    2. 文件缺失时返回 None，由调用方给 404 并提示重新生成，而不是现场分词。
+    3. 生成顺序按 target_id 排序，保证同一份语料得到完全相同的文件。
+"""
+
+import json
+import re
+from datetime import datetime
+from pathlib import Path
+
+from django.conf import settings
+
+PAGES_DIR = Path(settings.BASE_DIR) / "content" / "landmarks"
+CORPUS_PATH = Path(settings.BASE_DIR) / "runtime" / "index" / "qa_chunks.json"
+
+SECTION_ORDER = ["概述", "前言", "更多介绍", "历史沿革", "地理位置", "基本参数", "参观信息", "百科补充"]
+SECTION_TITLES = {
+    "地理位置": "站在这里",
+    "基本参数": "尺度与参数",
+    "参观信息": "到访之前",
+    "百科补充": "补记",
+}
+TIME_SECTIONS = ("历史沿革", "概述", "前言")
+BC_PATTERN = re.compile(r"公元前\s*(\d{1,4})\s*年")
+YEAR_PATTERN = re.compile(r"(\d{3,4})\s*年")
+SOURCE_LABEL = "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
+
+# 进程内缓存：文件 mtime 未变就不重复读盘
+_CACHE: dict[str, dict] = {}
+
+
+def split_sentences(text: str) -> list[str]:
+    """按中文句末标点切句，保留标点；空句丢弃。"""
+    parts = re.split(r"(?<=[。！？；])", text.strip())
+    return [part.strip() for part in parts if part and part.strip()]
+
+
+def extract_year(text: str) -> int | None:
+    """从句子中取年份：公元前记为负数，取不到返回 None（不猜）。"""
+    if not text:
+        return None
+    bc = BC_PATTERN.search(text)
+    if bc:
+        return -int(bc.group(1))
+    match = YEAR_PATTERN.search(text)
+    return int(match.group(1)) if match else None
+
+
+def group_chunks(index_path: Path = CORPUS_PATH) -> dict[str, list[dict]]:
+    """按 target_id 归组语料块；语料缺失给出可执行的修复提示。"""
+    if not index_path.exists():
+        raise FileNotFoundError(
+            f"文章库不存在: {index_path}；请先运行 python scripts/build_qa_index.py"
+        )
+    chunks = json.loads(index_path.read_text(encoding="utf-8"))
+    grouped: dict[str, list[dict]] = {}
+    for chunk in chunks:
+        grouped.setdefault(chunk["target_id"], []).append(chunk)
+    return grouped
+
+
+def _section_sentences(chunks: list[dict], section: str, limit: int = 20) -> list[str]:
+    """取某章节的句子（固定顺序）。"""
+    sentences: list[str] = []
+    for chunk in chunks:
+        if chunk.get("section") != section:
+            continue
+        sentences.extend(split_sentences(chunk.get("text", "")))
+        if len(sentences) >= limit:
+            break
+    return sentences[:limit]
+
+
+def build_page(landmark, chunks: list[dict]) -> dict:
+    """组装一个地标的页面数据（故事 + 卡片材料 + 展示元信息）。"""
+    seen: set[str] = set()
+
+    def unique(items: list[str]) -> list[str]:
+        kept: list[str] = []
+        for item in items:
+            if item and item not in seen:
+                seen.add(item)
+                kept.append(item)
+        return kept
+
+    # 整体介绍：概述/前言打底，再用更多介绍补一段
+    intro = "".join(
+        unique(_section_sentences(chunks, "概述", 2) or _section_sentences(chunks, "前言", 2))
+        + unique(_section_sentences(chunks, "更多介绍", 2))
+    ).strip()
+
+    # 时间轴：每个年份只取一句，升序；句子允许与整体介绍重复（时间锚点优先）
+    timeline: list[dict] = []
+    seen_years: set[int] = set()
+    for section in SECTION_ORDER:
+        for sentence in _section_sentences(chunks, section, 30):
+            year = extract_year(sentence)
+            if year is None or year in seen_years:
+                continue
+            seen_years.add(year)
+            timeline.append({"year": year, "text": sentence})
+            if len(timeline) >= 6:
+                break
+        if len(timeline) >= 6:
+            break
+    # 有年份的在前（升序），未记年的在后，保证 None 不参与比较
+    timeline.sort(key=lambda item: (item["year"] is None, item["year"] if item["year"] is not None else 0))
+
+    if not timeline:
+        # 语料里确实没有年份：用两句未记年的材料撑起时间轴的阅读节奏，明确标注未记年
+        for section in ("历史沿革", "概述", "更多介绍"):
+            for sentence in _section_sentences(chunks, section, 6):
+                if any(item["text"] == sentence for item in timeline):
+                    continue
+                timeline.append({"year": None, "text": sentence})
+                if len(timeline) >= 2:
+                    break
+            if len(timeline) >= 2:
+                break
+
+    # 分节材料
+    sections: list[dict] = []
+    for section, heading in SECTION_TITLES.items():
+        items = unique(_section_sentences(chunks, section, 2))
+        if items:
+            sections.append({"heading": heading, "items": items})
+
+    # 卡片用的时间碎片：只在纪年类章节里挑，年份缺失不补写
+    time_fragments: list[dict] = []
+    for section in TIME_SECTIONS:
+        for sentence in _section_sentences(chunks, section, 12):
+            if sentence in {item["text"] for item in time_fragments}:
+                continue
+            time_fragments.append(
+                {
+                    "text": sentence,
+                    "year": extract_year(sentence),
+                    "section": section,
+                    "targetId": landmark.target_id,
+                    "source": SOURCE_LABEL,
+                }
+            )
+            if len(time_fragments) >= 3:
+                break
+        if len(time_fragments) >= 3:
+            break
+
+    # 卡片用的文献摘录：从非纪年章节里取，不再走检索
+    snippets: list[dict] = []
+    for section in ("基本参数", "地理位置", "更多介绍", "参观信息", "百科补充"):
+        for sentence in _section_sentences(chunks, section, 6):
+            if any(item["text"] == sentence for item in snippets):
+                continue
+            snippets.append(
+                {
+                    "text": sentence[:240],
+                    "section": section,
+                    "targetId": landmark.target_id,
+                    "score": None,
+                    "source": f"preset:{section}",
+                }
+            )
+            if len(snippets) >= 3:
+                break
+        if len(snippets) >= 3:
+            break
+
+    country = landmark.country or ""
+    return {
+        # 不写 landmarkId：数据库自增 id 会随重建变化，接口返回时用当前地标 id
+        "landmark": landmark.name,
+        "target_id": landmark.target_id,
+        "title": f"{landmark.name}｜{country}" if country else landmark.name,
+        "country": country,
+        "region": landmark.region or "",
+        "photo": landmark.image_url or "",
+        "geo": {
+            "lat": float(landmark.lat),
+            "lon": float(landmark.lon),
+            "place": landmark.name,
+            "country": country,
+            "region": landmark.region or "",
+        },
+        "intro": intro,
+        "timeline": timeline,
+        "sections": sections,
+        "time_fragments": time_fragments,
+        "snippets": snippets,
+        "source": SOURCE_LABEL,
+        "built_at": datetime.now().isoformat(timespec="seconds"),
+    }
+
+
+def build_pages(verbose: bool = False) -> dict:
+    """生成全部地标页面文件（幂等，返回统计）。"""
+    from apps.landmarks.models import Landmark
+
+    grouped = group_chunks()
+    PAGES_DIR.mkdir(parents=True, exist_ok=True)
+    written = skipped = 0
+    # 排序后遍历：同一份语料每次生成顺序一致
+    for landmark in Landmark.objects.order_by("target_id"):
+        chunks = grouped.get(landmark.target_id, [])
+        if not chunks:
+            skipped += 1
+            continue
+        page = build_page(landmark, chunks)
+        target = PAGES_DIR / f"{landmark.target_id}.json"
+        target.write_text(json.dumps(page, ensure_ascii=False, indent=2), encoding="utf-8")
+        written += 1
+        if verbose:
+            print(f"页面已生成: {target.name}（{len(page['timeline'])} 条时间轴）")
+    return {"written": written, "skipped": skipped}
+
+
+def page_for(landmark) -> dict | None:
+    """读取地标页面文件（按 mtime 缓存）；没有文件返回 None。"""
+    target = PAGES_DIR / f"{getattr(landmark, 'target_id', '')}.json"
+    if not target.exists():
+        return None
+    mtime = target.stat().st_mtime
+    cached = _CACHE.get(str(target))
+    if cached and cached.get("mtime") == mtime:
+        return cached["data"]
+    data = json.loads(target.read_text(encoding="utf-8"))
+    _CACHE[str(target)] = {"mtime": mtime, "data": data}
+    return data
+
+
+def story_payload(landmark) -> dict | None:
+    """给故事接口用的结构：整体介绍 -> 时间轴 -> 分节材料。"""
+    page = page_for(landmark)
+    if page is None:
+        return None
+    return {
+        "landmarkId": landmark.id,
+        "title": page.get("landmark") or landmark.name,
+        "intro": page.get("intro", ""),
+        "timeline": page.get("timeline", []),
+        "sections": page.get("sections", []),
+        "source": page.get("source", ""),
+        "updatedAt": page.get("built_at"),
+    }

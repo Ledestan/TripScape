@@ -3,7 +3,7 @@
 创建日期: 2026-11-25
 
 把「地标页要显示的一切」预生成成文件，避免打开地标时再去分词/建索引，提供:
-    1. PAGES_DIR：content/landmarks/<target_id>.json 的固定位置
+    1. PAGES_DIR：backend/content/landmarks/<target_id>.json 的固定位置
     2. page_for：按地标读取页面文件（进程内缓存，按文件 mtime 失效）
     3. build_pages：从文章库与地标表一次性生成全部页面文件（幂等）
 
@@ -30,15 +30,19 @@ from pathlib import Path
 
 from django.conf import settings
 
-PAGES_DIR = Path(settings.BASE_DIR) / "content" / "landmarks"
+PAGES_DIR = Path(settings.BASE_DIR) / "backend" / "content" / "landmarks"
 CORPUS_PATH = Path(settings.BASE_DIR) / "runtime" / "index" / "qa_chunks.json"
 
 SECTION_ORDER = ["概述", "前言", "更多介绍", "历史沿革", "地理位置", "基本参数", "参观信息", "百科补充"]
+# 章节 -> 小标题：顺序即页面上的阅读顺序（intro 之后依次展开）
 SECTION_TITLES = {
+    "前言": "写在前面",
+    "历史沿革": "走过的年代",
     "地理位置": "站在这里",
     "基本参数": "尺度与参数",
     "参观信息": "到访之前",
     "百科补充": "补记",
+    "更多介绍": "再看一眼",
 }
 TIME_SECTIONS = ("历史沿革", "概述", "前言")
 BC_PATTERN = re.compile(r"公元前\s*(\d{1,4})\s*年")
@@ -103,9 +107,9 @@ def build_page(landmark, chunks: list[dict]) -> dict:
                 kept.append(item)
         return kept
 
-    # 整体介绍：概述/前言打底，再用更多介绍补一段
+    # 整体介绍：概述（或前言）三段 + 更多介绍两段，让开篇先讲清楚"这是什么地方"
     intro = "".join(
-        unique(_section_sentences(chunks, "概述", 2) or _section_sentences(chunks, "前言", 2))
+        unique(_section_sentences(chunks, "概述", 3) or _section_sentences(chunks, "前言", 3))
         + unique(_section_sentences(chunks, "更多介绍", 2))
     ).strip()
 
@@ -138,12 +142,21 @@ def build_page(landmark, chunks: list[dict]) -> dict:
             if len(timeline) >= 2:
                 break
 
-    # 分节材料
+    # 分节材料：按阅读顺序铺开，每节 2-3 句，让页面像一篇完整的介绍
     sections: list[dict] = []
     for section, heading in SECTION_TITLES.items():
-        items = unique(_section_sentences(chunks, section, 2))
+        items = unique(_section_sentences(chunks, section, 3))
         if items:
             sections.append({"heading": heading, "items": items})
+
+    # 语料很薄的地标（只有概述 + 百科补充）也要有段落结构：
+    # 把最长的一节拆成两节，标题用中性的导航词，内容仍是原句
+    if len(sections) < 2:
+        richest = max(sections, key=lambda item: len(item["items"])) if sections else None
+        if richest and len(richest["items"]) >= 2:
+            tail = richest["items"][1:]
+            richest["items"] = richest["items"][:1]
+            sections.append({"heading": "再看一眼", "items": tail})
 
     # 卡片用的时间碎片：只在纪年类章节里挑，年份缺失不补写
     time_fragments: list[dict] = []
@@ -205,8 +218,8 @@ def build_page(landmark, chunks: list[dict]) -> dict:
         "timeline": timeline,
         "sections": sections,
         "time_fragments": time_fragments,
+        # snippets 只供识别卡片的文献字段使用；地标页不再展示摘录与出处
         "snippets": snippets,
-        "source": SOURCE_LABEL,
         "built_at": datetime.now().isoformat(timespec="seconds"),
     }
 
@@ -258,6 +271,5 @@ def story_payload(landmark) -> dict | None:
         "intro": page.get("intro", ""),
         "timeline": page.get("timeline", []),
         "sections": page.get("sections", []),
-        "source": page.get("source", ""),
         "updatedAt": page.get("built_at"),
     }

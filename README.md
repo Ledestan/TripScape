@@ -68,7 +68,7 @@ pnpm build                               # 构建后由 Django 提供 SPA；开�
 ## 地标页面（一个地标一个文件，打开即读，不分词）
 
 ```text
-content/landmarks/<target_id>.json    # 预生成：整体介绍 / 时间轴 / 分节材料 / 卡片材料
+backend/content/landmarks/<target_id>.json    # 预生成：整体介绍 / 时间轴 / 分节材料 / 卡片材料
 scripts/build_landmark_pages.py       # 从文章库一次性生成（幂等）
 backend/manage.py seed_landmark_pages # 同上的管理命令（init_tripscape 第 8 步自动调用）
 GET /api/narrative/story/{id}         # 档案接口：只读该 JSON
@@ -170,7 +170,9 @@ TripScape/
 │     ├─ seed_sensitive_words.sql        #   敏感词基线（运行期可在后台增删）
 │     ├─ register_images.json            #   识别注册图清单（指纹缓存，可手工增删）
 │     └─ articles/                       #   地标文章库（每地标一篇章节式 markdown）
-├─ content/landmarks/                    # 26 个地标页面 JSON（打开地标直接读，不触发分词）
+├─ backend/content/                      # 内容资产（与代码同仓，逻辑随 backend 走）
+│  ├─ landmarks/                        #   26 个地标页面 JSON（打开即读，不触发分词）
+│  └─ articles/                         #   26 篇问答语料 markdown（全文，供问答索引）
 ├─ tests/backend/                        # pytest-django 后端测试
 ├─ docker/                               # Dockerfile.backend / Dockerfile.frontend、nginx.conf、mysql/my.cnf
 ├─ desktop.py                            # 桌面应用入口（pywebview）
@@ -188,7 +190,7 @@ TripScape/
 | 服务 | `backend/services/narrative_service.py`（卡片组装、投递与拾取）、`narrative_story.py`（故事文档读取） |
 | 接口 | `backend/api/narrative.py`（card / story / journal / fragments 共 7 个端点） |
 | 界面 | `frontend/src/features/narrative/`（胶片、档案、手记、故事渲染）、`stores/narrative.ts`（三层状态） |
-| 内容 | `content/landmarks/*.json`（预生成：整体介绍 + 时间轴 + 分节材料，命令 `seed_landmark_pages`） |
+| 内容 | `backend/content/landmarks/*.json`（预生成：整体介绍 + 时间轴 + 分节材料，命令 `seed_landmark_pages`） |
 
 ## 数据库表（MySQL `tripscape`，业务表统一 `ts_` 前缀、蛇形命名）
 
@@ -297,7 +299,7 @@ cd frontend && npx playwright test      # 端到端（e2e/，先启动后端并 
 以 **"每地标一篇章节式文章"** 为知识源（`backend/services/article_qa.py`）：
 
 ```
-离线建库：地标文章（scripts/db/articles/*.md）
+离线建库：地标文章（backend/content/articles/*.md）
             → 按章节分块（元数据：地标 / 标题 / 章节 / Chunk ID）
             → bge-small-zh 向量索引 + BM25 索引（同一 Chunk ID 关联）
 
@@ -308,7 +310,7 @@ cd frontend && npx playwright test      # 端到端（e2e/，先启动后端并 
             → 逐子项拒答（"文章未提及"）/ 整体拒答（"知识库中没有相关信息"）
 ```
 
-- **文章即数据**——`scripts/db/articles/` 每地标一篇 markdown
+- **文章即数据**——`backend/content/articles/` 每地标一篇 markdown
   （YAML 元数据 + 概述/基本参数/历史沿革/地理位置/参观信息章节），
   手工编辑后运行 `build_qa_index.py` 重建索引。
 - **复合问题**——"埃菲尔铁塔多高、什么时候建的"按疑问词边界拆分逐项作答

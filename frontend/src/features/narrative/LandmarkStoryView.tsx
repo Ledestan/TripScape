@@ -18,25 +18,9 @@
  *     2. 不拼接任何本地文案成"史实"，只做排版与顺序组织。
  */
 
-import { Clock3, Quote } from "lucide-react";
+import { Clock3 } from "lucide-react";
 
-export interface StoryTimelineItem {
-  year: number | null;
-  text: string;
-}
-
-export interface StorySection {
-  heading: string;
-  items: string[];
-}
-
-export interface LandmarkStoryData {
-  title: string;
-  intro: string;
-  timeline: StoryTimelineItem[];
-  sections: StorySection[];
-  source: string;
-}
+import type { LandmarkStoryData } from "./types";
 
 export default function LandmarkStoryView({ story }: { story: LandmarkStoryData }) {
   return (
@@ -87,13 +71,6 @@ export default function LandmarkStoryView({ story }: { story: LandmarkStoryData 
           </ul>
         </section>
       ))}
-
-      {story.source && (
-        <p className="flex items-start gap-1 border-t border-border/50 pt-2 text-[10px] leading-relaxed text-muted-foreground">
-          <Quote className="mt-[2px] h-3 w-3 shrink-0" />
-          出处：{story.source}；文化内容的最终解释权归人。
-        </p>
-      )}
     </div>
   );
 }

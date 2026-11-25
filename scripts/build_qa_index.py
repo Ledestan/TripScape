@@ -2,7 +2,7 @@
 创建日期：2025-10-08
 
 解析地标文章目录并构建双路检索索引，完成:
-    1. 解析 scripts/db/articles/*.md（YAML 元数据 + 章节结构）
+    1. 解析 backend/content/articles/*.md（YAML 元数据 + 章节结构，全文建库）
     2. 按 ## 章节切分文本块（每块元数据：地标/标题/章节/Chunk ID）
     3. bge-small-zh 向量编码 -> 向量矩阵
     4. 写出分块 JSON + 向量 npy + 指纹清单（幂等，文章变化自动失效）
@@ -20,7 +20,7 @@
     python scripts/build_qa_index.py --force-rebuild # 强制重建
 
 可选参数:
-    --articles <目录>   文章目录，默认 scripts/db/articles
+    --articles <目录>   文章目录，默认 backend/content/articles
     --chunk-size N      单块最大字符数，默认 500
     --force-rebuild     忽略指纹强制重建
 
@@ -238,7 +238,11 @@ def _parse_args(argv=None):
         description="地标文章问答索引构建（幂等，文章变化自动重建）。",
         epilog="示例：\n  python scripts/build_qa_index.py\n  python scripts/build_qa_index.py --force-rebuild\n",
     )
-    parser.add_argument("--articles", default=str(ROOT / "scripts" / "db" / "articles"), help="文章目录")
+    parser.add_argument(
+        "--articles",
+        default=str(ROOT / "backend" / "content" / "articles"),
+        help="文章目录，默认 backend/content/articles",
+    )
     parser.add_argument("--chunk-size", type=int, default=500, help="单块最大字符数，默认 500")
     parser.add_argument("--force-rebuild", action="store_true", help="强制重建")
     return parser.parse_args(argv)
@@ -250,7 +254,9 @@ def main(argv=None):
 
     article_dir = Path(args.articles)
     if not article_dir.exists():
-        raise SystemExit(f"错误: 文章目录不存在 {article_dir}，请先运行 scripts/build_articles.py")
+        raise SystemExit(
+            f"错误: 文章目录不存在 {article_dir}；请确认 backend/content/articles 下的文章"
+        )
 
     chunker = ArticleChunker(chunk_size=args.chunk_size)
     builder = QaIndexBuilder(ROOT / "runtime" / "index")

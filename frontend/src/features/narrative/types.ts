@@ -94,6 +94,5 @@ export interface LandmarkStoryData {
   intro: string;
   timeline: { year: number | null; text: string }[];
   sections: { heading: string; items: string[] }[];
-  source: string;
   updatedAt?: string;
 }

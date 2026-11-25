@@ -26,7 +26,6 @@ import {
   MapPin,
   MessageSquare,
   NotebookPen,
-  Quote,
   RefreshCw,
   X,
 } from "lucide-react";
@@ -76,7 +75,6 @@ export default function LandmarkNarrativePanel({
   onOpenJournalEditor: () => void;
 }) {
   const title = card?.title || story?.title || landmarkName || "地标档案";
-  const snippets = card?.ragSnippets || [];
 
   return (
     <section className="flex max-h-[min(660px,calc(100vh-150px))] flex-col overflow-hidden rounded-[18px] border border-border/70 bg-card/95 shadow-[0_24px_60px_-28px_rgb(0_0_0/0.65)] backdrop-blur-xl">
@@ -184,33 +182,6 @@ export default function LandmarkNarrativePanel({
               <LandmarkStoryView story={story} />
             ) : (
               <p className="text-[11px] text-muted-foreground">这个地标还没有预置故事内容。</p>
-            )}
-
-            {snippets.length > 0 && (
-              <section>
-                <h4 className="mb-1 flex items-center gap-1 text-[11px] font-semibold tracking-wide text-foreground/80">
-                  <Quote className="h-3 w-3 text-primary" />
-                  文献摘录
-                </h4>
-                <ul className="space-y-1.5">
-                  {snippets.map((snippet, index) => (
-                    <li
-                      key={`${snippet.targetId}-${index}`}
-                      className="rounded-xl border border-border/60 bg-background/60 p-2.5"
-                    >
-                      <div className="mb-1 flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                        <span className="rounded bg-accent px-1.5 py-0.5 font-medium">
-                          {snippet.section || "检索"}
-                        </span>
-                        {snippet.score !== null && (
-                          <span className="tabular-nums">命中 {snippet.score.toFixed(4)}</span>
-                        )}
-                      </div>
-                      <p className="text-[11.5px] leading-relaxed text-foreground/80">{snippet.text}</p>
-                    </li>
-                  ))}
-                </ul>
-              </section>
             )}
           </div>
         )}

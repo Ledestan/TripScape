@@ -30,7 +30,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-PAGES_DIR = ROOT / "content" / "landmarks"
+PAGES_DIR = ROOT / "backend" / "content" / "landmarks"
 QA_INDEX = ROOT / "runtime" / "index" / "qa_chunks.json"
 
 
@@ -71,8 +71,9 @@ def test_page_structure(path):
     years = [item["year"] for item in page["timeline"] if item["year"] is not None]
     assert years == sorted(years), f"{path.name} 时间轴未按年份升序"
     assert all(item["text"] for item in page["timeline"])
-    assert page["source"], f"{path.name} 缺少出处"
-    assert page["snippets"], f"{path.name} 缺少文献摘录"
+    # 页面本身不再展示出处与摘录；snippets 仅供识别卡片的文献字段
+    assert page["snippets"], f"{path.name} 缺少卡片用的文献字段"
+    assert len(page["sections"]) >= 2, f"{path.name} 分节太少"
 
 
 @pytest.mark.django_db
@@ -84,8 +85,7 @@ def test_story_endpoint_returns_structured_payload(api_client, page_landmark):
     assert data["title"] == "埃菲尔铁塔"
     assert data["intro"]
     assert data["timeline"] and data["timeline"][0]["year"] <= data["timeline"][-1]["year"]
-    assert isinstance(data["sections"], list)
-    assert data["source"]
+    assert isinstance(data["sections"], list) and len(data["sections"]) >= 2
 
 
 @pytest.mark.django_db

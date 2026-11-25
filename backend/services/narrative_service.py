@@ -1,32 +1,28 @@
-"""行旅识景 TripScape / 叙事服务（TripScape 2.0 本体，无特性开关）
-创建日期：2025-11-24
+"""
+行旅识景 TripScape / 叙事服务
+创建日期: 2025-11-24
 
-提供 SPEC §2 三条能力的服务层：
-    S2  叙事卡片结构化：build_narrative_card / _time_fragments / _rag_snippets
-    S1  三层切换的持久化：add_card_to_journal / journal_cards
-    S3  碎片投递与拾取：deliver_fragment / pick_fragment / pick_fragment_by_id
-
-数据来源全部为仓库内真实数据，不编造文化内容：
-    - timeFragments：文章库 runtime/index/qa_chunks.json 中该地标的
-      历史沿革/概述句（含年份的真实史料句），索引缺失时降级为
-      ts_landmark.intro 的真实句子（年份缺失时 year=None，不补写年份）。
-    - ragSnippets：services/article_qa.ArticleIndex.search 的真实混合检索
-      结果（向量 + BM25 + RRF），只做片段截断，不改写内容。
-    - photo：原图 URL 引用，不复制文件。
+叙事层的业务实现（2.0 本体），提供:
+    1. build_narrative_card / latest_card：卡片组装与读取
+    2. _time_fragments / _rag_snippets / _geo：三个切面的取值与降级
+    3. add_card_to_journal / journal_cards：卡片与手记的持久化
+    4. deliver_fragment / pick_fragment / pick_fragment_by_id：碎片投递与单次拾取
+    5. as_card / journal_payload / fragment_payload：对外序列化口径
 
 依赖:
-    Python: >=3.10
     需求文件: requirements.txt
-    依赖库: 同 article_qa（sentence-transformers / rank-bm25 / jieba）
+    依赖库:
+        Django==5.2
+        sentence-transformers / rank-bm25 / jieba（经 article_qa 间接使用）
 
 用法:
     from services import narrative_service as narrative
     card = narrative.build_narrative_card(landmark, user=user, confidence=0.91)
 
 注意:
-    1. 本模块不写 settings 开关判断——门控在 api 层统一做（见 api/narrative.py）。
-    2. 所有对外序列化都走 as_card() / journal_payload() / fragment_payload()，
-       保证字段集与 SPEC §2 一致，且碎片不泄露投递者身份。
+    1. 文化内容只取仓库内真实数据：文章库句子与 ts_landmark.intro，不编造年份。
+    2. 索引缺失时走降级分支，最末级兜底是明确的"尚无纪年史料登记"声明，不是史料。
+    3. 碎片对外不暴露投递者身份，库内保留为额度统计与自投排除。
 """
 
 import logging

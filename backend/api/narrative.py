@@ -1,20 +1,27 @@
-"""行旅识景 TripScape
-创建日期：2025-11-24
+"""
+行旅识景 TripScape / 叙事 API
+创建日期: 2025-11-24
 
-叙事 API（TripScape 2.0 本体，挂载在 /api/narrative）。
+叙事层的六个 HTTP 端点（TripScape 2.0 本体，无特性开关），完成:
+    1. 取地标卡片（无卡时按真实种子数据现建）
+    2. 卡片收进手记（只读持久化，幂等）
+    3. 读回我的手记
+    4. 卡片匿名投递到地标（同用户同地标上限 3）
+    5. 随机拾取一条未拾取过的碎片
+    6. 按 ID 拾取（重复拾取返回 409）
 
-端点：
-    GET    /api/narrative/card/{landmark_id}   取该地标最新叙事卡片（无则现建）
-    POST   /api/narrative/journal/cards        把卡片加入手账（只读持久化）
-    GET    /api/narrative/journal              我的手账卡片（刷新后取回）
-    POST   /api/narrative/fragments            卡片匿名投递到地标（同地标上限 3）
-    GET    /api/narrative/fragments/pick       拾取一条未拾取过的碎片
-    POST   /api/narrative/fragments/{id}/pick  按 ID 拾取（重复拾取 409）
+依赖:
+    需求文件: requirements.txt
+    依赖库:
+        Django==5.2
+        django-ninja
 
-错误语义（SPEC §3.5）：
-    第 4 次投递 -> 409 + 明确额度消息
-    重复拾取    -> 409 + 明确消息
-    碎片不存在/已无可拾取 -> 404
+用法:
+    由 backend/api/__init__.py 挂载到 /api/narrative
+
+注意:
+    1. 错误语义必须稳定：第 4 次投递 409、重复拾取 409、无可用碎片 404。
+    2. 匿名性由 service 层的序列化保证，API 层不额外拼接投递者信息。
 """
 
 from ninja import Router, Schema

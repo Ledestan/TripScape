@@ -1,17 +1,24 @@
-"""行旅识景 TripScape
-创建日期：2025-11-24
+"""
+行旅识景 TripScape / 叙事数据模型
+创建日期: 2025-11-24
 
-叙事应用：TripScape 2.0 本体的数据单元（已无特性开关，默认启用）。
+叙事层的四张表（2.0 本体，无特性开关），提供:
+    1. NarrativeCard：叙事卡片（识别成功后的结构化对象，只读持久化）
+    2. JournalCard：卡片收进手记（用户 × 卡片唯一）
+    3. NarrativeFragment：匿名留在原地的叙事碎片
+    4. FragmentPickup：单次拾取记录（碎片 × 用户唯一）
 
-四个模型对应 SPEC §2 的三条能力：
-    NarrativeCard     —— S2 叙事卡片（识别成功后的结构化对象，只读持久化）
-    JournalCard       —— S1 卡片加入手账（用户 × 卡片唯一，只读）
-    NarrativeFragment —— S3 匿名投递到地标的叙事碎片
-    FragmentPickup    —— S3 单次拾取记录（碎片 × 用户唯一）
+依赖:
+    需求文件: requirements.txt
+    依赖库:
+        Django==5.2
 
-约束：
-1. 卡片图片只存 URL 引用，不复制文件。
-2. 碎片对外不暴露投递者身份（匿名性由 service 层的序列化保证）。
+用法:
+    from apps.narrative.models import NarrativeCard, JournalCard
+
+注意:
+    1. 卡片图片只存 URL 引用，不复制文件。
+    2. 碎片不向使用者暴露投递者身份，匿名性由 service 层序列化保证。
 """
 
 from django.conf import settings

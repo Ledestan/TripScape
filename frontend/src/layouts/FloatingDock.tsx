@@ -98,7 +98,7 @@ export default function FloatingDock() {
 
       <div
 
-        className="absolute right-0 top-0 z-30 flex items-center gap-[var(--ui-gap)]"
+        className="absolute right-0 top-0 z-40 flex items-center gap-[var(--ui-gap)]"
 
         style={{ right: "var(--ui-pad)", top: "var(--ui-pad)" }}
 
@@ -128,6 +128,7 @@ export default function FloatingDock() {
 
             <button
 
+              data-testid="dock-avatar"
               onClick={() => setMenuOpen((v) => !v)}
 
               className={btn}
@@ -187,6 +188,7 @@ export default function FloatingDock() {
                   icon={<BookOpen className="h-3.5 w-3.5" />}
 
                   label="旅行手记"
+                  testId="dock-menu-journal"
 
                   onClick={() => {
 
@@ -310,11 +312,11 @@ export default function FloatingDock() {
 
 
 
-function MenuItem({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
+function MenuItem({ icon, label, onClick, testId }: { icon: React.ReactNode; label: string; onClick: () => void; testId?: string }) {
 
   return (
 
-    <button onClick={onClick} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm hover:bg-accent">
+    <button data-testid={testId} onClick={onClick} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm hover:bg-accent">
 
       {icon}
 

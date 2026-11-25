@@ -99,10 +99,38 @@
         animation: slide 1.3s ease-in-out infinite;
       }
       .boot-loading .tip {
-        font-size: 13px;
+        position: relative;
+        z-index: 2;
+        max-width: min(560px, 84vw);
+        text-align: center;
+        font-size: clamp(12px, 1.6vw, 15px);
         font-weight: 300;
-        letter-spacing: 8px;
-        color: rgba(255, 255, 255, 0.78);
+        letter-spacing: 2px;
+        line-height: 1.6;
+        color: rgba(255, 255, 255, 0.86);
+      }
+      /* 小屏与矮屏自适应：启动页不裁切提示文字 */
+      @media (max-width: 640px) {
+        .boot-loading {
+          gap: 18px;
+          padding: 20px 16px;
+        }
+        .boot-loading .orbit {
+          width: 64px;
+          height: 64px;
+        }
+        .boot-loading .arc {
+          background-size: 900px auto;
+        }
+      }
+      @media (max-height: 560px) {
+        .boot-loading {
+          gap: 12px;
+        }
+        .boot-loading .orbit {
+          width: 56px;
+          height: 56px;
+        }
       }
       @keyframes spin { to { transform: rotate(360deg); } }
       @keyframes pulse {

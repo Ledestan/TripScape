@@ -1,9 +1,22 @@
 /**
- * 叙事层数据类型（与后端 SPEC §2 S2 固定字段集一一对应）。
+ * 叙事层数据类型（与后端字段一一对应，不做本地改名）
+ * 创建日期: 2026-11-25
  *
- * 随 2.0 默认渲染；字段名与 /api/narrative/* 响应完全一致，
- * 不做本地改名，避免与 A2 快照产生第二套口径。
+ * 定义叙事接口返回的卡片、手记、碎片与故事结构，提供:
+ *     1. NarrativeCardData：地标卡片（九字段 + createdAt）
+ *     2. JournalEntry / PickedFragment：手记条目与碎片
+ *     3. LandmarkStoryData：预设故事（整体介绍 → 时间轴 → 分节材料）
+ *
+ * 依赖:
+ *     依赖库: 无
+ *
+ * 用法:
+ *     import type { LandmarkStoryData } from "./types";
+ *
+ * 注意:
+ *     字段名必须与 /api/narrative/* 响应完全一致，避免出现第二套口径。
  */
+
 export interface NarrativeGeo {
   lat: number;
   lon: number;
@@ -72,4 +85,15 @@ export interface NarrativeSpot {
   image_url: string;
   lat: number;
   lon: number;
+}
+
+/** 预设故事（GET /api/narrative/story/{id}）：整体介绍 -> 时间轴 -> 分节材料 */
+export interface LandmarkStoryData {
+  landmarkId: number;
+  title: string;
+  intro: string;
+  timeline: { year: number | null; text: string }[];
+  sections: { heading: string; items: string[] }[];
+  source: string;
+  updatedAt?: string;
 }

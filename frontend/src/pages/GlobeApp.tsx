@@ -9,6 +9,9 @@ import FloatingDock from "@/layouts/FloatingDock";
 import MessageBar from "@/features/qa/MessageBar";
 import GlobeControls from "@/features/globe/GlobeControls";
 import { JournalViewWindow } from "@/layouts/JournalViewWindow";
+// 地标评论/收藏浮窗与写手账浮窗（各自带关闭按钮）
+import LandmarkDetailWindow from "@/pages/LandmarkDetail";
+import JournalEditWindow from "@/pages/JournalEditWindow";
 // TripScape 2.0 叙事层（2.0 本体，无开关）
 import NarrativeHud from "@/features/narrative/NarrativeHud";
 import { useNarrativeStore } from "@/stores/narrative";
@@ -17,14 +20,17 @@ import { useViewport } from "@/hooks/useViewport";
 
 /**
  * 主页：全屏地球 + 四角浮层。
- * - 点光点：直接进入该地标的叙事档案（故事文档 + 卡片材料），不再弹中间层浮窗
- * - "ts:open-detail"（消息卡/搜索结果）：同样直接进入叙事档案
+ * - 点光点：直接进入该地标的叙事档案（故事 + 材料）
+ * - 档案底部可打开评论收藏浮窗与写手账浮窗，两者各自带关闭
  */
 export default function GlobeApp() {
   const { compact, narrow } = useViewport();
   const routeParams = useParams();
 
   const [highlightIds, setHighlightIds] = useState<Set<number> | undefined>(undefined);
+  const [detailId, setDetailId] = useState<number | null>(null);
+  const [journalLandmarkId, setJournalLandmarkId] = useState<number | null>(null);
+  const [journalOpen, setJournalOpen] = useState(false);
 
   const enterLandmark = useNarrativeStore((s) => s.enterLandmark);
   const resetNarrative = useNarrativeStore((s) => s.reset);
@@ -66,6 +72,25 @@ export default function GlobeApp() {
     return () => window.removeEventListener("ts:open-detail", onOpenDetail);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spots]);
+
+  // 叙事档案里的"评论与收藏"与"写手账"入口 -> 打开各自的浮窗（自带关闭）
+  useEffect(() => {
+    const onOpenLandmarkWindow = (e: Event) => {
+      const id = Number((e as CustomEvent<number>).detail || 0);
+      if (id) setDetailId(id);
+    };
+    const onOpenJournalEdit = (e: Event) => {
+      const id = Number((e as CustomEvent<number>).detail || 0);
+      setJournalLandmarkId(id || null);
+      setJournalOpen(true);
+    };
+    window.addEventListener("ts:open-landmark-window", onOpenLandmarkWindow);
+    window.addEventListener("ts:open-journal-edit", onOpenJournalEdit);
+    return () => {
+      window.removeEventListener("ts:open-landmark-window", onOpenLandmarkWindow);
+      window.removeEventListener("ts:open-journal-edit", onOpenJournalEdit);
+    };
+  }, []);
 
   // 搜索结果"查看手账"事件
   const [viewJournalId, setViewJournalId] = useState<number | null>(null);
@@ -142,6 +167,29 @@ export default function GlobeApp() {
 
       {/* 底部：TripScape 2.0 叙事层（globe → landmark → journal） */}
       <NarrativeHud />
+
+      {/* 地标评论/收藏浮窗（叙事档案里的"评论与收藏"入口打开，自带关闭） */}
+      {detailId !== null && (
+        <LandmarkDetailWindow
+          landmarkId={detailId}
+          onClose={() => setDetailId(null)}
+          onWriteJournal={(lmId) => {
+            setJournalLandmarkId(lmId);
+            setJournalOpen(true);
+          }}
+        />
+      )}
+
+      {/* 写手账浮窗（自带关闭；关闭后回到叙事档案） */}
+      {journalOpen && (
+        <JournalEditWindow
+          presetLandmarkId={journalLandmarkId ?? undefined}
+          onClose={() => {
+            setJournalLandmarkId(null);
+            setJournalOpen(false);
+          }}
+        />
+      )}
 
       {/* 全局搜索浮窗（"显示更多"打开，带上搜索词） */}
       {searchOpen && (

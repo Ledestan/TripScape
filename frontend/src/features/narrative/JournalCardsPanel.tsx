@@ -18,7 +18,7 @@
  *     2. 这里的「投递」与地标层的「匿名留在此处」是同一个接口，只是入口不同。
  */
 
-import { BookOpen, Compass, MapPin, Send } from "lucide-react";
+import { BookOpen, Compass, MapPin, Send, X } from "lucide-react";
 import { useMemo } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ export default function JournalCardsPanel({
   onWake,
   onPickHere,
   canPick,
+  onClose,
 }: {
   entries: JournalEntry[];
   onDeliver: (cardId: number, landmarkId: number) => void;
@@ -39,6 +40,7 @@ export default function JournalCardsPanel({
   onWake: (landmarkId: number, landmarkName: string) => void;
   onPickHere: () => void;
   canPick: boolean;
+  onClose: () => void;
 }) {
   const sorted = useMemo(
     () => [...entries].sort((a, b) => (a.addedAt < b.addedAt ? 1 : -1)),
@@ -48,16 +50,26 @@ export default function JournalCardsPanel({
   return (
     <section
       data-testid="narrative-layer-journal"
-      className="flex h-full flex-col overflow-hidden rounded-[20px] border border-border/70 bg-card/95 shadow-[0_24px_60px_-28px_rgb(0_0_0/0.65)] backdrop-blur-xl"
+      className="flex max-h-[min(660px,calc(100vh-150px))] flex-col overflow-hidden rounded-[20px] border border-border/70 bg-card/95 shadow-[0_24px_60px_-28px_rgb(0_0_0/0.65)] backdrop-blur-xl"
     >
       <header className="shrink-0 border-b border-border/60 px-3.5 py-2.5">
-        <h2 className="flex items-center gap-1.5 text-sm font-bold text-foreground">
-          <BookOpen className="h-4 w-4 text-primary" />
-          旅行手记
-          <span className="rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
-            {entries.length} 段
-          </span>
-        </h2>
+        <div className="flex items-start gap-2">
+          <h2 className="flex flex-1 items-center gap-1.5 text-sm font-bold text-foreground">
+            <BookOpen className="h-4 w-4 text-primary" />
+            旅行手记
+            <span className="rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
+              {entries.length} 段
+            </span>
+          </h2>
+          <button
+            data-testid="narrative-back"
+            onClick={onClose}
+            aria-label="关闭旅行手记"
+            className="rounded-full p-1 text-muted-foreground transition hover:bg-accent hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
         <p className="mt-0.5 text-[10.5px] leading-relaxed text-muted-foreground">
           收下的叙事是只读快照：可以匿名留给后来的人，但不能再改写。
         </p>

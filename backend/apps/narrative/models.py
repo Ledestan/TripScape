@@ -177,3 +177,50 @@ class FragmentPickup(models.Model):
 
     def __str__(self):
         return f"pickup:{self.fragment_id}->{self.user_id}"
+
+
+class LandmarkStory(models.Model):
+    """地标故事（预设内容）：整体介绍 + 时间轴 + 分节材料，随种子数据一次写入。
+
+    与"卡片"不同，这张表是**人工预设的长期内容**，不随用户操作变化；
+    前端地标档案直接读它，不再每次请求去磁盘找 Markdown 文件。
+    """
+
+    landmark = models.OneToOneField(
+        "landmarks.Landmark",
+        verbose_name="地标",
+        on_delete=models.CASCADE,
+        related_name="story",
+    )
+    intro = models.TextField("整体介绍", help_text="摘编自文章库的综合介绍段落")
+    timeline = models.JSONField(
+        "时间轴",
+        default=list,
+        help_text='[{"year": 1889, "text": "..."}]，年份缺失时为 null',
+    )
+    sections = models.JSONField(
+        "分节材料",
+        default=list,
+        help_text='[{"heading": "站在这里", "items": ["..."]}]',
+    )
+    source = models.CharField("来源", max_length=128, default="")
+    updated_at = models.DateTimeField("更新时间", auto_now=True)
+
+    class Meta:
+        db_table = "ts_landmark_story"
+        ordering = ["landmark_id"]
+
+    def as_payload(self) -> dict:
+        """对外结构：整体介绍 -> 时间轴 -> 分节材料（顺序即阅读顺序）。"""
+        return {
+            "landmarkId": self.landmark_id,
+            "title": self.landmark.name,
+            "intro": self.intro,
+            "timeline": self.timeline or [],
+            "sections": self.sections or [],
+            "source": self.source,
+            "updatedAt": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+    def __str__(self):
+        return f"story:{self.landmark_id}"

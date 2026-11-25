@@ -59,23 +59,14 @@ def get_card(request, landmark_id: int):
     return {"success": True, "data": card.as_card()}
 
 
-@router.get("/story/{landmark_id}", summary="地标故事（一个地标一篇 Markdown）", auth=OptionalAuth())
+@router.get("/story/{landmark_id}", summary="地标故事（整体介绍 + 时间轴 + 分节材料）", auth=OptionalAuth())
 def get_story(request, landmark_id: int):
-    """取 stories/ 下该地标的故事；没有对应文档时返回 404，不临时编造。"""
+    """读预置在数据库里的地标故事；没有预置时返回 404，不临时拼内容。"""
     lm = _landmark_or_404(landmark_id)
     story = narrative_story.story_for_landmark(lm)
     if story is None:
-        raise HttpError(404, "该地标还没有故事文档")
-    return {
-        "success": True,
-        "data": {
-            "landmarkId": lm.id,
-            "title": story["meta"].get("landmark", lm.name),
-            "filename": story["filename"],
-            "source": story["meta"].get("source", ""),
-            "markdown": story["markdown"],
-        },
-    }
+        raise HttpError(404, "该地标还没有故事内容")
+    return {"success": True, "data": story.as_payload()}
 
 @router.post("/journal/cards", summary="叙事卡片加入手账")
 @login_required

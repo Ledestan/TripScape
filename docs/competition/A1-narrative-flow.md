@@ -27,15 +27,11 @@ globe（未被讲述） → 点叙事轨道里的地标入口 → landmark（正
   **唯一没有叙事轨道的是 `/share/:token`**（`SharePage`，站外公开分享页）。
   所以"零跳转"指的是**层间切换不触发路由跳转**，而不是"只有一个 URL"。
 - **术语边界**：本图的"手账"= `layer=journal` 与 `ts_narrative_journal_card`（叙事卡片的手账）；
-  产品里另有一个既有的**手账编辑器浮窗** `JournalEditWindow`（`/journal_edit`，地标详情的"写手账"入口，
-  写的是 `ts_journal`），两者不是同一个东西，展板绘制时不要画串。
-- **开关前置**：本图所有叙事端点与 `NarrativeHud` 都受 `tripScape2` 门控。关闭态的准确分层是
-  **`get_card`（`OptionalAuth`，匿名放行）→ 404；其余五个 `@login_required` 端点匿名 → 401，
-  带 token → 404**（`@login_required` 在 router 装饰器内层、先于 `_gate()`）。
-  实测（同一份关闭态构建）：`GET /api/narrative/card/8` → 404；
-  匿名 `POST /api/narrative/journal/cards` → 401；匿名 `GET /api/narrative/fragments/pick` → 401；
-  `NarrativeHud` 不渲染（hud=0）。原始请求/响应见 `s1-flag-off-negative-control.md` §3 与同名 `.log`。
-  展板应标注该图是**"开关开启态"**。
+  1.0 的**手账编辑器浮窗** `JournalEditWindow`（`/journal_edit`）已随 1.0 一起删除，
+  因此本图的"手账"只剩 `layer=journal` 与 `ts_narrative_journal_card` 一个含义。
+- **无开关**：2.0 已是本体，叙事端点与 `NarrativeHud` 没有任何特性开关（2026-11-25 移除）。
+  鉴权分层仍然存在并值得画：`get_card` 用 `OptionalAuth`（匿名可读），其余五个端点
+  `@login_required`（匿名 401、带 token 200）。
 - ④ **不是第四个 layer**，而是**跨用户异步流**：碎片写入 `ts_narrative_fragment`，
   另一个会话在同一个地标层里读取它。图上把 ④ 画成"池 + 另一个会话"，
   而不是画成第四条平行轨道——否则会把"同步状态切换"和"异步跨用户投递"混为一谈。
@@ -69,7 +65,7 @@ flowchart LR
     N15["按 ID 拾取（仅后端可达，前端零调用）<br/>POST /api/narrative/fragments/{id}/pick<br/>二次拾取 409"]
   end
 
-  N12["识别入口（既有）<br/>POST /api/recognition/recognize<br/>tripScape2 开启时并入卡片字段"]
+  N12["识别入口（既有）<br/>POST /api/recognition/recognize<br/>识别成功即并入卡片字段（2.0 默认）"]
   N13["既有地标详情（旁路）<br/>/landmarks/:id → LandmarkDetailWindow<br/>与叙事层无跳转"]
 
   N2 --> N1
@@ -189,7 +185,6 @@ Mermaid 没有原生点划线箭头，图上用 `linkStyle 16,17 stroke-dasharra
 | S1 截图 | `docs/competition/evidence/s1-journal-{before,after}-refresh.png` | 刷新前后卡片一致 |
 | S3 投递/拾取 | `tests/backend/test_s3_fragment_{delivery,pickup}.py` → `docs/competition/evidence/s3-functional-green.log` | 第 4 次 409 / 二次拾取 409 / 摘要字段（`6 passed`） |
 | S3 手动 | `docs/competition/evidence/s3-manual-curl.log` | 真实 HTTP 200/200/200/409 + 拾取 200 + 二次拾取 409 |
-| 开关关闭实测 | `docs/competition/evidence/s1-flag-off-negative-control.{md,log}` | hud=0；`GET /api/narrative/card/8` → 404（OptionalAuth 直入 `_gate`）；匿名 `POST .../journal/cards` 与 `GET .../fragments/pick` → 401（login_required 先于 `_gate`） |
 
 ## 7. 本图不包含什么
 

@@ -13,15 +13,10 @@ const EVIDENCE = path.resolve(__dirname, "../docs/competition/evidence");
  *   2. 手账持久化在服务端（刷新后从 /api/narrative/journal 取回），不是前端内存；
  *   3. 刷新前后各截一张 journal 截图作为人工复核证据。
  *
- * 运行前置（见 plan.md §6）：前端按当前源码构建、后端以 TRIPSCAPE2_ENABLED=true 运行。
+ * 运行前置（见 plan.md §6）：前端按当前源码构建、后端启动即可（2.0 已是默认行为，无开关）。
  */
 test.describe("S1 三层空间切换", () => {
   test.beforeAll(async ({ request }) => {
-    // 开关必须开启，否则测的不是 2.0 行为
-    const features = await request.get("/api/features");
-    expect(features.ok()).toBeTruthy();
-    expect((await features.json()).tripScape2).toBe(true);
-
     // 预热：首次卡片组装要加载检索模型（bge-small-zh，冷启动数十秒）。
     // 预热对象就是测试将要点击的第一个地标，把模型冷启动排除在 UI 等待之外，
     // 避免把环境耗时误判成交互缺陷（断言本身不因此放宽）。

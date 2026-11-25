@@ -18,7 +18,7 @@ artifact: A3-service-blueprint
 version: 2
 spec: "SPEC.md §3.6（叙事流通层结构草稿）"
 project: "TripScape 2.0"
-feature_flag: "tripScape2（settings.TRIPSCAPE2_ENABLED，默认 false）"
+feature_flag: "无（2026-11-25 起叙事层是 2.0 本体，默认启用）"
 reading_order: "left_to_right（stage_order 越小越靠左）"
 edge_semantics: >-
   nodes[*].next 收三类**跨线**边——rail（跨泳道行车）、feedback（stage 递减的回边）、
@@ -319,7 +319,7 @@ nodes:
       kind: service
       ref: "services/narrative_service.py::fragment_limit / deliver_fragment"
     evidence:
-      - "backend/services/narrative_service.py::fragment_limit（settings.TRIPSCAPE2_MAX_FRAGMENTS_PER_LANDMARK）"
+      - "backend/services/narrative_service.py::fragment_limit（settings.NARRATIVE_MAX_FRAGMENTS_PER_LANDMARK）"
       - "tests/backend/test_s3_fragment_delivery.py（前 3 次 200，第 4 次 409）"
     next: [F4]
 
@@ -366,7 +366,7 @@ nodes:
     evidence:
       - "backend/services/recognition_service.py（RECOG_CONFIDENCE_THRESHOLD 判定）"
       - "backend/config/settings/base.py::RECOG_CONFIDENCE_THRESHOLD"
-      - "backend/api/narrative.py::_gate（开关关闭 404）"
+      - "backend/api/narrative.py::_landmark_or_404 / NarrativeError(404)"
       - "tests/backend/test_a4_low_confidence_gate.py（低置信度给候选）"
     next: [B1, B6]
 
@@ -385,8 +385,8 @@ failure_modes:
     evidence: "backend/apps/core/auth.py::login_required（raise HttpError(401, \"请先登录\")）；backend/api/narrative.py 五处 @login_required；get_card 为 auth=OptionalAuth()"
   - code: 404
     at: [F2, F3, F4, F5]
-    where: "已登录但开关关闭（叙事端点 404；匿名调用会先在 @login_required 处得到 401，到不了 _gate）/ 地标不存在 / 卡片不存在 / 无可用碎片"
-    evidence: "backend/api/narrative.py::_gate / _landmark_or_404 / NarrativeError(404)；get_card 首行 _gate()；装饰器顺序 login_required 在 _gate 外层"
+    where: "地标不存在 / 卡片不存在 / 无可用碎片（开关已移除，不再有「关闭态 404」）"
+    evidence: "backend/api/narrative.py::_landmark_or_404 / NarrativeError(404)（叙事层无特性开关）"
   - code: 403
     at: [F4, F1, F2]
     where: >-

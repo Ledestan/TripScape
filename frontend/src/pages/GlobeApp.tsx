@@ -9,18 +9,18 @@ import FloatingDock from "@/layouts/FloatingDock";
 import MessageBar from "@/features/qa/MessageBar";
 import GlobeControls from "@/features/globe/GlobeControls";
 import ElasticLandmarkCard from "@/features/globe/ElasticLandmarkCard";
-import LandmarkDetailWindow from "@/pages/LandmarkDetail";
-import JournalEditWindow from "@/pages/JournalEditWindow";
 import { JournalViewWindow } from "@/layouts/JournalViewWindow";
-// TripScape 2.0 叙事层（tripScape2 关闭时组件自身返回 null）
+// TripScape 2.0 叙事层（2.0 本体，无开关）
 import NarrativeHud from "@/features/narrative/NarrativeHud";
+import { useNarrativeStore } from "@/stores/narrative";
 import { api } from "@/api/client";
 import { useViewport } from "@/hooks/useViewport";
 
 /**
  * 主页：全屏地球 + 四角浮层。
- * - 详情浮窗在地球上打开（点光点/路由直达）
- * - 详情内点"写手账" -> 隐藏详情、开手账浮窗；手账关闭后详情回来
+ * - 点光点：弹出弹性资料卡（预览）；"查看叙事"进入 2.0 地标叙事层
+ * - "ts:open-detail"（消息卡/搜索结果/资料卡）：直接进入地标叙事层
+ * - 1.0 的地标详情浮窗与写手账浮窗已移除（2.0 用叙事层取代）
  */
 export default function GlobeApp() {
   const { compact, narrow } = useViewport();
@@ -28,12 +28,10 @@ export default function GlobeApp() {
 
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   const [highlightIds, setHighlightIds] = useState<Set<number> | undefined>(undefined);
-  const [detailId, setDetailId] = useState<number | null>(
-    routeParams.id ? Number(routeParams.id) : null
-  );
-  const [journalLandmarkId, setJournalLandmarkId] = useState<number | null>(null);
-  const [journalOpen, setJournalOpen] = useState(false);
   const [cardDocked, setCardDocked] = useState(false);
+
+  const enterLandmark = useNarrativeStore((s) => s.enterLandmark);
+  const resetNarrative = useNarrativeStore((s) => s.reset);
 
   const { data: spots } = useQuery({
     queryKey: ["landmarks", "spots"],
@@ -45,6 +43,23 @@ export default function GlobeApp() {
     globeBus.flyTo(s.lat, s.lon, s.id);
   };
 
+  /** 进入地标叙事层（名字优先取光点数据，取不到时留空由面板回填） */
+  const openNarrative = (id: number) => {
+    const spot = (spots || []).find((x) => x.id === id);
+    if (spot) flyToSpot(spot);
+    enterLandmark(id, spot?.name ?? "");
+  };
+
+  // 路由直达 /landmarks/:id -> 进入该地标叙事层
+  useEffect(() => {
+    const id = Number(routeParams.id || 0);
+    if (id) openNarrative(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeParams.id, spots]);
+
+  // 离开页面时复位叙事层（避免下次进入仍停在旧地标）
+  useEffect(() => () => resetNarrative(), [resetNarrative]);
+
   // 拖动地球 -> 资料卡片收成小条
   useEffect(() => {
     const onMove = () => {
@@ -54,26 +69,16 @@ export default function GlobeApp() {
     return () => window.removeEventListener("pointermove", onMove);
   }, []);
 
-  // 菜单"写手账"事件 -> 在地球上打开手账浮窗（可带 landmark_id 预选）
-  useEffect(() => {
-    const onOpenJournal = (e: Event) => {
-      const lmId = (e as CustomEvent<number>).detail;
-      if (lmId) setJournalLandmarkId(lmId);
-      setJournalOpen(true);
-    };
-    window.addEventListener("ts:open-journal", onOpenJournal);
-    return () => window.removeEventListener("ts:open-journal", onOpenJournal);
-  }, []);
-
-  // 消息卡"详情"事件 -> 打开地标详情浮窗
+  // 消息卡/搜索结果/资料卡"查看"事件 -> 进入地标叙事层
   useEffect(() => {
     const onOpenDetail = (e: Event) => {
       const id = (e as CustomEvent<number>).detail;
-      if (id) setDetailId(id);
+      if (id) openNarrative(id);
     };
     window.addEventListener("ts:open-detail", onOpenDetail);
     return () => window.removeEventListener("ts:open-detail", onOpenDetail);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spots]);
 
   // 搜索结果"查看手账"事件
   const [viewJournalId, setViewJournalId] = useState<number | null>(null);
@@ -125,9 +130,9 @@ export default function GlobeApp() {
           spots={spots || []}
           onHighlightChange={setHighlightIds}
           onPickLandmark={(s) => {
-            // 搜索选中：飞行 + 打开详情浮窗
+            // 搜索选中：飞行 + 进入地标叙事层
             flyToSpot(s);
-            setDetailId(s.id);
+            enterLandmark(s.id, s.name);
           }}
           narrow={narrow}
         />
@@ -154,43 +159,17 @@ export default function GlobeApp() {
         <GlobeControls compact={compact} narrow={narrow} />
       </div>
 
-      {/* 底部：TripScape 2.0 叙事层（globe → landmark → journal，开关内自渲染） */}
+      {/* 底部：TripScape 2.0 叙事层（globe → landmark → journal） */}
       <NarrativeHud />
 
       {/* 弹性资料卡片（点光点弹出；拖动时收成小条） */}
-      {selectedSpot && detailId === null && !journalOpen && (
+      {selectedSpot && (
         <ElasticLandmarkCard
           spot={selectedSpot}
           onClose={() => setSelectedSpot(null)}
           narrow={narrow}
           forceDocked={cardDocked}
-          onOpenDetail={() => setDetailId(selectedSpot.id)}
-        />
-      )}
-
-      {/* 详情浮窗（写手账时叠加在上，不隐藏详情） */}
-      {detailId !== null && (
-        <LandmarkDetailWindow
-          landmarkId={detailId}
-          onClose={() => {
-            setDetailId(null);
-            setSelectedSpot(null);
-          }}
-          onWriteJournal={(lmId) => {
-            setJournalLandmarkId(lmId);
-            setJournalOpen(true);
-          }}
-        />
-      )}
-
-      {/* 手账浮窗（可叠加在详情/个人主页之上） */}
-      {(journalLandmarkId !== null || journalOpen) && (
-        <JournalEditWindow
-          presetLandmarkId={journalLandmarkId ?? undefined}
-          onClose={() => {
-            setJournalLandmarkId(null);
-            setJournalOpen(false);
-          }}
+          onOpenDetail={() => openNarrative(selectedSpot.id)}
         />
       )}
 
@@ -201,7 +180,7 @@ export default function GlobeApp() {
         </Suspense>
       )}
 
-      {/* 搜索结果手账查看浮窗 */}
+      {/* 搜索结果手账查看浮窗（仍可查看 1.0 已发布的手账） */}
       {viewJournalId !== null && (
         <JournalViewWindow journalId={viewJournalId} onClose={() => setViewJournalId(null)} />
       )}
@@ -212,7 +191,7 @@ export default function GlobeApp() {
           className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-full border border-border/70 bg-card px-4 py-1 text-[var(--ui-fs-sm)] text-muted-foreground"
           style={{ bottom: "calc(var(--ui-pad) + 6px)" }}
         >
-          拖动旋转 · 滚轮缩放 · 点击看百科
+          拖动旋转 · 滚轮缩放 · 点击看叙事
         </div>
       )}
     </div>

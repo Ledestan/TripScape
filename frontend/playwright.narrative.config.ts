@@ -13,8 +13,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  *
  * 运行前置（见 plan.md §6）：
  *   1. 前端已按当前源码构建：corepack pnpm --dir frontend build
- *   2. 后端以 tripScape2 开启运行：
- *      $env:DB_ENGINE='sqlite'; $env:TRIPSCAPE2_ENABLED='true'
+ *   2. 后端运行（2.0 无开关）：
+ *      $env:DB_ENGINE='sqlite'; .venv\Scripts\python.exe backend\manage.py runserver 127.0.0.1:8000 --noreload
  *      .venv\Scripts\python.exe backend\manage.py runserver 127.0.0.1:8000 --noreload
  */
 export default defineConfig({

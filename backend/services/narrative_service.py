@@ -1,4 +1,4 @@
-"""行旅识景 TripScape / 叙事服务（TripScape 2.0，feature flag tripScape2）
+"""行旅识景 TripScape / 叙事服务（TripScape 2.0 本体，无特性开关）
 创建日期：2025-11-24
 
 提供 SPEC §2 三条能力的服务层：
@@ -311,7 +311,7 @@ def journal_cards(user):
 # ======================================================================
 def fragment_limit() -> int:
     """单用户单地标投递上限（SPEC §2 S3：最多 3 条）。"""
-    return int(getattr(settings, "TRIPSCAPE2_MAX_FRAGMENTS_PER_LANDMARK", 3))
+    return int(getattr(settings, "NARRATIVE_MAX_FRAGMENTS_PER_LANDMARK", 3))
 
 
 def deliver_fragment(user, card_id: int, landmark_id: int) -> dict:

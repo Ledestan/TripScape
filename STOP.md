@@ -11,7 +11,7 @@
 | 能力 | 功能证据 | 结果 | artifact | artifact 状态 | 总状态 |
 |---|---|---|---|---|---|
 | S2 叙事卡片结构化 | `tests/backend/test_s2_card_contract.py` | 红→绿（`2 passed`） | A2 叙事切面矩阵 | 6 轮，最终 **4.00（4/4/4/4）通过** | **VERIFIED** |
-| S1 三层空间切换 | `e2e/narrative-journal.spec.ts` | 红→绿（`1 passed`）+ 开关关闭负向对照（含 404/401 实测） | A1 叙事动线图 | 8 轮（达上限），最终 **4.30（5/4/4/4）通过** | **VERIFIED** |
+| S1 三层空间切换 | `e2e/narrative-journal.spec.ts` | 红→绿（`1 passed`） | A1 叙事动线图 | 8 轮（达上限），最终 **4.30（5/4/4/4）通过** | **VERIFIED** |
 | S3 碎片投递与拾取 | `tests/backend/test_s3_fragment_delivery.py` + `test_s3_fragment_pickup.py` | 红→绿（`6 passed`）+ 手动 curl | A3 服务蓝图 | 7 轮，最终 **4.30（5/4/4/4）通过** | **VERIFIED** |
 | 跨能力 | （依赖 S1–S3，均已 GREEN） | — | A4 技术可信度页 | 7 轮，最终 **4.00（4/4/4/4）通过** | **VERIFIED** |
 
@@ -24,12 +24,10 @@
 - 字段快照：`docs/competition/A2-card-schema.snapshot.json`（由 `scripts/narrative_card_snapshot.py` 从真实响应生成）
 
 ### S1
-- 前置：`frontend\node_modules\.bin\tsc.cmd -b` + `vite.cmd build`；后端 `TRIPSCAPE2_ENABLED=true` 起在 `127.0.0.1:8000`
+- 前置：`frontend\node_modules\.bin\tsc.cmd -b` + `vite.cmd build`；后端直接起在 `127.0.0.1:8000`（2.0 无开关）
 - 命令：`frontend\node_modules\.bin\playwright.cmd test -c playwright.narrative.config.ts`
 - 红：`docs/competition/evidence/s1-e2e-red.log`（实现前 dist：`narrative-hud` 不存在）
 - 绿：`docs/competition/evidence/s1-e2e-green.log`（`1 passed`，最近一次 25.3s）
-- 负向对照：`docs/competition/evidence/s1-flag-off-negative-control.{log,md}`
-  （开关关闭时同一份 dist 不渲染 HUD、`/api/narrative/card/8` 返回 404）
 - 截图：`s1-journal-before-refresh.png`、`s1-journal-after-refresh.png`
 
 ### S3
@@ -69,7 +67,7 @@
 | R4 | 识别自评非泛化：26 张评测图中 23 张在索引外；索引 351 条路径 333 条磁盘缺失 | `a4-recognition-selfcheck.json` | 已在 A4 §1.2 明示，不作准确率宣传 |
 | R5 | 拾取的 409 只经 `POST /api/narrative/fragments/{id}/pick`；前端走 GET（可见拒绝 404） | `backend/api/narrative.py`；`NarrativeHud.tsx` | 已在 A1/A2 标注，未改前端 |
 | R6 | 既有 e2e 4 个失败（升级前漂移） | 见上 | 按 §5 禁止改既有测试，未修 |
-| R7 | 特征开关默认关闭；本轮所有证据均在 `DB_ENGINE=sqlite` + `TRIPSCAPE2_ENABLED=true` 下采集 | 命令见 §2 | 已记录，默认行为未变（开关关闭有专门用例与浏览器级负向对照） |
+| R7 | 本轮证据在 `DB_ENGINE=sqlite` 下采集；特征开关已于 2026-11-25 移除（2.0 成为默认行为） | 命令见 §2 | 已记录；移除开关=默认行为变更，属产品决策（用户明确要求删除 1.0） |
 | R8 | A2 最终轮（R6）留下的 3 条**措辞级**编辑建议未纳入最终版本：M7 两格注记应说明 `anonymous` 只在拾取响应里、M8 fragment 格应标"跨用户拒绝裁决"、§1 M2 承载物应补 `RS.text` | `PROGRESS.md` §3 的 A2 R6 行 | 不改变达标结论（加权 4.00、无维度 <2.5）；留给人工制版时一并处理 |
 | R9 | A1 在 §4.3 的 8 轮上限处收尾，仍留 8 条措辞/标注级残留：线型二分规则不互斥（读/回显/拒绝也画实线）、N4 标签 `{id}` 应为 `{landmark_id}`、N15⇢N15 的 409 归因应写"服务层显式检查"而非唯一约束、匿名 401 应归 `GlobalAuth`（正文 `Unauthorized` 已佐证）、§5.5"UI 能看到 409"实为 curl 证据、N9→N14 图标签缺"同用户"、N8⇢N1 箭头与"无因果"表述相左、④ 子图缺会话边界标注 | `PROGRESS.md` §3 的 A1 R8 行 | **不得再开新轮**（已达上限）；这些是制版时的措辞修正，不影响功能证据与达标结论 |
 | R10 | A3 在 R7 达标，残留 5 条制版层问题：换乘站缺 `lane`/纵深放置、rail 与 constraint 判据未写成互斥规则（stage 相等的 rail 三条）、403 的 `at` 与 `where` 口径不一、"唯一必经换乘"属过度声明、`G5→B1` 缺语义解释 | `PROGRESS.md` §3 的 A3 R7 行 | 不影响达标；制版时按 Critic 建议补 `visibility_line` 带与段落说明 |
@@ -99,7 +97,7 @@ $env:DB_ENGINE='sqlite'
 | 未修改 `.env` / 密钥 / 生产 compose / CI / 认证逻辑 / 迁移策略 | ✅（`git diff main..HEAD --name-only` 无这些路径；仅新增新应用的 migration） |
 | 未删除种子数据 | ✅（未触碰 `scripts/db/seed_*` 与 `data/`） |
 | 未跳过/删除/弱化既有测试 | ✅（`frontend/e2e/journeys.spec.ts`、`tests/backend/*` 既有文件零改动） |
-| 新行为包在 `tripScape2` 内且默认关闭 | ✅（`settings.TRIPSCAPE2_ENABLED` 默认 false；关闭时叙事端点 404、识别响应无新字段，均有测试） |
+| ~~新行为包在 `tripScape2` 内且默认关闭~~ | 已被用户指令覆盖：2026-11-25 移除开关，2.0 成为默认；原门控期的负向对照证据已随开关删除 |
 | 未引入新依赖/设计系统 | ✅（`package.json`、`requirements.txt` 未改） |
 | 未重构 §2 之外模块 | ✅（改动集中在新增叙事层 + `GlobeApp` 单点挂载 + 识别响应增量） |
 | 单文件 >300 行已写理由 | ✅（`narrative_service.py` 401 行，理由见 `PROGRESS.md` §1） |
@@ -116,3 +114,24 @@ $env:DB_ENGINE='sqlite'
 > 因此本次运行没有生成 `BLOCKED.md` / `BLOCKED_CREATIVE.md` / `ESCALATE.md`；
 > 这三份文件的缺失本身就是"未触发停止条件"的证据。
 
+## 8. 2026-11-25 变更：2.0 成为默认（开关移除 + 1.0 被取代 UI 删除）
+
+用户指令："项目升级了，不要旧版本的东西了；现在的 2.0 就是本体。"
+
+| 变更 | 说明 |
+|---|---|
+| 移除 `tripScape2` | 后端 `_gate()`、`GET /api/features`、`useFeatureFlag` 全部删除；叙事端点与 HUD 恒定可用 |
+| 删除 1.0 被取代的 UI | `LandmarkDetail.tsx`（详情浮窗）、`JournalEditWindow.tsx`（写手账）、`/journal_edit` 路由、个人主页"编辑手账" |
+| 交互重定向 | 点光点 → 资料卡 →「查看叙事」；`ts:open-detail`（消息卡/搜索结果/资料卡）→ 进入 2.0 地标叙事层 |
+| 文档同步 | `plan.md`、`PROGRESS.md` §5、`A1/A2/A4`、`.env.example` 的开关表述改为"2.0 默认" |
+
+**验证**：`tsc -b` 干净、`vitest` 6 passed、`vite build` 成功（dist 已重建）、后端 `59 passed`（原 62 − 3 个开关用例）。
+
+**仍然保留的 1.0 面（未删，因为仍被引用）**：`ts_journal` 社交域与相关页面
+（`JournalViewWindow`、个人主页手账 Tab、搜索手账 Tab、公开分享页、管理后台审核/看板，
+以及 `api/journals|comments|likes|badges|footprints|shares|dashboard|admin` 与对应模型、约 20 个测试）。
+它不是"2.0 已取代"的部分，而是仍在使用中的既有功能；整层下线需要单独一次破坏性变更（含表清理与测试下线），本轮未做。
+
+**回滚**：`git revert <本节 commit>`（开关与 1.0 两个浮窗一起恢复）；
+或 `git checkout main -- frontend/src/pages/LandmarkDetail.tsx frontend/src/pages/JournalEditWindow.tsx`
+只恢复文件，再手工恢复路由与后端 `_gate`。

@@ -1,7 +1,7 @@
 """行旅识景 TripScape
 创建日期：2025-11-24
 
-叙事应用：TripScape 2.0（feature flag tripScape2）专属的数据单元。
+叙事应用：TripScape 2.0 本体的数据单元（已无特性开关，默认启用）。
 
 四个模型对应 SPEC §2 的三条能力：
     NarrativeCard     —— S2 叙事卡片（识别成功后的结构化对象，只读持久化）
@@ -10,9 +10,8 @@
     FragmentPickup    —— S3 单次拾取记录（碎片 × 用户唯一）
 
 约束：
-1. 全部新行为由 settings.TRIPSCAPE2_ENABLED 门控，默认关闭。
-2. 卡片图片只存 URL 引用，不复制文件。
-3. 碎片对外不暴露投递者身份（匿名性由 service 层的序列化保证）。
+1. 卡片图片只存 URL 引用，不复制文件。
+2. 碎片对外不暴露投递者身份（匿名性由 service 层的序列化保证）。
 """
 
 from django.conf import settings

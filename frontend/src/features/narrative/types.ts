@@ -1,7 +1,7 @@
 /**
  * 叙事层数据类型（与后端 SPEC §2 S2 固定字段集一一对应）。
  *
- * 只在 tripScape2 开启时被渲染；字段名与 /api/narrative/* 响应完全一致，
+ * 随 2.0 默认渲染；字段名与 /api/narrative/* 响应完全一致，
  * 不做本地改名，避免与 A2 快照产生第二套口径。
  */
 export interface NarrativeGeo {

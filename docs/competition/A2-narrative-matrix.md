@@ -64,7 +64,7 @@
 | M6 | 卡片身份与命名 **[复合行]** | `id` + `landmarkId` + `title` + `source` | `NarrativeCard.as_card()`；`title`←`_title`（地标名｜国家）；`source`←识别引擎名或 `landmark` | 整数 / 整数 / 字符串 / 字符串 |
 | M7 | 匿名性 | `ANON` | `fragment_payload` 固定 `anonymous=true`；库内 `delivered_by` 只用于额度与自投排除 | 布尔 + 响应无作者键 |
 | M8 | 单次拾取 | `PICK` | `FragmentPickup`（`unique_together=(fragment,user)`）+ `pick_fragment_by_id` 显式 409 | 唯一约束 / 二次拾取 409（值不在 payload，由拒绝裁决） |
-| M9 | 投递额度 | `QUOTA` | `fragment_limit()`（读 `TRIPSCAPE2_MAX_FRAGMENTS_PER_LANDMARK`，默认 3） | 整数额度 / 第 4 次 409 / 成功响应回报 `remaining` |
+| M9 | 投递额度 | `QUOTA` | `fragment_limit()`（读 `NARRATIVE_MAX_FRAGMENTS_PER_LANDMARK`，默认 3） | 整数额度 / 第 4 次 409 / 成功响应回报 `remaining` |
 | M10 | 时间刻度 **[复合行：三张表]** | `TS` | `ts_narrative_card.created_at`（扩展字段 `createdAt`）、`ts_narrative_journal_card.added_at`、`ts_narrative_fragment.created_at` | ISO 时间戳（三个来源分属三张表） |
 
 ## 2. 矩阵主体

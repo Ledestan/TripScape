@@ -75,12 +75,9 @@ env = environ.Env(
     # ---------------- JWT ----------------
     JWT_SECRET=(str, "tripscape-jwt-dev-secret"),
     JWT_EXPIRE_HOURS=(int, 72),
-    # ---------------- TripScape 2.0 特性开关 ----------------
-    # 默认关闭：新叙事层（S1/S2/S3）全部行为包在该开关内，
-    # 关闭时现有接口与默认行为逐字节不变（SPEC §5 硬边界）。
-    TRIPSCAPE2_ENABLED=(bool, False),
-    # S3：同一用户对同一地标的碎片投递上限（SPEC §2 S3）
-    TRIPSCAPE2_MAX_FRAGMENTS_PER_LANDMARK=(int, 3),
+    # ------ 叙事层（TripScape 2.0 本体，2026-11 起默认启用） ------
+    # 同一用户对同一地标的碎片投递上限（SPEC §2 S3）
+    NARRATIVE_MAX_FRAGMENTS_PER_LANDMARK=(int, 3),
 )
 
 # 优先读取仓库根 .env（存在即读）
@@ -118,7 +115,7 @@ LOCAL_APPS = [
     "apps.shares",
     "apps.dashboard",
     "apps.admin_panel",
-    # TripScape 2.0 叙事层（feature flag tripScape2 门控）
+    # TripScape 2.0 叙事层（2.0 本体，默认启用，无开关）
     "apps.narrative",
 ]
 
@@ -257,9 +254,8 @@ os.environ.setdefault("HF_ENDPOINT", env("HF_ENDPOINT"))
 JWT_SECRET = env("JWT_SECRET")
 JWT_EXPIRE_HOURS = env("JWT_EXPIRE_HOURS")
 
-# TripScape 2.0 特性开关（默认关闭；见 .env 之外的部署环境变量）
-TRIPSCAPE2_ENABLED = env("TRIPSCAPE2_ENABLED")
-TRIPSCAPE2_MAX_FRAGMENTS_PER_LANDMARK = env("TRIPSCAPE2_MAX_FRAGMENTS_PER_LANDMARK")
+# 叙事层参数（TripScape 2.0 本体，默认启用）
+NARRATIVE_MAX_FRAGMENTS_PER_LANDMARK = env("NARRATIVE_MAX_FRAGMENTS_PER_LANDMARK")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

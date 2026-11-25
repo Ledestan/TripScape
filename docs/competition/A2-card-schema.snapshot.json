@@ -1,10 +1,10 @@
 {
   "artifact": "A2-card-schema.snapshot",
-  "generatedAt": "2026-11-24T16:34:43+00:00",
+  "generatedAt": "2026-11-25T02:55:37+00:00",
   "spec": "SPEC.md §2 S2（固定字段集）/ §3.3（契约测试 + 字段快照）",
   "source": {
     "endpoint": "GET /api/narrative/card/{landmark_id}",
-    "recognitionFieldSource": "POST /api/recognition/recognize（tripScape2 开启时并入同一字段集）",
+    "recognitionFieldSource": "POST /api/recognition/recognize（识别成功即并入同一字段集）",
     "landmark": {
       "id": 8,
       "targetId": "EiffelTower",

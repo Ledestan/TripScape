@@ -48,7 +48,7 @@ def _validate(file) -> bytes:
 def recognize_sync(request, image: UploadedFile = None, photo_url: str = ""):
     """同步图片识别（返回 top-3 与低置信度候选）。
 
-    tripScape2 开启时，成功响应额外携带叙事卡片字段（SPEC §2 S2）：
+    成功响应额外携带叙事卡片字段（SPEC §2 S2；2.0 默认行为）：
         id / landmarkId / photo / title / geo / timeFragments /
         ragSnippets / confidence / source
     开关关闭时响应与既有行为完全一致（新增键不出现）。
@@ -62,8 +62,8 @@ def recognize_sync(request, image: UploadedFile = None, photo_url: str = ""):
     result = recognizer.recognize_image(data, user=user)
     if not result.get("success"):
         return result
-    if getattr(settings, "TRIPSCAPE2_ENABLED", False):
-        _attach_narrative_card(result, user=user, photo_url=photo_url)
+    # 2.0 本体：识别成功即附带叙事卡片（组装失败不影响识别结果）
+    _attach_narrative_card(result, user=user, photo_url=photo_url)
     return result
 
 

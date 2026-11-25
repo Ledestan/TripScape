@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
 
 import { useThemeStore } from "@/stores/theme";
@@ -6,7 +6,6 @@ import LoadingScreen from "@/components/LoadingScreen";
 
 // 地球 + 浮窗类页面（全部功能在浮窗内，无独立网页版）
 const GlobeApp = lazy(() => import("@/pages/GlobeApp"));
-const JournalEditWindow = lazy(() => import("@/pages/JournalEditWindow"));
 const SearchWindow = lazy(() => import("@/features/search/SearchWindow"));
 
 // 独立页（仅分享，供站外打开）
@@ -39,7 +38,6 @@ export default function App() {
           <Route path="/login" element={<LoginRoute />} />
           <Route path="/landmarks/:id" element={<GlobeApp />} />
           <Route path="/journals/:id" element={<GlobeApp />} />
-          <Route path="/journal_edit" element={<JournalEditRoute />} />
           <Route path="/search" element={<SearchRoute />} />
 
           {/* 旧网页版路由统一回地球 */}
@@ -62,37 +60,16 @@ function LoginRoute() {
   return <GlobeApp />;
 }
 
-/** /journal_edit：地球 + 手账浮窗（?landmark_id= 预选） */
-function JournalEditRoute() {
-  const [params] = useSearchParams();
-  const lmId = Number(params.get("landmark_id") || 0) || null;
-  const [open, setOpen] = useState(true);
-
-  return (
-    <div className="relative h-screen w-full">
-      <GlobeApp />
-      {open && lmId !== null && (
-        <Suspense fallback={null}>
-          <JournalEditWindow presetLandmarkId={lmId} onClose={() => setOpen(false)} />
-        </Suspense>
-      )}
-    </div>
-  );
-}
-
 /** /search：地球 + 搜索浮窗（?q= 预填） */
 function SearchRoute() {
   const [params] = useSearchParams();
-  const [open, setOpen] = useState(true);
 
   return (
     <div className="relative h-screen w-full">
       <GlobeApp />
-      {open && (
-        <Suspense fallback={null}>
-          <SearchWindow initialQuery={params.get("q") || ""} onClose={() => setOpen(false)} />
-        </Suspense>
-      )}
+      <Suspense fallback={null}>
+        <SearchWindow initialQuery={params.get("q") || ""} onClose={() => undefined} />
+      </Suspense>
     </div>
   );
 }

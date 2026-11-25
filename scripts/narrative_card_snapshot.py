@@ -90,8 +90,7 @@ def main():
     if landmark is None:
         raise SystemExit(f"地标不存在: {args.landmark}（不虚构地标，请先确认种子数据）")
 
-    with override_settings(TRIPSCAPE2_ENABLED=True):
-        resp = Client().get(f"/api/narrative/card/{landmark.id}")
+    resp = Client().get(f"/api/narrative/card/{landmark.id}")
     if resp.status_code != 200:
         raise SystemExit(f"端点返回 {resp.status_code}: {resp.content[:300]!r}")
 
@@ -123,7 +122,7 @@ def main():
         "spec": "SPEC.md §2 S2（固定字段集）/ §3.3（契约测试 + 字段快照）",
         "source": {
             "endpoint": "GET /api/narrative/card/{landmark_id}",
-            "recognitionFieldSource": "POST /api/recognition/recognize（tripScape2 开启时并入同一字段集）",
+            "recognitionFieldSource": "POST /api/recognition/recognize（识别成功即并入同一字段集）",
             "landmark": {
                 "id": landmark.id,
                 "targetId": landmark.target_id,

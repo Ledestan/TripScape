@@ -2,14 +2,13 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  MapPin, NotebookPen, MessageSquare, Star, Pencil, Compass, Award, Eye, EyeOff, Trash2,
+  MapPin, NotebookPen, MessageSquare, Star, Compass, Award, Eye, EyeOff, Trash2,
 } from "lucide-react";
 
 import { api, errMessage } from "@/api/client";
 import { useAuthStore } from "@/stores/auth";
 import { globeBus } from "@/features/globe/Globe";
 import { FloatingWindow } from "@/components/FloatingWindow";
-import JournalEditWindow from "@/pages/JournalEditWindow";
 import { JournalViewWindow } from "@/layouts/JournalViewWindow";
 
 /* ================================================================== */
@@ -37,7 +36,6 @@ export default function ProfileWindow({ onClose }: { onClose: () => void }) {
   const { user } = useAuthStore();
   const [tab, setTab] = useState<"footprints" | "journals" | "comments" | "favorites" | "badges">("footprints");
   const [viewJournal, setViewJournal] = useState<number | null>(null);
-  const [editJournal, setEditJournal] = useState<{ id?: number; landmarkId?: number } | null>(null);
 
   /* 足迹隐藏/显示 */
   const toggleFootprint = async (lmId: number) => {
@@ -175,12 +173,6 @@ export default function ProfileWindow({ onClose }: { onClose: () => void }) {
                             <FlyButton onClick={() => flyTo(j.lat!, j.lon!, j.landmark_id)} />
                           )}
                           <button
-                            onClick={() => setEditJournal({ id: j.id })}
-                            className="flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs transition hover:bg-accent"
-                          >
-                            <Pencil className="h-3 w-3" /> 编辑
-                          </button>
-                          <button
                             onClick={() => {
                               if (confirm(`删除手账《${j.title}》？`)) delJournal.mutate(j.id);
                             }}
@@ -284,18 +276,8 @@ export default function ProfileWindow({ onClose }: { onClose: () => void }) {
         )}
       </FloatingWindow>
 
-      {/* 叠浮窗：查看手账 / 编辑手账（不关闭个人主页） */}
+      {/* 叠浮窗：查看手账（不关闭个人主页） */}
       {viewJournal !== null && <JournalViewWindow journalId={viewJournal} onClose={() => setViewJournal(null)} />}
-      {editJournal && (
-        <JournalEditWindow
-          presetJournalId={editJournal.id}
-          presetLandmarkId={editJournal.landmarkId}
-          onClose={() => {
-            setEditJournal(null);
-            qc.invalidateQueries({ queryKey: ["profile"] });
-          }}
-        />
-      )}
     </>
   );
 }

@@ -5,7 +5,6 @@ import { ArrowLeft, BookOpen, Layers } from "lucide-react";
 
 import { api, errMessage } from "@/api/client";
 import { useAuthStore } from "@/stores/auth";
-import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { useNarrativeStore } from "@/stores/narrative";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
@@ -28,13 +27,11 @@ const LAYERS = [
 /**
  * TripScape 2.0 叙事层（SPEC §2 S1 三层空间切换）。
  *
- * 门控：tripScape2 关闭时本组件返回 null——默认行为与升级前一致。
+ * 2.0 本体：默认渲染，无特性开关。
  * 三层用底部叙事轨道呈现：地球层（未被讲述）→ 地标层（正在被讲述）
  * → 手账层（已沉淀），层间可感知、可返回。
  */
 export default function NarrativeHud() {
-  const enabled = useFeatureFlag("tripScape2");
-  if (!enabled) return null;
   return <NarrativeRail />;
 }
 

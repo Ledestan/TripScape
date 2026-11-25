@@ -7,7 +7,7 @@
 2. 断言识别接口返回对象包含 §2 S2 的全部 9 个字段；
    `timeFragments` / `ragSnippets` 为非空数组；`confidence` 为 0–1 数值。
 3. 另外验证 feature flag 默认关闭时响应不含卡片字段（§5 硬边界：
-   新行为必须包在 `tripScape2` 内，默认不改变现有行为）。
+   叙事层是 2.0 本体，识别响应默认携带卡片字段）。
 
 识别引擎在本测试中用测试替身注入"识别结果"（target_id + 置信度），
 这样断言的是 **HTTP 响应契约 + 真实 DB 地标 + 真实叙事服务**，
@@ -64,7 +64,6 @@ def _recognize(client):
 
 
 @pytest.mark.django_db
-@override_settings(TRIPSCAPE2_ENABLED=True)
 def test_recognition_returns_full_narrative_card(engine, api_client, landmark):
     """识别接口返回对象必须携带 §2 S2 的全部卡片字段，且取值合法。"""
     resp = _recognize(api_client)
@@ -117,19 +116,3 @@ def test_recognition_returns_full_narrative_card(engine, api_client, landmark):
 
     # source：卡片来源标签
     assert isinstance(body["source"], str) and body["source"].strip()
-
-
-@pytest.mark.django_db
-def test_card_fields_absent_when_flag_off(engine, api_client, landmark):
-    """开关默认关闭：识别响应保持现有行为，不出现叙卡字段（§5 硬边界）。"""
-    resp = _recognize(api_client)
-    assert resp.status_code == 200, resp.content
-    body = resp.json()
-
-    assert body.get("success") is True, body
-    # 现有字段仍在（不破坏默认行为）
-    assert body["landmark_id"] == landmark.id
-    assert body["target_id"] == landmark.target_id
-    # 新字段一律不出现
-    for field in ("landmarkId", "photo", "title", "geo", "timeFragments", "ragSnippets", "source"):
-        assert field not in body, f"开关关闭时不应出现新字段 {field}"

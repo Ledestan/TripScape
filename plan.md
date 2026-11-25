@@ -22,13 +22,13 @@ artifact 顺序：A2（随 S2）→ A1（随 S1）→ A3（随 S3）→ A4（收
 | 项 | 内容 | 说明 |
 |---|---|---|
 | 分支 | `git checkout -b upgrade-2.0-nightly` | §5 硬边界 |
-| 特性开关 | `backend/config/settings/base.py` 新增 `TRIPSCAPE2_ENABLED`（`env` 默认 `False`） | §5"所有新行为用 feature flag `tripScape2` 包住，默认关闭"。新 API 在开关关闭时一律 404，不改变现有默认行为 |
-| 开关发现 | `backend/api/features.py`：`GET /api/features` 返回 `{"tripScape2": bool}` | 前端运行期读取开关，避免把开关编译进 dist |
-| 前端读开关 | `frontend/src/hooks/useFeatureFlag.ts` | 只在开关为真时挂载叙事层 UI |
+| 特性开关 | ~~`TRIPSCAPE2_ENABLED`~~（2026-11-25 已移除） | 门控期用于隔离 2.0 行为；用户确认"2.0 就是本体"后整体移除 |
+| 开关发现 | ~~`GET /api/features`~~（已随开关删除） | 门控期的运行期发现机制，2.0 默认后不需要 |
+| 前端读开关 | ~~`useFeatureFlag.ts`~~（已删除） | 叙事层 UI 默认挂载 |
 | 新增应用 | `backend/apps/narrative/`（models + migrations/0001_initial） | 叙事卡片 / 手账加入记录 / 叙事碎片 / 拾取记录；沿用 Django migrations 既有策略，不改迁移机制 |
 | 新增服务 | `backend/services/narrative_service.py` | 卡片组装（时间碎片、RAG 检索片段）、手账持久化、投递限额、单次拾取 |
-| 新增 API | `backend/api/narrative.py`，并在 `backend/api/__init__.py` 挂载 `/api/narrative` | 全部端点开关门控 |
-| 现有 API 增量 | `backend/api/recognition.py`：开关开启时把卡片字段并入识别响应 | 纯增量键，开关关闭时响应与现在逐字节一致 |
+| 新增 API | `backend/api/narrative.py`，并在 `backend/api/__init__.py` 挂载 `/api/narrative` | 2.0 本体，无门控 |
+| 现有 API 增量 | `backend/api/recognition.py`：识别成功即把卡片字段并入响应 | 纯增量键 |
 
 **数据库**：仅新增 4 张 `ts_narrative_*` 表（Django migration），不删除、不修改种子数据，不改现有表结构。
 
@@ -111,7 +111,7 @@ MySQL 服务在本机未启动；`.env` 属 §5 禁改文件，因此**用环境
 $env:DB_ENGINE='sqlite'; .venv\Scripts\python.exe -m pytest tests/backend -v
 
 # 开发服务器（e2e 用；dist 由 pnpm build 产出）
-$env:DB_ENGINE='sqlite'; $env:TRIPSCAPE2_ENABLED='true'
+$env:DB_ENGINE='sqlite'
 .venv\Scripts\python.exe backend\manage.py runserver 127.0.0.1:8000 --noreload
 
 # 前端构建 + e2e

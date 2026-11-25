@@ -9,7 +9,7 @@
 | 能力 | 功能证据 | artifact | 状态 |
 |---|---|---|---|
 | S2 叙事卡片结构化 | **GREEN**（`test_s2_card_contract.py` 2 passed） | A2：R1 3.00 → R2 3.25 → R3 4.00 → R4 3.75 → R5 4.00 → **R6 4.00（4/4/4/4）** | **VERIFIED** |
-| S1 三层空间切换 | **GREEN**（`e2e/narrative-journal.spec.ts` 1 passed + 开关关闭负向对照） | A1：R1 3.00 → R2 3.75 → R3 3.75 → R4 4.00 → R5 4.55 → R6 4.00 → R7 4.00 → **R8 4.30（5/4/4/4）** | **VERIFIED** |
+| S1 三层空间切换 | **GREEN**（`e2e/narrative-journal.spec.ts` 1 passed） | A1：R1 3.00 → R2 3.75 → R3 3.75 → R4 4.00 → R5 4.55 → R6 4.00 → R7 4.00 → **R8 4.30（5/4/4/4）** | **VERIFIED** |
 | S3 碎片投递与拾取 | **GREEN**（6 passed + 手动 curl） | A3：R1 3.20 → R2 3.75 → R3 3.75 → R4 3.70 → R5 3.75 → R6 4.50 → **R7 4.30（5/4/4/4）** | **VERIFIED** |
 | A4 技术可信度页（跨能力） | 证据：`a4-recognition-selfcheck.json` + `test_a4_low_confidence_gate.py` 2 passed | A4：R1 3.05 → R2 3.80 → R3 3.75 → R4 3.20 → R5 4.00 → R6 3.75 → **R7 4.00（4/4/4/4）** | **VERIFIED** |
 
@@ -30,7 +30,7 @@
 ## 2. 能力执行记录
 ### S2 叙事卡片结构化
 
-- 功能证据：`tests/backend/test_s2_card_contract.py`（2 个用例：契约成立 + 开关关闭时新字段不出现）
+- 功能证据：`tests/backend/test_s2_card_contract.py`（1 个用例：识别响应携带完整卡片契约）
 - 证据命令：`$env:DB_ENGINE='sqlite'; .venv\Scripts\python.exe -m pytest tests/backend/test_s2_card_contract.py -v`
 - 红（先写证据，实现前）：`docs/competition/evidence/s2-contract-red.log`
   —— 在 `HEAD=be57b70` 的独立 worktree 上运行：`1 failed, 1 passed`，
@@ -40,7 +40,7 @@
   从真实 HTTP 响应生成；EiffelTower 卡片 timeFragments=3 / ragSnippets=3）。
 - 实现要点：`apps/narrative`（4 表，Django migration）、`services/narrative_service.py`
   （时间碎片取自文章库真实章节句、RAG 片段取自 `ArticleIndex.search` 真实检索）、
-  `api/recognition.py`（开关开启时并入字段集）、`api/features.py`（`GET /api/features`）。
+  `api/recognition.py`（识别成功即并入字段集）。
 - 状态：功能证据 **GREEN**；artifact A2 待 §4 循环。
 
 ### S1 三层空间切换
@@ -50,7 +50,7 @@
   - 构建：`frontend\node_modules\.bin\tsc.cmd -b` + `frontend\node_modules\.bin\vite.cmd build`
     （`corepack pnpm` 在本机长时间无输出、节点进程空闲，改用本地二进制等价执行 `pnpm build` 的两步）
   - 运行：`frontend\node_modules\.bin\playwright.cmd test -c playwright.narrative.config.ts`
-  - 服务：`$env:DB_ENGINE='sqlite'; $env:TRIPSCAPE2_ENABLED='true'; .venv\Scripts\python.exe backend\manage.py runserver 127.0.0.1:8000 --noreload`
+  - 服务：`$env:DB_ENGINE='sqlite'; .venv\Scripts\python.exe backend\manage.py runserver 127.0.0.1:8000 --noreload`
 - 红（实现前）：`docs/competition/evidence/s1-e2e-red.log`
   —— 用**实现前的 dist**（临时移除叙事层组件与 GlobeApp 挂载后重建）运行最终版测试：
   `1 failed`，失败点 `expect(getByTestId("narrative-hud")).toBeVisible()` 超时（叙事层不存在）。
@@ -60,8 +60,7 @@
 - 实现要点：
   - `frontend/src/stores/narrative.ts`：三层状态机（globe→landmark→journal，`back()` 逐层返回）
   - `frontend/src/features/narrative/{NarrativeHud,LandmarkNarrativePanel,JournalCardsPanel}.tsx`
-  - `frontend/src/hooks/useFeatureFlag.ts`：运行期读取 `GET /api/features`
-  - `frontend/src/pages/GlobeApp.tsx`：单点挂载 `<NarrativeHud />`（开关关闭时组件返回 null）
+  - `frontend/src/pages/GlobeApp.tsx`：单点挂载 `<NarrativeHud />`（默认渲染）
   - 持久化走后端：`POST /api/narrative/journal/cards` / `GET /api/narrative/journal`
     （刷新后从服务端取回，证明的是持久化而非前端内存）
 - 状态：功能证据 **GREEN**；artifact A1 待 §4 循环。
@@ -69,8 +68,8 @@
 ### S3 叙事碎片投递与拾取
 
 - 功能证据：
-  - 投递侧：`tests/backend/test_s3_fragment_delivery.py`（3 个用例：前 3 次成功+第 4 次 409、非手账卡片 403、开关关闭 404）
-  - 拾取侧：`tests/backend/test_s3_fragment_pickup.py`（3 个用例：来源卡片摘要+二次拾取 409、自投不可拾取、开关关闭 404）
+  - 投递侧：`tests/backend/test_s3_fragment_delivery.py`（2 个用例：前 3 次成功+第 4 次 409、非手账卡片 403）
+  - 拾取侧：`tests/backend/test_s3_fragment_pickup.py`（3 个用例：来源卡片摘要+二次拾取 409、自投不可拾取、按 ID 拾取 409）
 - 证据命令：`$env:DB_ENGINE='sqlite'; .venv\Scripts\python.exe -m pytest tests/backend/test_s3_fragment_delivery.py tests/backend/test_s3_fragment_pickup.py -v`
 - 红：`docs/competition/evidence/s3-functional-red.log` —— `4 failed, 2 passed`
   （2 个 passed 是"开关关闭 → 404"的门控用例，本就应通过）
@@ -125,4 +124,63 @@
 
 | commit | 内容 |
 |---|---|
-| （待记录） | — |
+| e675f75 | feat(s2)：叙事卡片结构化契约 + `tripScape2` 开关门控（功能证据由红转绿） |
+| 8bfaab4 | docs(a2)：叙事切面矩阵 v1（Creator R1）+ 评分记录 |
+| df69a6f | feat(s1)：三层空间切换与手账持久化，e2e 由红转绿 |
+| 7c57e8d | feat(s3)：碎片投递限额与单次拾取（红→绿）+ A2 v2 |
+| 232e560 | docs(a1)：叙事动线图 v1（Creator R1）+ A2-R1/R2、A1-R1 评分 |
+| 922a8d9 | docs(a1,a3)：动线图 v2 与服务蓝图 v2（Creator R2） |
+| 99fb0ae | docs(a2)：矩阵 v4（R3 通过后修正 11 处判定） |
+| 7d67276 | docs(a1,a3,a4)：第三轮修订（Creator R3/R3/R2） |
+| 9335e88 | test(regression)：全量后端 62 passed + vitest 6 passed；既有 e2e 4 failed（升级前漂移，附分析） |
+| 4f71a5e | docs(a2)：矩阵 v5（R4 通过后修正机制行判定规则） |
+| 6e5f392 | docs(a1,a3,a4)：第四轮修订（Creator R4/R4/R3）+ 自评脚本 first 口径修正 |
+| 82f43be | docs(a2)：矩阵 v6（R5 通过后统一机制行判定）+ 开关关闭负向对照证据 |
+| 14b19ca | chore：删除评审子代理遗留的临时脚本与非交付物 |
+| 6687071 | docs(a1,a3,a4)：第五轮修订（Creator R5/R5/R4） |
+| a15071b | docs(a1,a3,a4)：通过后收尾修订（A1 v6 / A3 v6 / A4 v5） |
+| e5fbaea | docs(a1,a3,a4)：第七轮收尾（A1 v7 / A3 v7 / A4 v6） |
+| ffce72f | docs(a1,a4)：第八轮修订（A1 v8 / A4 v7）+ 关闭态匿名 401 实测证据 |
+| f3be048 | docs(progress,stop)：记录四个 artifact 最终评分与收敛 |
+| 68b0052 | docs(stop)：补充未触发的停止条件说明 |
+
+## 5. 2026-11-25：2.0 升为默认（移除 tripScape2 开关，删除 1.0 被取代的 UI）
+
+用户指令："项目升级了，不要旧版本的东西了；现在的 2.0 就是本体。" 据此做了两件事。
+
+### 5.1 开关移除（2.0 成为默认行为）
+
+| 位置 | 变更 |
+|---|---|
+| `backend/config/settings/base.py` | 删除 `TRIPSCAPE2_ENABLED`；`TRIPSCAPE2_MAX_FRAGMENTS_PER_LANDMARK` → `NARRATIVE_MAX_FRAGMENTS_PER_LANDMARK` |
+| `backend/api/narrative.py` | 删除 `_gate()` 与 6 处调用；端点恒定可用 |
+| `backend/api/features.py` | 删除该文件与 `/api/features` 挂载 |
+| `backend/api/recognition.py` | 识别成功即 `_attach_narrative_card()`，不再判开关 |
+| `frontend/src/hooks/useFeatureFlag.ts` | 删除 |
+| `frontend/src/features/narrative/NarrativeHud.tsx` | 默认渲染，不再返回 null |
+| `tests/backend/test_s{2,3}_*.py` | 删除 3 个"开关关闭"用例与 `override_settings` 装饰器 |
+| `.env.example` | 删 `TRIPSCAPE2_*`，保留 `NARRATIVE_MAX_FRAGMENTS_PER_LANDMARK=3` |
+| `docs/competition/evidence/s1-flag-off-negative-control.{md,log}` | 删除（描述的行为已不存在） |
+
+### 5.2 删除 1.0 被 2.0 取代的 UI
+
+| 删除 | 替代 |
+|---|---|
+| `frontend/src/pages/LandmarkDetail.tsx`（地标详情浮窗：评论/手账 Tab、点赞、举报入口） | 点光点 → 弹性资料卡 →「查看叙事」进入 2.0 地标叙事层；搜索结果/消息卡/资料卡的 `ts:open-detail` 事件统一改为进入叙事层 |
+| `frontend/src/pages/JournalEditWindow.tsx`（1.0 手账编辑器，"写手账"） | 2.0 手账 = 叙事卡片加入手账（`ts_narrative_journal_card`，只读） |
+| `/journal_edit` 路由与 `JournalEditRoute`（`App.tsx`） | 无 |
+| 个人主页的「编辑手账」按钮（`ProfileWindow.tsx`） | 保留查看/删除；新叙事卡片走底部轨道 |
+
+**验证**：`tsc -b` 干净；`vitest run` 6 passed；`vite build` 成功（dist 已重建）；后端全量 **59 passed**（62 − 3 个开关用例）。
+**未做**：没有重启任何服务（按用户要求）；已打开的桌面窗口需要重新启动才会用上新 dist 与无开关后端。
+
+### 5.3 仍然保留的 1.0 后端/页面（待确认后整体删除）
+
+`ts_journal` 及其社交域仍在运行，因为下列页面还在读它：
+`JournalViewWindow`（查看历史手账）、`ProfileWindow` / `UserProfileWindow`（手账 Tab）、
+`SearchWindow`（手账 Tab）、`Share`（公开分享页）、`AdminPanelWindow`（审核/看板）、
+以及 `api/journals.py`、`comments.py`、`likes.py`、`badges.py`、`footprints.py`、`shares.py`、`dashboard.py`、
+`admin*.py` 与 `apps/journals`、`apps/comments` 等模型（约 20 个后端测试依赖它们）。
+
+删除这一整层会连带删表与删测试，属于破坏性变更，故本轮**没有**动它；
+若要执行，需要一次单独的"1.0 后端下线"变更（含表清理与测试下线）。

@@ -19,7 +19,7 @@ flowchart LR
     I8["响应 success=true<br/>候选为附加区块（非拒答）"]
     I9["MessageBar 候选列表<br/>frontend/src/features/qa/MessageBar.tsx:83"]
   end
-  subgraph FRAG["碎片链（三个端点均由 tripScape2 门控：关闭时 404，api/narrative.py:32-35）"]
+  subgraph FRAG["碎片链（2.0 本体，无开关；端点见 api/narrative.py）"]
     F1["JournalCard（用户 A 的手账）<br/>ts_narrative_journal_card"]
     F2["投递（用户 A，t1）<br/>deliver_fragment：同用户×同地标 ≤3，第 4 次 409"]
     F3["NarrativeFragment（投递产物）<br/>anonymous=true，响应无 delivered_by"]
@@ -32,7 +32,7 @@ flowchart LR
   I3 --> I5
   I4 --> I5
   I5 --> I6 --> I7 --> I8 --> I9
-  I7 -->|"tripScape2 开启：_attach_narrative_card"| CARD["NarrativeCard<br/>ts_narrative_card"]
+  I7 -->|"识别成功即 _attach_narrative_card（2.0 默认）"| CARD["NarrativeCard<br/>ts_narrative_card"]
   CARD -->|"POST /api/narrative/journal/cards<br/>add_card_to_journal（get_or_create）"| F1
   F1 --> F2 --> F3 --> F4 --> F5
 ```

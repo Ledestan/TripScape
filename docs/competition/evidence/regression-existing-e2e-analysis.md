@@ -18,7 +18,7 @@
    管理后台浮窗）在本轮 `git diff main..HEAD` 中**均未被修改**
    （`git diff --name-only main..HEAD | grep -E 'MessageBar|DynamicIslandSearch|LoginWindow|AdminPanel|SearchWindow'` 无输出）。
 2. 失败原因是"页面上不存在该元素"，不是"点击/断言流程被打断"；
-   本轮新增的叙事层 HUD 只在 `tripScape2` 开启时渲染，且位于底部中央，
+   本轮新增的叙事层 HUD 常驻底部中央（当时由 `tripScape2` 开关控制，现已随 2.0 默认化移除），
    没有覆盖上述四个定位器所在的区域（登录浮窗、灵动岛、管理后台登录页）。
 3. 同一套件中仍然通过的 3 个用例（`登录页可达`、`无效分享链接`、`搜索页可达`）
    说明站点本身可访问、SPA 可加载。

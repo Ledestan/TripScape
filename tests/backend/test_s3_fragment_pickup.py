@@ -52,7 +52,6 @@ def picker_token(picker):
 
 
 @pytest.mark.django_db
-@override_settings(TRIPSCAPE2_ENABLED=True)
 def test_pick_returns_source_card_summary_and_rejects_second_pick(
     api_client, user_token, picker_token, landmark
 ):
@@ -94,21 +93,11 @@ def test_pick_returns_source_card_summary_and_rejects_second_pick(
 
 
 @pytest.mark.django_db
-@override_settings(TRIPSCAPE2_ENABLED=True)
 def test_own_fragment_is_not_pickable(api_client, user_token, landmark):
     """自己投递的碎片不出现在自己的拾取池（叙事必须来自陌生人）。"""
     card_id = _card_and_journal(api_client, user_token, landmark.id)
     _deliver(api_client, user_token, card_id, landmark.id)
 
-    resp = api_client.json_get(
-        f"/api/narrative/fragments/pick?landmark_id={landmark.id}", token=user_token
-    )
-    assert resp.status_code == 404, resp.content
-
-
-@pytest.mark.django_db
-def test_pick_endpoint_absent_when_flag_off(api_client, user_token, landmark):
-    """开关关闭：拾取端点不存在。"""
     resp = api_client.json_get(
         f"/api/narrative/fragments/pick?landmark_id={landmark.id}", token=user_token
     )

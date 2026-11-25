@@ -38,7 +38,6 @@ def _deliver(client, token, card_id: int, landmark_id: int):
 
 
 @pytest.mark.django_db
-@override_settings(TRIPSCAPE2_ENABLED=True)
 def test_first_three_deliveries_ok_and_fourth_rejected(api_client, user_token, landmark):
     """前 3 次成功、第 4 次 409，且响应/库内计数一致。"""
     card_id = _make_card_id(api_client, user_token, landmark.id)
@@ -64,19 +63,9 @@ def test_first_three_deliveries_ok_and_fourth_rejected(api_client, user_token, l
 
 
 @pytest.mark.django_db
-@override_settings(TRIPSCAPE2_ENABLED=True)
 def test_deliver_rejects_card_not_in_journal(api_client, user_token, landmark):
     """只能投递手账中的卡片（未沉淀的卡片不能直接抛给陌生人）。"""
     card_id = _make_card_id(api_client, user_token, landmark.id)
     resp = _deliver(api_client, user_token, card_id, landmark.id)
     assert resp.status_code == 403, resp.content
     assert "手账" in resp.json().get("detail", "")
-
-
-@pytest.mark.django_db
-def test_deliver_endpoint_absent_when_flag_off(api_client, user_token, landmark):
-    """开关关闭：端点按不存在处理（不改变现有默认行为）。"""
-    # 开关关闭时连卡片端点也不可用，故这里直接用任意 card_id 验证路由门控
-    card_id = 1
-    resp = _deliver(api_client, user_token, card_id, landmark.id)
-    assert resp.status_code == 404, resp.content

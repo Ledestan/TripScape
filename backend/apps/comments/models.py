@@ -20,6 +20,16 @@ class Comment(models.Model):
     landmark = models.ForeignKey(
         Landmark,
         verbose_name="地标",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="comments",
+    )
+    journal = models.ForeignKey(
+        "journals.Journal",
+        verbose_name="手账",
+        null=True,
+        blank=True,
         on_delete=models.CASCADE,
         related_name="comments",
     )
@@ -41,7 +51,10 @@ class Comment(models.Model):
     class Meta:
         db_table = "ts_comment"
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["landmark", "-created_at"])]
+        indexes = [
+            models.Index(fields=["landmark", "-created_at"]),
+            models.Index(fields=["journal", "-created_at"]),
+        ]
 
     def as_dict(self):
         return {
@@ -54,6 +67,8 @@ class Comment(models.Model):
             },
             "landmark_id": self.landmark_id,
             "landmark_name": self.landmark.name if self.landmark_id else "",
+            "journal_id": self.journal_id,
+            "journal_title": self.journal.title if self.journal_id else "",
             "parent_id": self.parent_id,
             "content": self.content,
             "created_at": self.created_at.isoformat(),

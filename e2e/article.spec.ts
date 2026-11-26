@@ -38,19 +38,19 @@ test.describe("S4 文章详情页", () => {
 
     // 评论
     const content = `文章评论 ${Date.now()}`;
-    await page.getByTestId("article-comment-input").fill(content);
+    await page.getByTestId("comment-input").fill(content);
     await page.getByRole("button", { name: "发送" }).click();
     await expect(page.getByText(content)).toBeVisible({ timeout: 10_000 });
 
     // 回复（限定在自己刚发的评论块内，避免命中历史评论）
-    const mine = page.getByTestId("article-comment").first();
+    const mine = page.getByTestId("comment-item").first();
     await mine.getByRole("button", { name: "回复" }).click();
-    await expect(page.getByTestId("article-comment-input")).toHaveAttribute(
+    await expect(page.getByTestId("comment-input")).toHaveAttribute(
       "placeholder",
       /回复 @/
     );
     const replyText = `回复 ${Date.now()}`;
-    await page.getByTestId("article-comment-input").fill(replyText);
+    await page.getByTestId("comment-input").fill(replyText);
     await page.getByRole("button", { name: "发送" }).click();
     await expect(page.getByText(replyText)).toBeVisible({ timeout: 10_000 });
 

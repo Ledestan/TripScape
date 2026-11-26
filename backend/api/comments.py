@@ -23,8 +23,9 @@ router = Router()
 
 
 class CommentIn(Schema):
-    landmark_id: int
-    content: str
+    landmark_id: int = None
+    journal_id: int = None
+    content: str = ""
     parent_id: int = None
 
 
@@ -38,30 +39,69 @@ class ReportIn(Schema):
 # ----------------------------------------------------------------------
 # 具体路径路由（必须在参数路由 /{comment_id} 之前注册，否则会被抢占）
 # ----------------------------------------------------------------------
+
+
+def _tree(records):
+    """把同一目标的评论整理成树：顶级按时间倒序，回复按时间正序。"""
+    from collections import defaultdict
+
+    grouped = defaultdict(list)
+    for record in records:
+        grouped[record.parent_id].append(record)
+
+    for children in grouped.values():
+        children.sort(key=lambda item: item.created_at)
+
+    def build(parent_id=None):
+        nodes = []
+        for record in grouped.get(parent_id, []):
+            node = record.as_dict()
+            node["replies"] = build(record.id)
+            nodes.append(node)
+        return nodes
+
+    top = grouped.get(None, [])
+    top.sort(key=lambda item: item.created_at, reverse=True)
+    return [{**record.as_dict(), "replies": build(record.id)} for record in top]
+
+
 @router.get("/landmark/{landmark_id}", summary="地标评论（公开）", auth=OptionalAuth())
 def landmark_comments(request, landmark_id: int):
-    """地标下的公开评论树（一级 + 回复，过滤隐藏与软删）。"""
-    qs = (
+    """地标下的公开评论树（任意层级回复，过滤隐藏与软删）。"""
+    records = list(
         Comment.objects.filter(
             landmark_id=landmark_id,
             is_hidden=False,
             deleted_at__isnull=True,
-            parent__isnull=True,
         )
         .select_related("user", "landmark")
-        .order_by("-created_at")[:100]
+        .order_by("created_at")[:300]
     )
-    data = []
-    for c in qs:
-        d = c.as_dict()
-        d["replies"] = [
-            r.as_dict()
-            for r in c.replies.filter(is_hidden=False, deleted_at__isnull=True)
-            .select_related("user", "landmark")
-            .order_by("created_at")
-        ]
-        data.append(d)
-    return {"success": True, "data": data}
+    return {"success": True, "data": _tree(records)}
+
+
+@router.get("/journal/{journal_id}", summary="手账评论（公开或作者）", auth=OptionalAuth())
+def journal_comments(request, journal_id: int):
+    """手账下的评论树：公开手账任何人可读，私密手账仅作者/管理员。"""
+    from apps.journals.models import Journal
+
+    journal = Journal.objects.filter(id=journal_id, deleted_at__isnull=True).first()
+    if not journal:
+        raise HttpError(404, "手账不存在")
+    viewer = getattr(request, "auth", None)
+    is_owner = getattr(viewer, "is_authenticated", False) and journal.user_id == viewer.id
+    if not journal.is_public and not is_owner and not is_any_admin(viewer):
+        raise HttpError(403, "该手账未公开")
+    records = list(
+        Comment.objects.filter(
+            journal_id=journal_id,
+            is_hidden=False,
+            deleted_at__isnull=True,
+        )
+        .select_related("user", "journal")
+        .order_by("created_at")[:300]
+    )
+    return {"success": True, "data": _tree(records)}
 
 
 @router.post("/", summary="发表评论")
@@ -71,6 +111,7 @@ def create(request, payload: CommentIn):
     ok, result = comment_service.create_comment(
         user=request.auth,
         landmark_id=payload.landmark_id,
+        journal_id=payload.journal_id,
         content=payload.content,
         parent_id=payload.parent_id,
     )

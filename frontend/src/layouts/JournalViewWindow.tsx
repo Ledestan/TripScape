@@ -13,6 +13,7 @@ import { api, errMessage } from "@/api/client";
 import { useAuthStore } from "@/stores/auth";
 import { FloatingWindow } from "@/components/FloatingWindow";
 import ReportDialog from "@/features/comments/ReportDialog";
+import CommentSection from "@/features/comments/CommentSection";
 import { SkeletonRows } from "@/components/ui/skeleton";
 
 // 画布渲染带 konva，只在真的打开带画布的手账时才加载
@@ -48,7 +49,7 @@ export function JournalViewWindow({ journalId, onClose }: { journalId: number; o
     ((j.canvas as { elements: unknown[] }).elements.length > 0);
 
   return (
-    <FloatingWindow open onClose={onClose} title={j ? `${j.title} · 手账` : "手账"} width={480} maxHeight="72vh">
+    <FloatingWindow open onClose={onClose} title={j ? `${j.title} · 手账` : "手账"} width={480} maxHeight="80vh">
       {!j ? (
         <SkeletonRows rows={3} className="py-6" />
       ) : (
@@ -75,6 +76,10 @@ export function JournalViewWindow({ journalId, onClose }: { journalId: number; o
           {j.content?.trim() ? (
             <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{j.content}</div>
           ) : null}
+
+          <div className="mt-3 border-t border-border/60 pt-3">
+            <CommentSection journalId={journalId} />
+          </div>
 
           <div className="mt-3 flex items-center gap-2">
             <LikeButton targetType="journal" targetId={journalId} />

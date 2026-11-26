@@ -706,11 +706,7 @@ export default function LandmarkDetailWindow({
                   >
 
                     {j.canvas?.elements?.length ? (
-                      <div className="flex h-28 items-center justify-center overflow-hidden rounded-t-xl bg-muted">
-                        <Suspense fallback={null}>
-                          <CanvasThumb canvas={j.canvas} maxHeight={112} />
-                        </Suspense>
-                      </div>
+                      <div className="h-28 w-full overflow-hidden rounded-t-xl bg-muted"><Suspense fallback={null}><CanvasThumb canvas={j.canvas} /></Suspense></div>
                     ) : j.images?.[0] ? (
                       <img src={j.images[0]} alt="" className="h-28 w-full rounded-t-xl object-cover" />
                     ) : null}

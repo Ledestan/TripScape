@@ -69,35 +69,30 @@ function CameraDistanceProbe({ distRef }: { distRef: React.MutableRefObject<numb
 /* ================================================================== */
 /* 背面隐藏：地球组静止（自转由相机方位角承担），方向恒定               */
 /* ================================================================== */
-function useBackfaceHide(markerCoords: { lat: number; lon: number }[]) {
+function useBackfaceHide(
+  slotsRef: React.MutableRefObject<Map<number, HTMLElement>>,
+  versionRef: React.MutableRefObject<number>,
+  markerCoords: { lat: number; lon: number }[]
+) {
   const { camera } = useThree();
   const dirs = useMemo(
     () => markerCoords.map((m) => latLonToVector3(m.lat, m.lon, 1).normalize()),
     [markerCoords]
   );
 
-  // 每帧 querySelectorAll 会强制样式重算，是之前卡顿的主要来源之一：
-  // 标记元素只在切换层级时变化，抓一次缓存即可
-  const elsRef = useRef<HTMLElement[]>([]);
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => {
-      elsRef.current = Array.from(document.querySelectorAll<HTMLElement>("[data-marker-idx]"));
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [markerCoords]);
-
   const lastCam = useRef(new THREE.Vector3(0, 0, 0));
-  const frameNo = useRef(0);
+  const appliedVersion = useRef(-1);
 
   useFrame(() => {
-    frameNo.current += 1;
-    if (frameNo.current % 2) return; // 隔帧更新，肉眼无差
-    if (lastCam.current.distanceToSquared(camera.position) < 1e-7) return; // 镜头没动就不写 DOM
+    // 镜头没动、标记集合也没变，就不用再写样式
+    const camMoved = lastCam.current.distanceToSquared(camera.position) > 1e-7;
+    if (!camMoved && appliedVersion.current === versionRef.current) return;
     lastCam.current.copy(camera.position);
+    appliedVersion.current = versionRef.current;
 
     const camDir = camera.position.clone().normalize();
-    for (const el of elsRef.current) {
-      const n = dirs[Number(el.dataset.markerIdx)];
+    for (const [index, el] of slotsRef.current) {
+      const n = dirs[index];
       if (!n) continue;
       // 可见 ⟺ 标记法线与"球心->相机"方向同侧（正面半球）
       el.style.visibility = camDir.dot(n) > 0.12 ? "visible" : "hidden";
@@ -260,16 +255,25 @@ function buildRegionClusters(spots: Spot[]): Cluster[] {
 function MarkerSlot({
   position,
   markerIndex,
+  register,
   children,
 }: {
   position: THREE.Vector3;
   markerIndex: number;
+  register: (index: number, el: HTMLElement | null) => void;
   children: React.ReactNode;
 }) {
   return (
     <group position={position}>
       <Html center zIndexRange={[10, 0]}>
-        <div data-marker-idx={markerIndex}>{children}</div>
+        <div
+          data-marker-idx={markerIndex}
+          ref={(el) => {
+            register(markerIndex, el);
+          }}
+        >
+          {children}
+        </div>
       </Html>
     </group>
   );
@@ -322,6 +326,14 @@ function EarthContent({
   });
 
   const clusters = useMemo(() => buildRegionClusters(spots || []), [spots]);
+  // 标记自注册：新挂载的点位立刻登记，背面隐藏不会漏
+  const slotsRef = useRef<Map<number, HTMLElement>>(new Map());
+  const slotsVersion = useRef(0);
+  const register = useCallback((index: number, el: HTMLElement | null) => {
+    if (el) slotsRef.current.set(index, el);
+    else slotsRef.current.delete(index);
+    slotsVersion.current += 1;
+  }, []);
   // 背面隐藏（组静止，方向恒定）
   const markerCoords = useMemo(
     () =>
@@ -330,7 +342,7 @@ function EarthContent({
         : clusters.map((c) => ({ lat: c.lat, lon: c.lon })),
     [zoomedIn, spots, clusters]
   );
-  useBackfaceHide(markerCoords);
+  useBackfaceHide(slotsRef, slotsVersion, markerCoords);
 
   return (
     <>
@@ -347,7 +359,7 @@ function EarthContent({
         <group ref={markersGroupRef}>
           {zoomedIn
             ? (spots || []).map((s, i) => (
-                <MarkerSlot key={s.id} position={latLonToVector3(s.lat, s.lon, 1.02)} markerIndex={i}>
+                <MarkerSlot key={s.id} position={latLonToVector3(s.lat, s.lon, 1.02)} markerIndex={i} register={register}>
                   <SpotBadge
                     spot={s}
                     visited={!!s.visited}
@@ -358,7 +370,7 @@ function EarthContent({
                 </MarkerSlot>
               ))
             : clusters.map((c, i) => (
-                <MarkerSlot key={c.key} position={latLonToVector3(c.lat, c.lon, 1.02)} markerIndex={i}>
+                <MarkerSlot key={c.key} position={latLonToVector3(c.lat, c.lon, 1.02)} markerIndex={i} register={register}>
                   <ClusterBadge
                     label={c.label}
                     count={c.count}

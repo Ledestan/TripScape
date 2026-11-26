@@ -21,6 +21,7 @@ export function FloatingWindow({
   width = 460,
   maxHeight = "70vh",
   fixedHeight,
+  testId,
 }: {
   open: boolean;
   onClose: () => void;
@@ -30,6 +31,8 @@ export function FloatingWindow({
   maxHeight?: string;
   /** 固定高度（不随内容扩展），如 "480px" */
   fixedHeight?: string;
+  /** 可选测试锚点 */
+  testId?: string;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -47,6 +50,7 @@ export function FloatingWindow({
       {/* 极轻遮罩：保留背景可见度，点击关闭 */}
       <div className="absolute inset-0 bg-black/25" onClick={onClose} />
       <div
+        data-testid={testId}
         className={cn(
           "relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-panel border border-border/60 bg-card text-card-foreground shadow-panel",
           "animate-in zoom-in-95 fade-in duration-200"

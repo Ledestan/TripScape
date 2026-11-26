@@ -6,9 +6,10 @@
  */
 
 import { useState } from "react";
+import { MapPin, Eye, Star, Send, Flag, NotebookPen, MessageSquare } from "lucide-react";
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { MapPin, Eye, Star, Send, Flag, NotebookPen, MessageSquare, Compass } from "lucide-react";
 import { api, errMessage } from "@/api/client";
 import { useAuthStore } from "@/stores/auth";
 import { globeBus } from "@/features/globe/bus";
@@ -83,6 +84,8 @@ export default function LandmarkDetailWindow({
 
   onWriteJournal,
 
+  initialTab = "comments",
+
 }: {
 
   landmarkId: number;
@@ -91,9 +94,12 @@ export default function LandmarkDetailWindow({
 
   onWriteJournal: (landmarkId: number) => void;
 
+  /** 从档案的「评论 / 手账」进入时指定页签 */
+  initialTab?: "comments" | "journals";
+
 }) {
 
-  const [tab, setTab] = useState<"comments" | "journals">("comments");
+  const [tab, setTab] = useState<"comments" | "journals">(initialTab);
 
   const [viewJournal, setViewJournal] = useState<number | null>(null);
 
@@ -264,6 +270,8 @@ export default function LandmarkDetailWindow({
 
       fixedHeight="min(70vh, 640px)"
 
+      testId="landmark-detail-window"
+
     >
 
       {lm && (
@@ -336,19 +344,6 @@ export default function LandmarkDetailWindow({
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
 
-            <Button
-
-              size="sm"
-
-              onClick={() => globeBus.flyTo(lm.lat, lm.lon, lm.id)}
-
-              className="bg-sky-500/90 text-foreground hover:bg-sky-400"
-
-            >
-
-              <Compass className="mr-1 h-3.5 w-3.5" /> 飞过去
-
-            </Button>
 
             <Button size="sm" onClick={() => onWriteJournal(landmarkId)}>
 
@@ -395,6 +390,10 @@ export default function LandmarkDetailWindow({
               <button
 
                 key={t}
+
+                data-testid={`detail-tab-${t}`}
+
+                data-active={tab === t}
 
                 onClick={() => setTab(t)}
 

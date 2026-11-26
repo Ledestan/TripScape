@@ -36,6 +36,7 @@ export default function GlobeApp() {
 
   const [highlightIds, setHighlightIds] = useState<Set<number> | undefined>(undefined);
   const [detailId, setDetailId] = useState<number | null>(null);
+  const [detailTab, setDetailTab] = useState<"comments" | "journals">("comments");
   const [journalLandmarkId, setJournalLandmarkId] = useState<number | null>(null);
   const [journalOpen, setJournalOpen] = useState(false);
 
@@ -80,11 +81,15 @@ export default function GlobeApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spots]);
 
-  // 叙事档案里的"评论与收藏"与"写手账"入口 -> 打开各自的浮窗（自带关闭）
+  // 档案里的「评论 / 手账」入口 -> 打开详情浮窗的对应页签（浮窗自带关闭）
   useEffect(() => {
     const onOpenLandmarkWindow = (e: Event) => {
-      const id = Number((e as CustomEvent<number>).detail || 0);
-      if (id) setDetailId(id);
+      const detail = (e as CustomEvent<number | { landmarkId: number; tab?: string }>).detail;
+      const id = typeof detail === "number" ? detail : Number(detail?.landmarkId || 0);
+      if (!id) return;
+      const tab = typeof detail === "object" && detail?.tab === "journals" ? "journals" : "comments";
+      setDetailTab(tab);
+      setDetailId(id);
     };
     const onOpenJournalEdit = (e: Event) => {
       const id = Number((e as CustomEvent<number>).detail || 0);
@@ -175,10 +180,11 @@ export default function GlobeApp() {
       {/* 底部：TripScape 2.0 叙事层（globe → landmark → journal） */}
       <NarrativeHud />
 
-      {/* 地标评论/收藏浮窗（叙事档案里的"评论与收藏"入口打开，自带关闭） */}
+      {/* 地标评论/手账浮窗（档案里的「评论 / 手账」入口打开，自带关闭） */}
       {detailId !== null && (
         <LandmarkDetailWindow
           landmarkId={detailId}
+          initialTab={detailTab}
           onClose={() => setDetailId(null)}
           onWriteJournal={(lmId) => {
             setJournalLandmarkId(lmId);

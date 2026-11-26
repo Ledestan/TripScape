@@ -5,8 +5,8 @@
  * 叙事层数据类型（与后端字段一一对应，不做本地改名）
  * 定义叙事接口返回的卡片、手记、碎片与故事结构，提供:
  * 1. NarrativeCardData：地标卡片（九字段 + createdAt）
- * 2. JournalEntry / PickedFragment：手记条目与碎片
- * 3. LandmarkStoryData：预设故事（整体介绍 → 时间轴 → 分节材料）
+ * 2. LandmarkStoryData：预设故事（整体介绍 → 时间轴 → 分节材料）
+ * 3. FavoriteItem：我的收藏条目（来自 /api/auth/profile）
  * 依赖:
  * 依赖库: 无
  * 用法:
@@ -52,26 +52,12 @@ export interface NarrativeCardData {
   createdAt?: string;
 }
 
-export interface JournalEntry {
-  card: NarrativeCardData;
-  addedAt: string;
-}
-
-export interface SourceCardSummary {
+export interface FavoriteItem {
   id: number;
-  title: string;
-  photo: string;
-  landmarkId: number;
-  confidence: number;
-  snippet: string;
-}
-
-export interface PickedFragment {
-  id: number;
-  landmarkId: number;
-  createdAt: string;
-  anonymous: boolean;
-  sourceCard: SourceCardSummary;
+  name: string;
+  country?: string;
+  photo?: string;
+  favorited_at?: string;
 }
 
 /** globe 层地标入口（复用 GET /api/landmarks/spots） */

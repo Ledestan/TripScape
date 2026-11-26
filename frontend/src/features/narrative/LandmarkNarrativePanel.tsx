@@ -20,7 +20,6 @@
 
 import {
   AlertCircle,
-  BookOpen,
   Footprints,
   Loader2,
   MapPin,
@@ -44,13 +43,7 @@ export default function LandmarkNarrativePanel({
   onRetry,
   landmarkName,
   story,
-  journalCount,
   onBack,
-  onOpenJournal,
-  onPick,
-  picking,
-  onDeliver,
-  delivering,
   onOpenComments,
   onOpenJournalEditor,
   favorited,
@@ -65,13 +58,7 @@ export default function LandmarkNarrativePanel({
   onRetry: () => void;
   landmarkName: string;
   story?: LandmarkStoryData;
-  journalCount: number;
   onBack: () => void;
-  onOpenJournal: () => void;
-  onPick: () => void;
-  picking: boolean;
-  onDeliver: (cardId: number) => void;
-  delivering: boolean;
   onOpenComments: () => void;
   onOpenJournalEditor: () => void;
   favorited: boolean;
@@ -137,22 +124,8 @@ export default function LandmarkNarrativePanel({
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
-        {/* 浮窗自带的关闭与收藏入口 */}
+        {/* 浮窗自带关闭：不依赖页面顶部返回 */}
         <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
-          <button
-            data-testid="narrative-open-journal"
-            onClick={onOpenJournal}
-            className="flex items-center gap-1 rounded-full bg-black/35 px-2 py-1 text-[10.5px] text-white/90 backdrop-blur transition hover:bg-black/50"
-          >
-            <BookOpen className="h-3 w-3" />
-            收藏
-            <span
-              data-testid="narrative-journal-count"
-              className="rounded-full bg-white/20 px-1 text-[10px] font-bold"
-            >
-              {journalCount}
-            </span>
-          </button>
           <button
             data-testid="narrative-back"
             onClick={onBack}
@@ -232,33 +205,13 @@ export default function LandmarkNarrativePanel({
         )}
       </div>
 
-      {/* 动作区：上行是叙事动作，下行是评论 / 收藏 / 足迹 / 手账 */}
+      {/* 动作区：评论 / 收藏 / 足迹 / 手账，四个各自独立的按钮 */}
       <footer className="shrink-0 border-t border-border/60 bg-card px-3 py-2.5">
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="grid grid-cols-4 gap-1.5">
           <Button
             size="sm"
             variant="outline"
-            data-testid="narrative-pick"
-            onClick={onPick}
-            disabled={picking}
-          >
-            {picking ? "拾取中…" : "拾取碎片"}
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            data-testid="narrative-deliver"
-            onClick={() => card && onDeliver(card.id)}
-            disabled={delivering || !card}
-          >
-            {delivering ? "投递中…" : "匿名留在此处"}
-          </Button>
-        </div>
-        <div className="mt-1.5 flex items-center gap-1 border-t border-border/40 pt-1.5">
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 text-[11px] text-muted-foreground hover:text-foreground"
+            className="h-8 px-0 text-[11px]"
             data-testid="narrative-open-comments"
             onClick={onOpenComments}
           >
@@ -267,9 +220,11 @@ export default function LandmarkNarrativePanel({
           </Button>
           <Button
             size="sm"
-            variant="ghost"
-            className={`h-7 text-[11px] ${
-              favorited ? "text-amber-500 hover:text-amber-500" : "text-muted-foreground hover:text-foreground"
+            variant="outline"
+            className={`h-8 px-0 text-[11px] ${
+              favorited
+                ? "border-amber-400/70 text-amber-500 hover:text-amber-500"
+                : "text-muted-foreground hover:text-foreground"
             }`}
             data-testid="narrative-favorite"
             onClick={onToggleFavorite}
@@ -280,8 +235,8 @@ export default function LandmarkNarrativePanel({
           </Button>
           <Button
             size="sm"
-            variant="ghost"
-            className="h-7 text-[11px] text-muted-foreground hover:text-foreground"
+            variant="outline"
+            className="h-8 px-0 text-[11px] text-muted-foreground hover:text-foreground"
             data-testid="narrative-footprints"
             onClick={onOpenFootprints}
           >
@@ -290,13 +245,13 @@ export default function LandmarkNarrativePanel({
           </Button>
           <Button
             size="sm"
-            variant="ghost"
-            className="h-7 text-[11px] text-muted-foreground hover:text-foreground"
+            variant="outline"
+            className="h-8 px-0 text-[11px] text-muted-foreground hover:text-foreground"
             data-testid="narrative-open-journal-edit"
             onClick={onOpenJournalEditor}
           >
             <NotebookPen className="mr-1 h-3 w-3" />
-            写手账
+            手账
           </Button>
         </div>
       </footer>

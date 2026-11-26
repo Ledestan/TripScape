@@ -31,8 +31,8 @@ updated: 2026-10-08
 
 ## 百科补充
 
- |image = Hatshetsup-temple-1by7.jpg |alt = partially reconstructed limestone temple |caption = 哈特谢普苏特神庙 |map_type = Egypt |map_alt = location of the temple displayed on a map |relief = yes |location = |region = 代尔埃尔巴哈里 |coordinates = |type = |length = (Temple) (Causeway) |width = |area = |height = |builder = Unclear, possibly: <br> , Overseer of Works <br> 哈布森尼布, High Priest |material = Limestone, sandstone, granite |built = c. 15th century BC |epochs = 青铜时代 I |cultures = 古埃及, 科普特人 |excavations = 1827–present |archaeologists = |condition = Reconstructed |ownership = |management = |public_access = Limited |website = |notes = }}哈特谢普苏特神庙（埃及语：Ḏsr-ḏsrw）是埃及第十八王朝法老哈特谢普苏特统治时期的第七年至第二十年之间建造的 c. 1498–1483 BC, c. 1479–1458 BC, c. 1473–1458 BC, c. 1472–1457 BC.}}。它位于卢克索附近。
-它的设计深受埃及第十一王朝曼图霍特普二世时期建造的曼图霍特普二世神庙的影响。 c. 2051–2000 BC, c. 2055–2004 BC, c. 2010–1998 BC, c. 1897–1887 BC.}} 1737 年，来自英国的理查德·波科克发现了哈特谢普苏特神庙遗址。
+ |image = Hatshetsup-temple-1by7.jpg |alt = partially reconstructed limestone temple |caption = 哈特谢普苏特神庙 |map_type = Egypt |map_alt = location of the temple displayed on a map |relief = yes |location = |region = 代尔埃尔巴哈里 |coordinates = |type = |length = (Temple) (Causeway) |width = |area = |height = |builder = Unclear, possibly: , Overseer of Works 哈布森尼布, High Priest |material = Limestone, sandstone, granite |built = c. 15th century BC |epochs = 青铜时代 I |cultures = 古埃及, 科普特人 |excavations = 1827–present |archaeologists = |condition = Reconstructed |ownership = |management = |public_access = Limited |website = |notes = 哈特谢普苏特神庙（埃及语：Ḏsr-ḏsrw）是埃及第十八王朝法老哈特谢普苏特统治时期的第七年至第二十年之间建造的 c. 1498–1483 BC, c. 1479–1458 BC, c. 1473–1458 BC, c. 1472–1457 BC.。它位于卢克索附近。
+它的设计深受埃及第十一王朝曼图霍特普二世时期建造的曼图霍特普二世神庙的影响。 c. 2051–2000 BC, c. 2055–2004 BC, c. 2010–1998 BC, c. 1897–1887 BC. 1737 年，来自英国的理查德·波科克发现了哈特谢普苏特神庙遗址。
 1893年至1906年间，由领导的对神庙遗址进行全面挖掘。
 
 ## 基本参数

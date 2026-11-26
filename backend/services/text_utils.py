@@ -26,6 +26,11 @@ import re
 _SENT_SPLIT = re.compile(r"(?<=[。！？；])\s*|\n+")
 # 纪年：公元前后接 1-4 位数字，或 3-4 位年份
 _YEAR_RE = re.compile(r"(公元前)?\s*(\d{1,4})\s*年")
+# 摘编残留：模板括号、表格竖线、图片尺寸、空括号、括号内以标点开头——命中就整句丢弃
+# 注意：不能把「；」「：」当残留——它们是正常中文标点，切句后句尾就带「；」
+_CJK_RE = re.compile(r"[\u4e00-\u9fff]")
+_ARTIFACT_RE = re.compile(r"[{}|]|thumb|\d{2,4}\s*px|（\s*）|（\s*[；：，、]|</?[a-zA-Z]")
+
 
 
 def split_sentences(text: str) -> list[str]:
@@ -37,13 +42,23 @@ def split_sentences(text: str) -> list[str]:
 
     返回：
         list[str]：按出现顺序排列的句子
+
+    注意：
+        含残留标记的句子直接丢弃——宁可少一句，也不让「曲折金字塔（）」
+        这种半截话出现在地标页或卡片里。
     """
     out: list[str] = []
     for part in _SENT_SPLIT.split(text or ""):
         sentence = re.sub(r"^[\s\-*·#|>]+", "", part or "").strip()
         sentence = re.sub(r"thumb\|\d+px\|?", "", sentence).strip()
-        if len(sentence) >= 6 and not sentence.startswith(("|", "}}")):
-            out.append(sentence)
+        if len(sentence) < 6:
+            continue
+        if _ARTIFACT_RE.search(sentence):
+            continue
+        # 几乎没有中文的句子（英文图注、纯参数行）不进页面
+        if len(_CJK_RE.findall(sentence)) < len(sentence) * 0.3:
+            continue
+        out.append(sentence)
     return out
 
 

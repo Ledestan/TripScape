@@ -104,10 +104,11 @@ class Journal(models.Model):
                 self.pending_edit if (self.edit_pending and can_see_pending) else None
             ),
             "created_at": self.created_at.isoformat(),
+            # 画布是手账主体，列表也要带（详情页卡片直接拿它做预览图）
+            "canvas": self.canvas or {},
         }
         if with_content:
             data["content"] = self.content
-            data["canvas"] = self.canvas or {}
         return data
 
 

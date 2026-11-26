@@ -8,7 +8,7 @@
 import { Suspense, lazy, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Flag, Heart } from "lucide-react";
+import { Flag, Heart, Pencil } from "lucide-react";
 import { api, errMessage } from "@/api/client";
 import { useAuthStore } from "@/stores/auth";
 import { FloatingWindow } from "@/components/FloatingWindow";
@@ -30,7 +30,7 @@ export function JournalViewWindow({ journalId, onClose }: { journalId: number; o
       (
         await api.get(`/journals/${journalId}`)
       ).data.data as {
-        user: { nickname: string; avatar: string };
+        user: { id: number; nickname: string; avatar: string };
         landmark: { name: string };
         title: string;
         content: string;
@@ -78,7 +78,22 @@ export function JournalViewWindow({ journalId, onClose }: { journalId: number; o
 
           <div className="mt-3 flex items-center gap-2">
             <LikeButton targetType="journal" targetId={journalId} />
-            {j.user.nickname !== me?.nickname && <ReportButton onClick={() => setReportOpen(true)} />}
+            {me?.id === j.user.id && (
+              <button
+                type="button"
+                data-testid="journal-edit"
+                className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs transition hover:border-primary/50 hover:text-primary"
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent("ts:edit-journal", { detail: { journalId } })
+                  );
+                  onClose();
+                }}
+              >
+                <Pencil className="h-3 w-3" /> 修改
+              </button>
+            )}
+            {j.user.id !== me?.id && <ReportButton onClick={() => setReportOpen(true)} />}
           </div>
 
           {reportOpen && <ReportDialog targetType="journal" targetId={journalId} onClose={() => setReportOpen(false)} />}
@@ -94,7 +109,7 @@ export function LikeButton({
   targetId,
   count = 0,
 }: {
-  targetType: "journal" | "comment";
+  targetType: "journal" | "comment" | "article";
   targetId: number;
   count?: number;
 }) {

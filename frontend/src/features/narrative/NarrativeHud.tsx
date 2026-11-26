@@ -128,6 +128,11 @@ export default function NarrativeHud() {
             story={story}
             onBack={back}
             onOpenComments={() => openDetail("comments")}
+            onOpenArticle={() => {
+              window.dispatchEvent(
+                new CustomEvent("ts:open-article", { detail: { landmarkId, title: landmarkName } })
+              );
+            }}
             onOpenJournalEditor={() => {
               if (requireLogin("查看手账")) openDetail("journals");
             }}

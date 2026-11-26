@@ -5,25 +5,39 @@
  * 把预置在数据库里的故事渲染成「整体介绍 → 时间轴 → 分节材料」，完成:
  *     1. 先读整体介绍，让读者知道这是什么地方
  *     2. 再读时间轴（按年份升序，年份缺失单独标注）
- *     3. 最后读现场与到访信息，顺序与内容结构一一对应
+ *     3. 分节默认折叠两行，可单节展开，也可"查看全文"进文章详情页
  *
  * 依赖:
  *     依赖库: lucide-react
  *
  * 用法:
- *     <LandmarkStoryView story={story} />
+ *     <LandmarkStoryView story={story} onOpenArticle={() => ...} />
+ *     <LandmarkStoryView story={story} expanded />   // 文章详情页
  *
  * 注意:
  *     1. 数据形状来自 GET /api/narrative/story/{id}，字段缺失时安全降级。
  *     2. 不拼接任何本地文案成"史实"，只做排版与顺序组织。
  */
 
-import { Clock3 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { ChevronDown, ChevronUp, Clock3, FileText } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import type { LandmarkStoryData } from "./types";
 
-export default function LandmarkStoryView({ story }: { story: LandmarkStoryData }) {
+const PREVIEW_ITEMS = 2;
+
+export default function LandmarkStoryView({
+  story,
+  onOpenArticle,
+  expanded = false,
+}: {
+  story: LandmarkStoryData;
+  /** 点"查看全文"时打开文章详情页 */
+  onOpenArticle?: () => void;
+  /** 文章详情页里全部展开，不再折叠 */
+  expanded?: boolean;
+}) {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
   // 阅读浮现：每块内容进入视口时上浮 10px 淡入，长页面读起来像在翻文献。
   // 只做一次（observe 后立即 unobserve），滚动回来不会反复闪。
@@ -77,22 +91,85 @@ export default function LandmarkStoryView({ story }: { story: LandmarkStoryData 
         </section>
       )}
 
-      {/* 分节材料：站在这里 / 尺度与参数 / 到访之前 / 补记 */}
-      {story.sections?.map((section) => (
-        <section key={section.heading}>
-          <h4 className="mb-1 text-[11px] font-semibold tracking-wide text-foreground/80">
-            {section.heading}
-          </h4>
-          <ul className="space-y-1">
-            {section.items.map((item, index) => (
-              <li key={index} className="flex gap-1.5 text-[11.5px] leading-relaxed text-foreground/80">
-                <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-primary/60" />
-                <span className="min-w-0 flex-1">{item}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+      {/* 分节材料：默认折叠，可单节展开 */}
+      {story.sections?.map((section) => {
+        const isOpen = expanded || openSections[section.heading];
+        const items = isOpen ? section.items : section.items.slice(0, PREVIEW_ITEMS);
+        const hiddenCount = section.items.length - items.length;
+
+        return (
+          <section key={section.heading}>
+            <h4 className="mb-1 text-[11px] font-semibold tracking-wide text-foreground/80">
+              {section.heading}
+            </h4>
+            <ul className="space-y-1">
+              {items.map((item, index) => (
+                <li
+                  key={index}
+                  className="flex gap-1.5 text-[11.5px] leading-relaxed text-foreground/80"
+                >
+                  <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-primary/60" />
+                  <span className="min-w-0 flex-1">{item}</span>
+                </li>
+              ))}
+            </ul>
+
+            {!expanded && hiddenCount > 0 && (
+              <button
+                type="button"
+                className="mt-1 flex items-center gap-0.5 text-[10.5px] text-primary hover:underline"
+                onClick={() =>
+                  setOpenSections((sections) => ({
+                    ...sections,
+                    [section.heading]: !isOpen,
+                  }))
+                }
+              >
+                {isOpen ? (
+                  <>
+                    <ChevronUp className="h-3 w-3" />
+                    收起
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-3 w-3" />
+                    展开本节（还有 {hiddenCount} 条）
+                  </>
+                )}
+              </button>
+            )}
+
+            {!expanded && isOpen && hiddenCount <= 0 && (
+              <button
+                type="button"
+                className="mt-1 flex items-center gap-0.5 text-[10.5px] text-muted-foreground hover:text-primary"
+                onClick={() =>
+                  setOpenSections((sections) => ({
+                    ...sections,
+                    [section.heading]: !isOpen,
+                  }))
+                }
+              >
+                <ChevronUp className="h-3 w-3" />
+                收起
+              </button>
+            )}
+          </section>
+        );
+      })}
+
+      {/* 查看全文 → 文章详情页 */}
+      {onOpenArticle && !expanded && (
+        <button
+          type="button"
+          data-testid="narrative-open-article"
+          onClick={onOpenArticle}
+          className="flex w-full items-center justify-center gap-1 rounded-card border border-border/70 px-2 py-1.5 text-[11px] text-foreground/80 transition hover:border-primary/50 hover:text-primary"
+        >
+          <FileText className="h-3 w-3" />
+          查看全文
+        </button>
+      )}
     </div>
   );
 }

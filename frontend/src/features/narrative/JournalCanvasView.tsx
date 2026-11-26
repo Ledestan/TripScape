@@ -184,9 +184,12 @@ export function ElementNode({ element }: { element: CanvasElement }) {
 export default function JournalCanvasView({
   canvas,
   width = 420,
+  maxHeight,
 }: {
   canvas: unknown;
   width?: number;
+  /** 缩略图场景按高度再收一次，避免 3:4 在矮容器里被裁 */
+  maxHeight?: number;
 }) {
   const container = useRef<HTMLDivElement | null>(null);
   const [boxWidth, setBoxWidth] = useState(width);
@@ -204,7 +207,7 @@ export default function JournalCanvasView({
 
   if (doc.elements.length === 0) return null;
 
-  const scale = boxWidth / CANVAS_W;
+  const scale = Math.min(boxWidth / CANVAS_W, maxHeight ? maxHeight / CANVAS_H : Infinity);
   return (
     <div ref={container} className="w-full">
       <div className="overflow-hidden rounded-card border border-border/60">

@@ -8,7 +8,7 @@
 from django.conf import settings
 from django.db import models
 
-TARGET_TYPES = (("journal", "手账"), ("comment", "评论"))
+TARGET_TYPES = (("journal", "手账"), ("comment", "评论"), ("article", "文章"))
 
 
 class Like(models.Model):

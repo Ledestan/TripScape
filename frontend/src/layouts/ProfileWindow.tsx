@@ -12,6 +12,8 @@ import {
   MapPin, NotebookPen, MessageSquare, Star, Compass, Award, Eye, EyeOff, Trash2,
 } from "lucide-react";
 
+import { BadgeIcon } from "@/components/ui/badge-icon";
+
 import { api, errMessage } from "@/api/client";
 import { useAuthStore } from "@/stores/auth";
 import { globeBus } from "@/features/globe/bus";
@@ -253,7 +255,13 @@ export default function ProfileWindow({ onClose }: { onClose: () => void }) {
                             b.owned ? "border-amber-400/60 bg-amber-400/10" : "border-border bg-muted/40 opacity-60"
                           }`}
                         >
-                          <div className={`text-2xl ${b.owned ? "" : "grayscale"}`}>{b.icon}</div>
+                          <div
+                            className={`flex h-8 w-8 items-center justify-center rounded-full bg-background/60 ${
+                              b.owned ? "text-amber-500" : "text-muted-foreground"
+                            }`}
+                          >
+                            <BadgeIcon icon={b.icon} className="h-4 w-4" />
+                          </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">
                               <span className="truncate text-sm font-medium">{b.name}</span>

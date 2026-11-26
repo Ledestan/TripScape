@@ -28,7 +28,7 @@ class Badge(models.Model):
         "类别", max_length=16, choices=CATEGORIES, db_index=True
     )
     threshold = models.PositiveIntegerField("达成阈值", default=1)
-    icon = models.CharField("图标（emoji）", max_length=16, default="🏅")
+    icon = models.CharField("图标（lucide 名称）", max_length=32, default="award")
     is_active = models.BooleanField("启用", default=True)
 
     class Meta:

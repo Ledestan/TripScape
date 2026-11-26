@@ -45,6 +45,7 @@ export default function LandmarkNarrativePanel({
   story,
   onBack,
   onOpenComments,
+  onOpenArticle,
   onOpenJournalEditor,
   favorited,
   favoriteBusy,
@@ -59,6 +60,7 @@ export default function LandmarkNarrativePanel({
   story?: LandmarkStoryData;
   onBack: () => void;
   onOpenComments: () => void;
+  onOpenArticle: () => void;
   onOpenJournalEditor: () => void;
   favorited: boolean;
   favoriteBusy: boolean;
@@ -195,7 +197,7 @@ export default function LandmarkNarrativePanel({
         {!loading && !failed && (
           <div className="space-y-3.5">
             {story ? (
-              <LandmarkStoryView story={story} />
+              <LandmarkStoryView story={story} onOpenArticle={onOpenArticle} />
             ) : (
               <p className="text-[11px] text-muted-foreground">这个地标还没有预置故事内容。</p>
             )}

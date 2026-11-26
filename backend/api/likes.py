@@ -2,7 +2,7 @@
 行旅识景 TripScape / api/likes
 创建日期: 2025-09-01
 
-点赞 API：手账 / 评论。
+点赞 API：手账 / 评论 / 文章（地标详情）。
 
 POST /api/likes/            点赞 / 取消（toggle）
 GET  /api/likes/status      批量查我是否点过赞（ids）
@@ -19,7 +19,7 @@ router = Router()
 
 
 class LikeIn(Schema):
-    target_type: str  # journal / comment
+    target_type: str  # journal / comment / article
     target_id: int
 
 
@@ -31,10 +31,14 @@ def toggle_like(request, payload: LikeIn):
     目标可见性校验（TS-20）：私密/软删/隐藏内容不可点赞——
     点赞数与通知都是公开信号，不得泄露不可见对象的存在。
     """
-    if payload.target_type not in ("journal", "comment"):
+    if payload.target_type not in ("journal", "comment", "article"):
         raise HttpError(400, "目标类型不合法")
 
-    if payload.target_type == "journal":
+    if payload.target_type == "article":
+        from apps.landmarks.models import Landmark
+
+        obj = Landmark.objects.filter(id=payload.target_id).first()
+    elif payload.target_type == "journal":
         obj = Journal.objects.filter(
             id=payload.target_id,
             deleted_at__isnull=True,
@@ -65,11 +69,16 @@ def toggle_like(request, payload: LikeIn):
         liked = True
         # 通知作者（不通知自己）
         try:
-            if obj.user_id != request.auth.id:
+            author_id = getattr(obj, "user_id", None)
+            if author_id and author_id != request.auth.id:
                 what = (
                     "手账《%s》" % (getattr(obj, "title", None) or "无题")
                     if payload.target_type == "journal"
-                    else "你的评论"
+                    else (
+                        "地标《%s》的文章" % (getattr(obj, "name", None) or "")
+                        if payload.target_type == "article"
+                        else "你的评论"
+                    )
                 )
                 Notification.objects.create(
                     user=obj.user,
@@ -79,7 +88,11 @@ def toggle_like(request, payload: LikeIn):
                     link=(
                         f"/journals/{payload.target_id}"
                         if payload.target_type == "journal"
-                        else ""
+                        else (
+                            f"/landmarks/{payload.target_id}"
+                            if payload.target_type == "article"
+                            else ""
+                        )
                     ),
                 )
         except Exception:
@@ -97,7 +110,7 @@ def toggle_like(request, payload: LikeIn):
 @login_required
 def like_status(request, target_type: str, ids: str):
     """批量查询我是否点过赞。"""
-    if target_type not in ("journal", "comment"):
+    if target_type not in ("journal", "comment", "article"):
         raise HttpError(400, "目标类型不合法")
     id_list = [int(x) for x in ids.split(",") if x.strip().isdigit()][:100]
     liked_ids = list(

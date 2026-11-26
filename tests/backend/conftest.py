@@ -118,20 +118,20 @@ def badges(db):
             name="初次远行",
             category="footprint",
             threshold=1,
-            icon="👣",
+            icon="footprints",
         ),
         Badge.objects.create(
             code="first_journal",
             name="第一篇手账",
             category="journal",
             threshold=1,
-            icon="📔",
+            icon="notebook-pen",
         ),
         Badge.objects.create(
             code="first_comment",
             name="破冰发言",
             category="comment",
             threshold=1,
-            icon="💬",
+            icon="message-square",
         ),
     ]

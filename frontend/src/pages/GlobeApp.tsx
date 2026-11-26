@@ -20,6 +20,7 @@ import { JournalViewWindow } from "@/layouts/JournalViewWindow";
 import LandmarkDetailWindow from "@/pages/LandmarkDetail";
 // 写手账复用创作浮窗（konva 按需加载，不进首屏）
 const JournalComposeWindow = lazy(() => import("@/features/journal/JournalComposeWindow"));
+const ArticleWindow = lazy(() => import("@/features/narrative/ArticleWindow"));
 
 // TripScape 2.0 叙事层（2.0 本体，无开关）
 import NarrativeHud from "@/features/narrative/NarrativeHud";
@@ -43,6 +44,8 @@ export default function GlobeApp() {
   const [journalOpen, setJournalOpen] = useState(false);
   // 从详情窗点"写手账"时先把详情窗收起，写完再放回来
   const [returnDetailId, setReturnDetailId] = useState<number | null>(null);
+  const [articleTarget, setArticleTarget] = useState<{ id: number; title: string } | null>(null);
+  const [journalEditId, setJournalEditId] = useState<number | null>(null);
 
   const enterLandmark = useNarrativeStore((s) => s.enterLandmark);
   const resetNarrative = useNarrativeStore((s) => s.reset);
@@ -108,6 +111,27 @@ export default function GlobeApp() {
     };
   }, []);
 
+  // 文章详情页（档案"查看全文"派发）
+  useEffect(() => {
+    const onOpenArticle = (event: Event) => {
+      const detail = (event as CustomEvent<{ landmarkId: number; title?: string }>).detail;
+      if (!detail?.landmarkId) return;
+      setArticleTarget({ id: detail.landmarkId, title: detail.title || "" });
+    };
+    window.addEventListener("ts:open-article", onOpenArticle);
+    return () => window.removeEventListener("ts:open-article", onOpenArticle);
+  }, []);
+  // 修改手账（查看窗里的"修改"按钮派发）
+  useEffect(() => {
+    const onEditJournal = (event: Event) => {
+      const detail = (event as CustomEvent<{ journalId: number }>).detail;
+      if (!detail?.journalId) return;
+      setJournalEditId(detail.journalId);
+      setJournalOpen(true);
+    };
+    window.addEventListener("ts:edit-journal", onEditJournal);
+    return () => window.removeEventListener("ts:edit-journal", onEditJournal);
+  }, []);
   // 搜索结果"查看手账"事件
   const [viewJournalId, setViewJournalId] = useState<number | null>(null);
   useEffect(() => {
@@ -205,8 +229,10 @@ export default function GlobeApp() {
           <JournalComposeWindow
             open
             presetLandmarkId={journalLandmarkId ?? undefined}
+            presetJournalId={journalEditId ?? undefined}
             onClose={() => {
               setJournalLandmarkId(null);
+              setJournalEditId(null);
               setJournalOpen(false);
               if (returnDetailId !== null) {
                 setDetailId(returnDetailId);
@@ -217,6 +243,16 @@ export default function GlobeApp() {
         </Suspense>
       )}
 
+      {/* 文章详情页（可点赞、评论、回复） */}
+      {articleTarget && (
+        <Suspense fallback={null}>
+          <ArticleWindow
+            landmarkId={articleTarget.id}
+            title={articleTarget.title}
+            onClose={() => setArticleTarget(null)}
+          />
+        </Suspense>
+      )}
       {/* 全局搜索浮窗（"显示更多"打开，带上搜索词） */}
       {searchOpen && (
         <Suspense fallback={null}>

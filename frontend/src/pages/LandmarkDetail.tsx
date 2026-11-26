@@ -20,6 +20,8 @@ import { FloatingWindow } from "@/components/FloatingWindow";
 import ReportDialog from "@/features/comments/ReportDialog";
 import { lazy, Suspense } from "react";
 
+const CanvasThumb = lazy(() => import("@/features/narrative/JournalCanvasView"));
+
 const JournalViewLazy = ({ journalId, onClose }: { journalId: number; onClose: () => void }) => (
 
   <Suspense fallback={null}>
@@ -703,11 +705,15 @@ export default function LandmarkDetailWindow({
 
                   >
 
-                    {j.images?.[0] && (
-
+                    {j.canvas?.elements?.length ? (
+                      <div className="flex h-28 items-center justify-center overflow-hidden rounded-t-xl bg-muted">
+                        <Suspense fallback={null}>
+                          <CanvasThumb canvas={j.canvas} maxHeight={112} />
+                        </Suspense>
+                      </div>
+                    ) : j.images?.[0] ? (
                       <img src={j.images[0]} alt="" className="h-28 w-full rounded-t-xl object-cover" />
-
-                    )}
+                    ) : null}
 
                     <CardContent className="p-3">
 

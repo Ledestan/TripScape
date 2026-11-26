@@ -55,4 +55,46 @@ test.describe("S4 文章详情页", () => {
     await expect(page.getByText(replyText)).toBeVisible({ timeout: 10_000 });
 
   });
+
+  test("地标详情的回复可以再回复、可以修改", async ({ page, request }) => {
+    const spots = await (await request.get("/api/landmarks/spots")).json();
+    const landmark = spots.data[0];
+
+    await page.goto("/login");
+    await page.waitForSelector("#boot-screen", { state: "detached", timeout: 30_000 });
+    await page.locator('input[autocomplete="username"]').fill("demo");
+    await page.locator('input[autocomplete="current-password"]').fill("demo123456");
+    await page.locator('form button[type="submit"]').click();
+    await page.waitForTimeout(1200);
+
+    await page.goto(`/landmarks/${landmark.id}`);
+    await page.waitForSelector("#boot-screen", { state: "detached", timeout: 30_000 });
+    await page.getByTestId("narrative-open-comments").click();
+    await expect(page.getByTestId("comment-input")).toBeVisible({ timeout: 10_000 });
+
+    const stamp = Date.now();
+    await page.getByTestId("comment-input").fill(`顶层 ${stamp}`);
+    await page.getByRole("button", { name: "发送" }).click();
+    await expect(page.getByText(`顶层 ${stamp}`)).toBeVisible({ timeout: 10_000 });
+
+    const top = page.getByTestId("comment-item").first();
+    await top.getByRole("button", { name: "回复" }).first().click();
+    await expect(page.getByTestId("comment-input")).toHaveAttribute("placeholder", /回复 @/);
+    await page.getByTestId("comment-input").fill(`二层 ${stamp}`);
+    await page.getByRole("button", { name: "发送" }).click();
+    await expect(page.getByText(`二层 ${stamp}`)).toBeVisible({ timeout: 10_000 });
+
+    // 对"回复的回复"再回复
+    const second = page.getByTestId("comment-reply").filter({ hasText: `二层 ${stamp}` }).first();
+    await second.getByRole("button", { name: "回复" }).first().click();
+    await expect(page.getByTestId("comment-input")).toHaveAttribute("placeholder", /回复 @/);
+    await page.getByTestId("comment-input").fill(`三层 ${stamp}`);
+    await page.getByRole("button", { name: "发送" }).click();
+    await expect(page.getByText(`三层 ${stamp}`)).toBeVisible({ timeout: 10_000 });
+
+    // 三层回复上仍然有 修改 / 删除
+    const third = page.getByTestId("comment-reply").filter({ hasText: `三层 ${stamp}` }).first();
+    await expect(third.getByRole("button", { name: "修改" }).first()).toBeVisible();
+    await expect(third.getByRole("button", { name: "删除" }).first()).toBeVisible();
+  });
 });

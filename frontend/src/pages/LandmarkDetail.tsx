@@ -14,11 +14,11 @@ import { api, errMessage } from "@/api/client";
 import { useAuthStore } from "@/stores/auth";
 import { globeBus } from "@/features/globe/bus";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { FloatingWindow } from "@/components/FloatingWindow";
 import ReportDialog from "@/features/comments/ReportDialog";
 import { lazy, Suspense } from "react";
+import CommentSection from "@/features/comments/CommentSection";
 
 const CanvasThumb = lazy(() => import("@/features/narrative/JournalCanvasView"));
 
@@ -103,19 +103,11 @@ export default function LandmarkDetailWindow({
 
   const [tab, setTab] = useState<"comments" | "journals">(initialTab);
 
+  const { token } = useAuthStore();
+
   const [viewJournal, setViewJournal] = useState<number | null>(null);
 
   const [reportTarget, setReportTarget] = useState<{ type: "comment" | "journal"; id: number } | null>(null);
-
-  const [editingComment, setEditingComment] = useState<number | null>(null);
-
-  const [editText, setEditText] = useState("");
-
-  const { token, user } = useAuthStore();
-
-  const [text, setText] = useState("");
-
-  const [replyTo, setReplyTo] = useState<Comment | null>(null);
 
   const qc = useQueryClient();
 
@@ -129,7 +121,7 @@ export default function LandmarkDetailWindow({
 
   });
 
-  const { data: comments, refetch } = useQuery({
+  const { data: comments } = useQuery({
 
     queryKey: ["comments", landmarkId],
 
@@ -146,83 +138,6 @@ export default function LandmarkDetailWindow({
     queryFn: async () => (await api.get(`/journals/landmark/${landmarkId}`)).data.data,
 
     enabled: !!landmarkId,
-
-  });
-
-  const submit = useMutation({
-
-    mutationFn: async () => {
-
-      const payload = replyTo
-
-        ? { landmark_id: landmarkId, content: text, parent_id: replyTo.id }
-
-        : { landmark_id: landmarkId, content: text };
-
-      return api.post("/comments/", payload);
-
-    },
-
-    onSuccess: () => {
-
-      toast.success("评论已发布");
-
-      setText("");
-
-      setReplyTo(null);
-
-      refetch();
-
-      qc.invalidateQueries({ queryKey: ["landmark", landmarkId] });
-
-      // 个人中心的评论数与列表要同步刷新（否则 30s 缓存内看到旧数据）
-
-      qc.invalidateQueries({ queryKey: ["profile"] });
-
-    },
-
-    onError: (e) => toast.error(errMessage(e, "评论失败")),
-
-  });
-
-
-  const updateComment = useMutation({
-
-    mutationFn: async (id: number) =>
-
-      api.put(`/comments/${id}`, { landmark_id: landmarkId, content: editText }),
-
-    onSuccess: () => {
-
-      toast.success("评论已更新");
-
-      setEditingComment(null);
-
-      refetch();
-
-      qc.invalidateQueries({ queryKey: ["profile"] });
-
-    },
-
-    onError: (e) => toast.error(errMessage(e, "更新失败")),
-
-  });
-
-  const delComment = useMutation({
-
-    mutationFn: async (id: number) => api.delete(`/comments/${id}`),
-
-    onSuccess: () => {
-
-      toast.success("评论已删除");
-
-      refetch();
-
-      qc.invalidateQueries({ queryKey: ["landmark", landmarkId] });
-
-      qc.invalidateQueries({ queryKey: ["profile"] });
-
-    },
 
   });
 
@@ -415,274 +330,11 @@ export default function LandmarkDetailWindow({
 
           </div>
 
-          {/* 评论 Tab */}
-
+          {/* 评论 Tab：一级 + 任意层级回复，统一用 CommentSection */}
           {tab === "comments" && (
-
             <div className="mt-3">
-
-              {token ? (
-
-                <div className="mb-3">
-
-                  {replyTo && (
-
-                    <div className="mb-1.5 flex items-center gap-2 text-xs text-muted-foreground">
-
-                      回复 @{replyTo.user.nickname}：
-
-                      <button className="text-primary hover:underline" onClick={() => setReplyTo(null)}>
-
-                        取消
-
-                      </button>
-
-                    </div>
-
-                  )}
-
-                  <Textarea
-
-                    value={text}
-
-                    onChange={(e) => setText(e.target.value)}
-
-                    placeholder="发表评论…"
-
-                    rows={2}
-
-                  />
-
-                  <div className="mt-1.5 flex justify-end">
-
-                    <Button size="sm" disabled={!text.trim() || submit.isPending} onClick={() => submit.mutate()}>
-
-                      <Send className="mr-1 h-3.5 w-3.5" />
-
-                      {submit.isPending ? "发布中…" : "发布"}
-
-                    </Button>
-
-                  </div>
-
-                </div>
-
-              ) : (
-
-                <p className="mb-3 rounded-xl border border-dashed p-2.5 text-center text-xs text-muted-foreground">
-
-                  登录后可以发表评论
-
-                </p>
-
-              )}
-
-              <div className="max-h-[26vh] space-y-2 overflow-y-auto pr-0.5">
-
-                {comments?.length ? (
-
-                  comments.map((c) => (
-
-                    <div key={c.id}>
-
-                      <Card>
-
-                        <CardContent className="flex items-start gap-2.5 p-3">
-
-                          {c.user.avatar ? (
-
-                            <img src={c.user.avatar} alt="" className="h-7 w-7 rounded-full object-cover" />
-
-                          ) : (
-
-                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-xs">
-
-                              {c.user.nickname[0]}
-
-                            </div>
-
-                          )}
-
-                          <div className="min-w-0 flex-1">
-
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-
-                              <span className="font-medium text-foreground">{c.user.nickname}</span>
-
-                              <span>{new Date(c.created_at).toLocaleString("zh-CN")}</span>
-
-                            </div>
-
-                            {editingComment === c.id ? (
-
-                              <div className="mt-1">
-
-                                <textarea
-
-                                  value={editText}
-
-                                  onChange={(e) => setEditText(e.target.value)}
-
-                                  rows={2}
-
-                                  className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
-
-                                />
-
-                                <div className="mt-1 flex justify-end gap-1.5">
-
-                                  <button
-
-                                    className="rounded-lg px-2 py-1 text-xs hover:bg-muted"
-
-                                    onClick={() => setEditingComment(null)}
-
-                                  >
-
-                                    取消
-
-                                  </button>
-
-                                  <button
-
-                                    className="rounded-lg bg-primary px-2.5 py-1 text-xs text-primary-foreground"
-
-                                    onClick={() => updateComment.mutate(c.id)}
-
-                                  >
-
-                                    保存
-
-                                  </button>
-
-                                </div>
-
-                              </div>
-
-                            ) : (
-
-                              <p className="mt-0.5 break-words text-sm">{c.content}</p>
-
-                            )}
-
-                            <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-
-                              <button className="hover:text-primary" onClick={() => setReplyTo(c)}>
-
-                                回复
-
-                              </button>
-
-                              <LikeBtn targetType="comment" targetId={c.id} />
-
-                              {user?.id === c.user.id ? (
-
-                                <>
-
-                                  <button
-
-                                    className="hover:text-primary"
-
-                                    onClick={() => {
-
-                                      setEditingComment(c.id);
-
-                                      setEditText(c.content);
-
-                                    }}
-
-                                  >
-
-                                    编辑
-
-                                  </button>
-
-                                  <button
-
-                                    className="hover:text-destructive"
-
-                                    onClick={() => {
-
-                                      if (confirm("删除这条评论？")) delComment.mutate(c.id);
-
-                                    }}
-
-                                  >
-
-                                    删除
-
-                                  </button>
-
-                                </>
-
-                              ) : (
-
-                                <button
-
-                                  className="flex items-center gap-0.5 hover:text-destructive"
-
-                                  onClick={() => setReportTarget({ type: "comment", id: c.id })}
-
-                                >
-
-                                  <Flag className="h-3 w-3" /> 举报
-
-                                </button>
-
-                              )}
-
-                            </div>
-
-                          </div>
-
-                        </CardContent>
-
-                      </Card>
-
-                      {c.replies?.length > 0 && (
-
-                        <div className="ml-6 mt-1.5 space-y-1.5 border-l-2 border-border pl-3">
-
-                          {c.replies.map((r) => (
-
-                            <Card key={r.id}>
-
-                              <CardContent className="p-2.5">
-
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-
-                                  <span className="font-medium text-foreground">{r.user.nickname}</span>
-
-                                  <span>{new Date(r.created_at).toLocaleString("zh-CN")}</span>
-
-                                </div>
-
-                                <p className="mt-0.5 break-words text-sm">{r.content}</p>
-
-                              </CardContent>
-
-                            </Card>
-
-                          ))}
-
-                        </div>
-
-                      )}
-
-                    </div>
-
-                  ))
-
-                ) : (
-
-                  <p className="py-6 text-center text-sm text-muted-foreground">还没有评论，来抢沙发！</p>
-
-                )}
-
-              </div>
-
+              <CommentSection landmarkId={landmarkId} />
             </div>
-
           )}
 
           {/* 手账 Tab */}

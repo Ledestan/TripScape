@@ -60,7 +60,7 @@ export default function CommentSection({
     : `/comments/journal/${journalId}`;
 
   const { data: comments, refetch } = useQuery({
-    queryKey: ["comments", landmarkId ? "landmark" : "journal", landmarkId ?? journalId],
+    queryKey: landmarkId ? ["comments", landmarkId] : ["comments", "journal", journalId],
     queryFn: async () => (await api.get(path)).data.data as CommentNode[],
     enabled: !!landmarkId || !!journalId,
   });

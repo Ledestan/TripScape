@@ -5,7 +5,7 @@
  * 该组件的界面与交互实现；结构与事件约定见下方代码。
  */
 
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Flag, Heart } from "lucide-react";
@@ -14,6 +14,9 @@ import { useAuthStore } from "@/stores/auth";
 import { FloatingWindow } from "@/components/FloatingWindow";
 import ReportDialog from "@/features/comments/ReportDialog";
 import { SkeletonRows } from "@/components/ui/skeleton";
+
+// 画布渲染带 konva，只在真的打开带画布的手账时才加载
+const JournalCanvasView = lazy(() => import("@/features/narrative/JournalCanvasView"));
 
 /* ================================================================== */
 /* 手账查看浮窗（个人主页/详情页/搜索结果点手账弹出；含点赞与举报）       */
@@ -32,10 +35,17 @@ export function JournalViewWindow({ journalId, onClose }: { journalId: number; o
         title: string;
         content: string;
         images: string[];
+        canvas?: unknown;
         visited_at: string | null;
         created_at: string;
       },
   });
+
+  // 有画布就优先展示画布；老手账没有画布时退回图片九宫格
+  const hasCanvas =
+    !!j?.canvas &&
+    Array.isArray((j.canvas as { elements?: unknown[] }).elements) &&
+    ((j.canvas as { elements: unknown[] }).elements.length > 0);
 
   return (
     <FloatingWindow open onClose={onClose} title={j ? `${j.title} · 手账` : "手账"} width={480} maxHeight="72vh">
@@ -48,7 +58,14 @@ export function JournalViewWindow({ journalId, onClose }: { journalId: number; o
             <span>@ {j.landmark.name}</span>
             <span>{j.visited_at || new Date(j.created_at).toLocaleDateString("zh-CN")}</span>
           </div>
-          {j.images?.length > 0 && (
+          {hasCanvas && (
+            <div className="mt-3">
+              <Suspense fallback={null}>
+                <JournalCanvasView canvas={j.canvas} />
+              </Suspense>
+            </div>
+          )}
+          {!hasCanvas && j.images?.length > 0 && (
             <div className="mt-3 grid grid-cols-2 gap-2">
               {j.images.slice(0, 6).map((u, i) => (
                 <img key={i} src={u} alt="" className="h-36 w-full rounded-xl object-cover" />

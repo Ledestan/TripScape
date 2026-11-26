@@ -142,6 +142,50 @@ def test_layer_order_follows_array_order():
     assert [element["z"] for element in doc["elements"]] == [0, 1]
 
 
+def test_sticker_and_tape_fields():
+    """贴纸与胶带进白名单；未知变体回落默认值。"""
+    doc = normalize_canvas(
+        {
+            "elements": [
+                {"type": "sticker", "variant": "heart", "color": "#c05a4a", "shadow": False, "cornerRadius": 0},
+                {"type": "tape", "pattern": "stripe", "color": "#d6ba84", "borderWidth": 2},
+                {"type": "sticker", "variant": "hacker"},
+            ]
+        }
+    )
+    heart, tape, fallback = doc["elements"]
+    assert heart["variant"] == "heart"
+    assert heart["shadow"] is False
+    assert heart["cornerRadius"] == 0
+    assert tape["pattern"] == "stripe"
+    assert tape["borderWidth"] == 2
+    assert fallback["variant"] == "star"
+    assert fallback["color"] == "#d9a441"
+
+
+def test_style_fields_are_clamped():
+    """圆角、边框、投影都收在白名单里，越界值被夹取。"""
+    doc = normalize_canvas(
+        {
+            "elements": [
+                {
+                    "type": "photo",
+                    "src": "/uploads/a.jpg",
+                    "cornerRadius": 999,
+                    "borderWidth": 99,
+                    "borderColor": "not-a-color",
+                    "evil": 1,
+                }
+            ]
+        }
+    )
+    element = doc["elements"][0]
+    assert element["cornerRadius"] == 120
+    assert element["borderWidth"] == 12
+    assert element["borderColor"] == "#00000000"
+    assert "evil" not in element
+
+
 def test_unknown_type_raises():
     """不认识的元素类型直接报错，而不是悄悄存进去。"""
     with pytest.raises(CanvasError):

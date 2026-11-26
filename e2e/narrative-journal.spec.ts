@@ -81,14 +81,14 @@ test.describe("S1 叙事档案、收藏与足迹", () => {
     await expect(page.getByTestId("detail-tab-journals")).toHaveAttribute("data-active", "true");
     await page.keyboard.press("Escape");
 
-    // ---- 足迹：独立浮窗 ----
+    // ---- 档案底部只有三个入口：足迹已收进个人中心 ----
     await page.goto(`/landmarks/${spot.id}`);
     await page.waitForSelector("#boot-screen", { state: "detached", timeout: 30_000 });
     await expect(page.getByTestId("narrative-layer-landmark")).toBeVisible({ timeout: 30_000 });
-    await page.getByTestId("narrative-footprints").click();
-    await expect(page.getByText("我的足迹")).toBeVisible({ timeout: 10_000 });
-    await page.keyboard.press("Escape");
-    await expect(page.getByText("我的足迹")).toHaveCount(0);
+    await expect(page.getByTestId("narrative-open-comments")).toBeVisible();
+    await expect(page.getByTestId("narrative-favorite")).toBeVisible();
+    await expect(page.getByTestId("narrative-open-journal-edit")).toBeVisible();
+    await expect(page.getByTestId("narrative-footprints")).toHaveCount(0);
 
     // ---- 刷新后收藏状态仍在 ----
     await page.reload();

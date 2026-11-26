@@ -27,7 +27,7 @@ import { api, errMessage } from "@/api/client";
 import { globeBus } from "@/features/globe/bus";
 import { useAuthStore } from "@/stores/auth";
 import { useNarrativeStore } from "@/stores/narrative";
-import FootprintWindow from "./FootprintWindow";
+
 import LandmarkNarrativePanel from "./LandmarkNarrativePanel";
 import type { FavoriteItem } from "./types";
 import type { LandmarkStoryData, NarrativeCardData } from "./types";
@@ -36,11 +36,11 @@ export default function NarrativeHud() {
   const layer = useNarrativeStore((s) => s.layer);
   const landmarkId = useNarrativeStore((s) => s.landmarkId);
   const landmarkName = useNarrativeStore((s) => s.landmarkName);
-  const enterLandmark = useNarrativeStore((s) => s.enterLandmark);
+
   const back = useNarrativeStore((s) => s.back);
   const token = useAuthStore((s) => s.token);
   const qc = useQueryClient();
-  const [footprintsOpen, setFootprintsOpen] = useState(false);
+
 
   // 档案浮窗压在地球上时停掉自转：省 GPU，也不会隔着面板看见地球在转
   useEffect(() => {
@@ -136,23 +136,12 @@ export default function NarrativeHud() {
             onToggleFavorite={() => {
               if (landmarkId !== null && requireLogin("收藏")) toggleFavorite.mutate(landmarkId);
             }}
-            onOpenFootprints={() => setFootprintsOpen(true)}
+
           />
         </div>
       )}
 
-      {/* 足迹窗挂在 HUD 里，但 HUD 根节点是 pointer-events-none：
-          这里必须再开 pointer-events-auto，否则窗口关不上 */}
-      <div className="pointer-events-auto">
-        <FootprintWindow
-          open={footprintsOpen}
-          onClose={() => setFootprintsOpen(false)}
-          onLocate={(id, name) => {
-            setFootprintsOpen(false);
-            enterLandmark(id, name);
-          }}
-        />
-      </div>
+      {/* 足迹已收进个人中心：档案里不再重复开窗 */}
     </div>
   );
 }

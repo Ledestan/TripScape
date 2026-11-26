@@ -85,8 +85,6 @@ export default function JournalEditWindow({
 
   const [canvas, setCanvas] = useState<CanvasDoc>(emptyCanvas());
 
-  const [uploading, setUploading] = useState(false);
-
   const [saving, setSaving] = useState(false);
 
   const [savingShare, setSavingShare] = useState(false);
@@ -208,34 +206,6 @@ export default function JournalEditWindow({
 
   }, [landmarks, search]);
 
-  const uploadImage = async (file: File) => {
-
-    setUploading(true);
-
-    try {
-
-      const form = new FormData();
-
-      form.append("image", file);
-
-      const r = await api.post("/uploads/image", form);
-
-      setImages((imgs) => [...imgs, r.data.url]);
-
-      toast.success("图片已上传");
-
-    } catch (e) {
-
-      toast.error(errMessage(e, "上传失败"));
-
-    } finally {
-
-      setUploading(false);
-
-    }
-
-  };
-
   const save = async () => {
 
     if (!token) {
@@ -266,7 +236,15 @@ export default function JournalEditWindow({
 
         content: content.trim(),
 
-        images,
+        images: Array.from(
+          new Set([
+            ...images,
+            ...canvas.elements
+              .filter((element) => element.type === "photo")
+              .map((element) => (element as { src?: string }).src || "")
+              .filter(Boolean),
+          ])
+        ),
 
         visited_at: visitedAt || null,
 
@@ -520,9 +498,7 @@ export default function JournalEditWindow({
 
               onChange={setCanvas}
 
-              photos={images}
-
-              fragment={fragmentSource}
+                fragment={fragmentSource}
 
             />
 
@@ -553,66 +529,6 @@ export default function JournalEditWindow({
             className="resize-y"
 
           />
-
-        </div>
-
-        <div className="space-y-2">
-
-          <Label>图片记录</Label>
-
-          <div className="flex flex-wrap gap-2">
-
-            {images.map((url, i) => (
-
-              <div key={i} className="group relative h-20 w-20 overflow-hidden rounded-lg border">
-
-                <img src={url} alt="" className="h-full w-full object-cover" />
-
-                <button
-
-                  className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition group-hover:opacity-100"
-
-                  onClick={() => setImages(images.filter((_, j) => j !== i))}
-
-                >
-
-                  <X className="h-3 w-3" />
-
-                </button>
-
-              </div>
-
-            ))}
-
-            <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed text-muted-foreground transition hover:border-primary hover:text-primary">
-
-              <ImagePlus className="h-5 w-5" />
-
-              <span className="text-xs">{uploading ? "上传中…" : "添加"}</span>
-
-              <input
-
-                type="file"
-
-                accept="image/png,image/jpeg,image/webp"
-
-                className="hidden"
-
-                onChange={(e) => {
-
-                  const f = e.target.files?.[0];
-
-                  if (f) uploadImage(f);
-
-                  e.target.value = "";
-
-                }}
-
-              />
-
-            </label>
-
-          </div>
 
         </div>
 
@@ -656,7 +572,7 @@ export default function JournalEditWindow({
 
             </Button>
 
-            <Button size="sm" onClick={save} disabled={saving || uploading}>
+            <Button size="sm" onClick={save} disabled={saving}>
 
               {saving ? "保存中…" : presetJournalId ? "更新" : "发布手账"}
 

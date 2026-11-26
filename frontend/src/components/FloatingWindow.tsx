@@ -51,6 +51,9 @@ export function FloatingWindow({
       <div className="absolute inset-0 bg-black/25" onClick={onClose} />
       <div
         data-testid={testId}
+        role="dialog"
+        aria-modal="true"
+        aria-label={typeof title === "string" ? title : "浮窗"}
         className={cn(
           "relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-panel border border-border/60 bg-card text-card-foreground shadow-panel",
           "animate-in zoom-in-95 fade-in duration-200"

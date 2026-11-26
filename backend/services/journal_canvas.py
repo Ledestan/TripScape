@@ -34,15 +34,35 @@ CANVAS_RATIO = "3:4"
 MAX_ELEMENTS = 40
 MAX_TEXT_LENGTH = 200
 
-ELEMENT_TYPES = ("photo", "text", "fragment")
+ELEMENT_TYPES = ("photo", "text", "fragment", "sticker", "tape")
 
 # 元素允许的字段（其余键一律丢弃）
-COMMON_FIELDS = ("id", "type", "x", "y", "width", "height", "rotation", "scale", "opacity", "z")
+COMMON_FIELDS = (
+    "id",
+    "type",
+    "x",
+    "y",
+    "width",
+    "height",
+    "rotation",
+    "scale",
+    "opacity",
+    "z",
+    "cornerRadius",
+    "shadow",
+    "borderWidth",
+    "borderColor",
+)
 TYPE_FIELDS = {
-    "photo": ("src",),
+    "photo": ("src", "color"),
     "text": ("text", "fontSize", "color", "align", "fontFamily", "fontStyle"),
     "fragment": ("title", "snippet", "year", "landmarkId", "color"),
+    "sticker": ("variant", "color"),
+    "tape": ("color", "pattern"),
 }
+
+STICKER_VARIANTS = ("star", "heart", "circle", "pin", "burst")
+TAPE_PATTERNS = ("plain", "stripe", "dot")
 
 HEX_COLOR = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
 
@@ -121,6 +141,10 @@ def normalize_element(raw, index: int) -> dict:
         "scale": round(_clamp(raw.get("scale"), 0.1, 4, 1), 3),
         "opacity": round(_clamp(raw.get("opacity"), 0.1, 1, 1), 2),
         "z": int(_clamp(raw.get("z"), 0, MAX_ELEMENTS, index)),
+        "cornerRadius": round(_clamp(raw.get("cornerRadius"), 0, 120, 6), 2),
+        "shadow": bool(raw.get("shadow", True)),
+        "borderWidth": round(_clamp(raw.get("borderWidth"), 0, 12, 0), 2),
+        "borderColor": _color(raw.get("borderColor"), "#00000000"),
     }
 
     for key in TYPE_FIELDS[kind]:
@@ -134,8 +158,16 @@ def normalize_element(raw, index: int) -> dict:
         element["fontSize"] = round(_clamp(element.get("fontSize"), 10, 96, 24), 2)
         element["color"] = _color(element.get("color"), "#f5f2ea")
         element["align"] = "center" if raw.get("align") == "center" else "left"
-        element["fontFamily"] = _text(raw.get("fontFamily"), 40) or "serif"
+        element["fontFamily"] = _text(element.get("fontFamily"), 40) or "serif"
         element["fontStyle"] = "italic" if raw.get("fontStyle") == "italic" else "normal"
+    elif kind == "sticker":
+        variant = str(raw.get("variant") or "star")
+        element["variant"] = variant if variant in STICKER_VARIANTS else "star"
+        element["color"] = _color(raw.get("color"), "#d9a441")
+    elif kind == "tape":
+        pattern = str(raw.get("pattern") or "plain")
+        element["pattern"] = pattern if pattern in TAPE_PATTERNS else "plain"
+        element["color"] = _color(raw.get("color"), "#d6ba84")
     else:  # fragment
         element["title"] = _text(element.get("title"), 60)
         element["snippet"] = _text(element.get("snippet"), MAX_TEXT_LENGTH)

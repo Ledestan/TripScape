@@ -20,11 +20,6 @@ import { JournalViewWindow } from "@/layouts/JournalViewWindow";
 import LandmarkDetailWindow from "@/pages/LandmarkDetail";
 import JournalEditWindow from "@/pages/JournalEditWindow";
 
-const CreationComposeWindow = lazy(() =>
-
-  import("@/features/creation/CreationComposeWindow")
-
-);
 // TripScape 2.0 叙事层（2.0 本体，无开关）
 import NarrativeHud from "@/features/narrative/NarrativeHud";
 import { useNarrativeStore } from "@/stores/narrative";
@@ -45,8 +40,6 @@ export default function GlobeApp() {
   const [detailTab, setDetailTab] = useState<"comments" | "journals">("comments");
   const [journalLandmarkId, setJournalLandmarkId] = useState<number | null>(null);
   const [journalOpen, setJournalOpen] = useState(false);
-
-  const [creationOpen, setCreationOpen] = useState(false);
 
   const enterLandmark = useNarrativeStore((s) => s.enterLandmark);
   const resetNarrative = useNarrativeStore((s) => s.reset);
@@ -110,13 +103,6 @@ export default function GlobeApp() {
       window.removeEventListener("ts:open-landmark-window", onOpenLandmarkWindow);
       window.removeEventListener("ts:open-journal-edit", onOpenJournalEdit);
     };
-  }, []);
-
-  // 旅行拼贴创作浮窗（头像菜单 / 其他入口派发事件）
-  useEffect(() => {
-    const onOpenCreation = () => setCreationOpen(true);
-    window.addEventListener("ts:open-creation", onOpenCreation);
-    return () => window.removeEventListener("ts:open-creation", onOpenCreation);
   }, []);
 
   // 搜索结果"查看手账"事件
@@ -218,35 +204,6 @@ export default function GlobeApp() {
           }}
         />
       )}
-
-      {/* 旅行拼贴创作浮窗：宿主负责保存/导出，这里先给演示素材与本地保存 */}
-      <Suspense fallback={null}>
-        <CreationComposeWindow
-          open={creationOpen}
-          title="旅行拼贴"
-          assetSlots={{
-            stickers: [
-              { id: "st-star", label: "星标", kind: "sticker", variant: "star", color: "#d9a441" },
-              { id: "st-heart", label: "心形", kind: "sticker", variant: "heart", color: "#c05a4a" },
-              { id: "st-pin", label: "定位", kind: "sticker", variant: "pin", color: "#3d7a68" },
-            ],
-            tapes: [
-              { id: "tp-kraft", label: "牛皮纸", kind: "tape", color: "rgba(198,166,110,0.72)", pattern: "plain" },
-              { id: "tp-stripe", label: "条纹", kind: "tape", color: "rgba(120,150,160,0.55)", pattern: "stripe" },
-            ],
-            backgrounds: [
-              { id: "bg-cream", label: "米白纸", kind: "background", color: "#f3ece1" },
-              { id: "bg-kraft", label: "牛皮纸", kind: "background", color: "#e6d7c3" },
-              { id: "bg-night", label: "深空", kind: "background", color: "#141a24" },
-            ],
-          }}
-          onSave={async () => {
-            // 宿主接入点：以后可以 POST /api/journals/ 的 canvas 字段
-            await new Promise((resolve) => window.setTimeout(resolve, 400));
-          }}
-          onClose={() => setCreationOpen(false)}
-        />
-      </Suspense>
 
       {/* 全局搜索浮窗（"显示更多"打开，带上搜索词） */}
       {searchOpen && (

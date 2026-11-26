@@ -52,6 +52,7 @@ from api.qa import router as qa_router
 from api.recognition import router as recognition_router
 from api.search import router as search_router
 from api.shares import router as shares_router
+from api.uploads import router as uploads_router
 
 api.add_router("/auth", accounts_router)
 api.add_router("/admin", audit_router)
@@ -64,6 +65,7 @@ api.add_router("/landmarks", landmarks_router)
 api.add_router("/notifications", notifications_router)
 api.add_router("/search", search_router)
 api.add_router("/shares", shares_router)
+api.add_router("/uploads", uploads_router)
 
 
 api.add_router("/qa", qa_router)

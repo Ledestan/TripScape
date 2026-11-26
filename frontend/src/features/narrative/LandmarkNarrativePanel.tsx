@@ -49,7 +49,6 @@ export default function LandmarkNarrativePanel({
   favorited,
   favoriteBusy,
   onToggleFavorite,
-  onOpenFootprints,
 }: {
   card?: NarrativeCardData;
   loading: boolean;
@@ -64,7 +63,6 @@ export default function LandmarkNarrativePanel({
   favorited: boolean;
   favoriteBusy: boolean;
   onToggleFavorite: () => void;
-  onOpenFootprints: () => void;
 }) {
   const title = card?.title || story?.title || landmarkName || "地标档案";
 
@@ -205,9 +203,9 @@ export default function LandmarkNarrativePanel({
         )}
       </div>
 
-      {/* 动作区：评论 / 收藏 / 足迹 / 手账，四个各自独立的按钮 */}
+      {/* 动作区：评论 / 收藏 / 手账 三个入口（足迹已收进个人中心，这里不再重复） */}
       <footer className="shrink-0 border-t border-border/60 bg-card px-3 py-2.5">
-        <div className="grid grid-cols-4 gap-1.5">
+        <div className="grid grid-cols-3 gap-1.5">
           <Button
             size="sm"
             variant="outline"
@@ -232,16 +230,6 @@ export default function LandmarkNarrativePanel({
           >
             <Star className={`mr-1 h-3 w-3 ${favorited ? "fill-amber-400 text-amber-400" : ""}`} />
             {favorited ? "已收藏" : "收藏"}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 px-0 text-[11px] text-muted-foreground hover:text-foreground"
-            data-testid="narrative-footprints"
-            onClick={onOpenFootprints}
-          >
-            <Footprints className="mr-1 h-3 w-3" />
-            足迹
           </Button>
           <Button
             size="sm"

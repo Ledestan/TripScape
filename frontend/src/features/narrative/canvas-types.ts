@@ -3,8 +3,8 @@
  * 创建日期: 2026-11-26
  *
  * 手账画布的数据模型与纯函数，与渲染（react-konva）解耦，完成:
- *     1. CanvasDoc / CanvasElement：3:4 版式上的照片、文字、碎片卡片
- *     2. 工厂函数：createText / createPhoto / createFragment
+ *     1. CanvasDoc / CanvasElement：3:4 版式上的照片、文字、碎片卡片、贴纸、胶带
+ *     2. 工厂函数：createText / createPhoto / createFragment / createSticker / createTape
  *     3. 编辑操作：updateElement / removeElement / moveLayer
  *     4. 序列化与容错解析：serializeCanvas / parseCanvas（与后端字段一一对应）
  *
@@ -25,7 +25,10 @@ export const CANVAS_H = 960;
 export const CANVAS_RATIO = "3:4" as const;
 export const MAX_ELEMENTS = 40;
 
-export type CanvasElementType = "photo" | "text" | "fragment";
+export type CanvasElementType = "photo" | "text" | "fragment" | "sticker" | "tape";
+
+export type StickerVariant = "star" | "heart" | "circle" | "pin" | "burst";
+export type TapePattern = "plain" | "stripe" | "dot";
 
 export interface BaseElement {
   id: string;
@@ -42,6 +45,13 @@ export interface BaseElement {
   opacity: number;
   /** 图层顺序：数组下标即层级 */
   z: number;
+  /** 圆角（px） */
+  cornerRadius: number;
+  /** 投影开关 */
+  shadow: boolean;
+  /** 边框宽度（px，0 = 无边框） */
+  borderWidth: number;
+  borderColor: string;
 }
 
 export interface PhotoElement extends BaseElement {
@@ -69,7 +79,24 @@ export interface FragmentElement extends BaseElement {
   color?: string;
 }
 
-export type CanvasElement = PhotoElement | TextElement | FragmentElement;
+export interface StickerElement extends BaseElement {
+  type: "sticker";
+  variant: StickerVariant;
+  color: string;
+}
+
+export interface TapeElement extends BaseElement {
+  type: "tape";
+  color: string;
+  pattern: TapePattern;
+}
+
+export type CanvasElement =
+  | PhotoElement
+  | TextElement
+  | FragmentElement
+  | StickerElement
+  | TapeElement;
 
 export interface CanvasDoc {
   version: 1;
@@ -87,7 +114,7 @@ export function emptyCanvas(): CanvasDoc {
     ratio: CANVAS_RATIO,
     width: CANVAS_W,
     height: CANVAS_H,
-    background: "#0d1016",
+    background: "#12161d",
     elements: [],
   };
 }
@@ -104,42 +131,52 @@ export function clamp(value: number, low: number, high: number, fallback = 0): n
   return Math.min(high, Math.max(low, value));
 }
 
-/** 新建文字元素 */
-export function createText(text = "在这里写一句", x = 80, y = 120): TextElement {
+function baseOf(
+  type: CanvasElementType,
+  x: number,
+  y: number,
+  width: number,
+  height: number
+): Omit<BaseElement, "id" | "type"> & { id: string; type: CanvasElementType } {
   return {
-    id: nextId("text"),
-    type: "text",
-    text,
+    id: nextId(type),
+    type,
     x,
     y,
-    width: 400,
-    height: 80,
+    width,
+    height,
     rotation: 0,
     scale: 1,
     opacity: 1,
     z: 0,
+    cornerRadius: 8,
+    shadow: true,
+    borderWidth: 0,
+    borderColor: "#00000000",
+  };
+}
+
+/** 新建文字元素 */
+export function createText(text = "在这里写一句", x = 80, y = 120): TextElement {
+  return {
+    ...baseOf("text", x, y, 400, 80),
+    type: "text",
+    text,
     fontSize: 28,
     color: "#f5f2ea",
     align: "left",
     fontFamily: "serif",
     fontStyle: "normal",
+    shadow: false,
   };
 }
 
 /** 新建照片元素 */
 export function createPhoto(src: string, x = 120, y = 140): PhotoElement {
   return {
-    id: nextId("photo"),
+    ...baseOf("photo", x, y, 320, 240),
     type: "photo",
     src,
-    x,
-    y,
-    width: 320,
-    height: 240,
-    rotation: 0,
-    scale: 1,
-    opacity: 1,
-    z: 0,
     color: "#1b1b1b",
   };
 }
@@ -151,21 +188,44 @@ export function createFragment(
   y = 300
 ): FragmentElement {
   return {
-    id: nextId("fragment"),
+    ...baseOf("fragment", x, y, 360, 150),
     type: "fragment",
     title: data.title.slice(0, 60),
     snippet: (data.snippet || "").slice(0, 200),
     year: (data.year || "").slice(0, 16),
     landmarkId: data.landmarkId ?? 0,
-    x,
-    y,
-    width: 360,
-    height: 150,
-    rotation: 0,
-    scale: 1,
-    opacity: 1,
-    z: 0,
     color: "#12161d",
+    cornerRadius: 10,
+  };
+}
+
+/** 新建贴纸元素 */
+export function createSticker(
+  variant: StickerVariant = "star",
+  color = "#d9a441",
+  x = 120,
+  y = 140
+): StickerElement {
+  return {
+    ...baseOf("sticker", x, y, 96, 96),
+    type: "sticker",
+    variant,
+    color,
+    cornerRadius: 0,
+    shadow: false,
+  };
+}
+
+/** 新建胶带元素 */
+export function createTape(color = "#d6ba84", x = 80, y = 70): TapeElement {
+  return {
+    ...baseOf("tape", x, y, 200, 44),
+    type: "tape",
+    color,
+    pattern: "plain",
+    rotation: -6,
+    cornerRadius: 2,
+    shadow: false,
   };
 }
 
@@ -230,6 +290,8 @@ export function clampElement(element: CanvasElement): CanvasElement {
     rotation: clamp(element.rotation, -180, 180),
     scale: clamp(element.scale, 0.1, 4, 1),
     opacity: clamp(element.opacity, 0.1, 1, 1),
+    cornerRadius: clamp(element.cornerRadius, 0, 120, 8),
+    borderWidth: clamp(element.borderWidth, 0, 12, 0),
   };
 }
 
@@ -249,7 +311,7 @@ export function serializeCanvas(doc: CanvasDoc): CanvasDoc {
 }
 
 /**
- * 容错解析：后端返回的 canvas 可能是空对象或旧结构，这里统一补默认值。
+ * 容错解析：后端返回的 canvas 可能是空对象或旧结构，这里补默认值。
  *
  * 参数：
  *     raw : unknown，接口里的 canvas 字段
@@ -263,11 +325,11 @@ export function parseCanvas(raw: unknown): CanvasDoc {
   const source = raw as Partial<CanvasDoc>;
   if (!Array.isArray(source.elements)) return base;
 
+  const allowed: CanvasElementType[] = ["photo", "text", "fragment", "sticker", "tape"];
   const elements = source.elements
     .filter((item): item is CanvasElement => {
       if (!item || typeof item !== "object") return false;
-      const type = (item as CanvasElement).type;
-      return type === "photo" || type === "text" || type === "fragment";
+      return allowed.includes((item as CanvasElement).type);
     })
     .slice(0, MAX_ELEMENTS)
     .map((element, index) => clampElement({ ...element, z: index }));

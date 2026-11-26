@@ -40,6 +40,18 @@ test.describe("S2 手账画布", () => {
     await page.getByRole("button", { name: "碎片" }).click();
     await expect(page.getByText("3:4 · 2/40")).toBeVisible();
 
+    // 直接在画布里上传照片（新版写手账不再走旧版九宫格）
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=",
+      "base64"
+    );
+    await page.locator('input[type="file"]').setInputFiles({
+      name: "trip.png",
+      mimeType: "image/png",
+      buffer: png,
+    });
+    await expect(page.getByText("3:4 · 3/40")).toBeVisible({ timeout: 20_000 });
+
     const title = `画布 e2e ${Date.now()}`;
     await page.locator('input[maxlength="128"]').first().fill(title);
     await page.getByRole("button", { name: /发布手账/ }).click();
@@ -62,6 +74,13 @@ test.describe("S2 手账画布", () => {
     ).json();
     const canvas = detail.data.canvas as { ratio: string; elements: { type: string }[] };
     expect(canvas.ratio).toBe("3:4");
-    expect(canvas.elements.map((element) => element.type)).toEqual(["text", "fragment"]);
+    expect(canvas.elements.map((element) => element.type)).toEqual(["text", "fragment", "photo"]);
+
+    // 查看端要能把画布渲染出来（否则存了也看不见）
+    await page.evaluate((id) => {
+      window.dispatchEvent(new CustomEvent("ts:open-journal-view", { detail: id }));
+    }, created!.id);
+    await expect(page.getByRole("dialog")).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[role="dialog"] canvas').first()).toBeVisible({ timeout: 10_000 });
   });
 });

@@ -57,6 +57,25 @@ pnpm build                               # 构建后由 Django 提供 SPA；开�
 - 所有入口脚本（`desktop.py`、`manage.py`、`scripts/*.py`、管理命令）都显式设置该标记。
 - `pytest.ini` 已关闭 `cacheprovider`，不会产生 `.pytest_cache`。
 
+### 启动图与素材来源
+
+启动页的两张背景图不是素材站找的，而是**用自有数据渲染**（`scripts/make_boot_art.py`）：
+
+```bash
+python scripts/make_boot_art.py --catalog D:/tmp/hyg_v41.csv   # 生成两张图
+python scripts/make_boot_art.py --catalog ... --only stars     # 只重画星野
+```
+
+| 产物 | 来源 | 生成方式 |
+| --- | --- | --- |
+| `public/stars.jpg` | HYG 星表（CC BY-SA 4.0，`github.com/astronexus/HYG-Database`） | 按真实赤经/赤纬/星等/色指数做 46° 小视场投影，亮星画高斯光斑 |
+| `public/earth-arc.jpg` | 仓库内 `public/earth.png` 等距圆柱贴图 | 球面正交投影 + 临边昏暗 + 边缘大气辉光 |
+
+投递说明可写：*星空按 HYG 星表的真实星位渲染；地球由项目自有贴图程序化生成。*
+
+> 注意：`public/earth.png`（产品内贴图地球用）若同样来自第三方，建议换成 NASA Blue Marble
+> （公有领域，`visibleearth.nasa.gov`）后重跑脚本——贴图与地平线弧会一起换成 NASA 版本。
+
 一键重置（恢复初始状态）：`python reset_project.py`（清 runtime → 重建数据库与种子 → 重建前端；
 `--yes` 免确认、`--no-frontend` 跳过构建、`--with-tests` 重置后跑测试）。
 旧命令 `python scripts/reset_all.py` 保留为转发入口，两者等价。

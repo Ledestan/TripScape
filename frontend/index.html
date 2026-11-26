@@ -49,10 +49,11 @@
         font-family: system-ui, -apple-system, "PingFang SC", sans-serif;
       }
 
-      /* 星野：比容器大一圈，缓慢漂移时不会露出边缘 */
+      /* 星野：容器已用同一张图打底（首帧兜底），这一层只负责漂移的"视差"，
+         所以目标不透明度压到 0.45，避免同一张图叠加成双曝光 */
       .boot-loading .stars {
         position: absolute;
-        inset: -8%;
+        inset: 0;
         background: #04070d url("/stars.jpg") no-repeat center center;
         background-size: cover;
         opacity: 0;
@@ -264,7 +265,7 @@
       }
       @keyframes stars-in {
         from { opacity: 0; }
-        to { opacity: 0.72; }
+        to { opacity: 0.45; }
       }
       @keyframes drift {
         from { transform: translate3d(-1.2%, -1%, 0) scale(1.03); }

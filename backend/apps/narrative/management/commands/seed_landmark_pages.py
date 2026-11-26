@@ -22,6 +22,10 @@
     2. 生成的是纯文本 JSON，打开地标时直接读文件，不会再触发分词。
 """
 
+import sys
+
+sys.dont_write_bytecode = True
+
 from django.core.management.base import BaseCommand
 from services import landmark_pages
 
@@ -46,6 +50,7 @@ class Command(BaseCommand):
             return
         self.stdout.write(
             self.style.SUCCESS(
-                f"地标页面已生成：{stats['written']} 篇 / 跳过 {stats['skipped']} 篇"
+                f"地标页面已生成：{stats['written']} 篇"
+                f" / 未变化 {stats['unchanged']} 篇 / 跳过 {stats['skipped']} 篇"
             )
         )

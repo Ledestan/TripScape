@@ -39,7 +39,7 @@
 ```bash
 pip install -r requirements.txt          # 后端依赖
 copy .env.example .env                   # 环境配置（Windows）；macOS/Linux 用 cp
-python scripts/reset_all.py              # 一键初始化：runtime + MySQL + 种子 + 识别/问答双索引
+python reset_project.py --yes            # 一键初始化：runtime + 数据库与种子 + 地标页面 + 前端构建
 python backend/manage.py runserver       # http://127.0.0.1:8000
 
 cd frontend                              # 前端（新终端）
@@ -47,8 +47,15 @@ pnpm install
 pnpm build                               # 构建后由 Django 提供 SPA；开发用 pnpm dev
 ```
 
-> **提示**：首次运行 reset_all 会下载 DINOv2 权重（84MB，走 hf-mirror 镜像），
-> 之后缓存在用户目录不再下载；索引构建约 1 分钟。
+> **提示**：首次构建问答索引会下载 bge-small-zh 权重（约 92MB，走 hf-mirror 镜像），
+> 之后缓存在用户目录不再下载；索引构建约 40 秒。
+
+### 环境约定：不生成 `__pycache__`
+
+- 用户级环境变量 `PYTHONDONTWRITEBYTECODE=1`（解释器启动前生效，覆盖 `.pth` 早导入）。
+- venv 内 `sitecustomize.py` 再兜一层 `sys.dont_write_bytecode = True`；`reset_project.py` 会重建它。
+- 所有入口脚本（`desktop.py`、`manage.py`、`scripts/*.py`、管理命令）都显式设置该标记。
+- `pytest.ini` 已关闭 `cacheprovider`，不会产生 `.pytest_cache`。
 
 一键重置（恢复初始状态）：`python reset_project.py`（清 runtime → 重建数据库与种子 → 重建前端；
 `--yes` 免确认、`--no-frontend` 跳过构建、`--with-tests` 重置后跑测试）。

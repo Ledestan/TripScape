@@ -9,12 +9,10 @@ Django 管理入口（backend/）。
     python backend/manage.py migrate
     python backend/manage.py init_tripscape
     python backend/manage.py runserver
-"""
-
-"""Django 管理入口
 
 所有 manage.py 子命令的统一入口：runserver / migrate / makemigrations / init_tripscape / celery 相关。执行时全局禁用 __pycache__。
 """
+
 
 import os
 import sys

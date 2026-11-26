@@ -110,6 +110,37 @@ def uses_sqlite() -> bool:
     return not mysql_reachable()
 
 
+def ensure_no_bytecode_hook() -> None:
+    """在 venv 内写 sitecustomize，让所有 Python 进程都不生成 __pycache__。
+
+    该钩子属于环境产物（.venv 不入库），重建虚拟环境后会丢失，
+    所以在重置流程里必须先补回来，否则后面跑迁移/测试又会产出一堆缓存。
+    """
+    started = time.time()
+    print_banner("第 0 步 / 关闭字节码缓存")
+
+    site_dir = Path(sys.prefix) / "Lib" / "site-packages"
+    if not site_dir.exists():  # 非 Windows 布局
+        site_dir = Path(sys.prefix) / "lib" / "site-packages"
+    hook = site_dir / "sitecustomize.py"
+    hook.write_text(
+        '"""解释器钩子：禁用 __pycache__（由 reset_project.py 自动重建）。"""\n\n'
+        "import sys\n\n"
+        "sys.dont_write_bytecode = True\n",
+        encoding="utf-8",
+    )
+    os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
+    print(f"已写入解释器钩子: {hook}")
+
+    # 钩子只能拦住 sitecustomize 之后的导入；.pth 早导入仍需用户级环境变量兜底
+    if os.name == "nt" and not os.environ.get("PYTHONDONTWRITEBYTECODE"):
+        print(
+            "提示: 建议把 PYTHONDONTWRITEBYTECODE=1 设为用户环境变量"
+            "（setx PYTHONDONTWRITEBYTECODE 1），可覆盖解释器启动前的导入"
+        )
+    print_step_done("关闭字节码缓存", started)
+
+
 def run(cmd: list[str], title: str, cwd: Path | None = None) -> int:
     """统一子进程入口：Windows 下 .cmd 必须经 cmd /c，前端命令要在 frontend/ 下跑。"""
     print(f"[执行] {' '.join(cmd)}")
@@ -259,6 +290,8 @@ def main() -> None:
     if not args.yes and not confirm():
         sys.exit("已取消，未做任何修改")
 
+    # 先补字节码钩子，再跑任何子进程，避免重置过程自己产出一堆 __pycache__
+    ensure_no_bytecode_hook()
     clean_runtime()
     if not args.skip_db:
         reset_database()

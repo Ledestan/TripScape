@@ -230,7 +230,7 @@ def build_pages(verbose: bool = False) -> dict:
 
     grouped = group_chunks()
     PAGES_DIR.mkdir(parents=True, exist_ok=True)
-    written = skipped = 0
+    written = skipped = unchanged = 0
     # 排序后遍历：同一份语料每次生成顺序一致
     for landmark in Landmark.objects.order_by("target_id"):
         chunks = grouped.get(landmark.target_id, [])
@@ -239,13 +239,21 @@ def build_pages(verbose: bool = False) -> dict:
             continue
         page = build_page(landmark, chunks)
         target = PAGES_DIR / f"{landmark.target_id}.json"
+
+        # 内容没变就不落盘：避免每次生成只刷新 built_at，制造无意义的 diff
+        if target.exists():
+            previous = json.loads(target.read_text(encoding="utf-8"))
+            if {**previous, "built_at": None} == {**page, "built_at": None}:
+                unchanged += 1
+                continue
+
         target.write_text(
             json.dumps(page, ensure_ascii=False, indent=2), encoding="utf-8"
         )
         written += 1
         if verbose:
             print(f"页面已生成: {target.name}（{len(page['timeline'])} 条时间轴）")
-    return {"written": written, "skipped": skipped}
+    return {"written": written, "unchanged": unchanged, "skipped": skipped}
 
 
 def page_for(landmark) -> dict | None:

@@ -17,6 +17,9 @@
 """
 
 import re
+import sys
+
+sys.dont_write_bytecode = True
 from pathlib import Path
 from apps.admin_panel.models import SensitiveWord
 from apps.badges.models import Badge
@@ -264,7 +267,8 @@ class Command(BaseCommand):
 
             stats = landmark_pages.build_pages()
             self.stdout.write(
-                f"   生成 {stats['written']} 个页面文件 / 跳过 {stats['skipped']} 个"
+                f"   生成 {stats['written']} 个页面文件"
+                f" / 未变化 {stats['unchanged']} 个 / 跳过 {stats['skipped']} 个"
             )
         except FileNotFoundError as exc:
             # 语料没生成时不要让初始化失败：地标与账号已经可用，页面可稍后补

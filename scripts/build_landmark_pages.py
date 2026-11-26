@@ -85,7 +85,10 @@ def main() -> None:
         stats = landmark_pages.build_pages(verbose=args.verbose)
     except FileNotFoundError as exc:
         sys.exit(f"错误: {exc}")
-    print(f"页面已生成: {stats['written']} 篇 / 跳过 {stats['skipped']} 篇")
+    print(
+        f"页面已生成: {stats['written']} 篇"
+        f" / 未变化 {stats['unchanged']} 篇 / 跳过 {stats['skipped']} 篇"
+    )
     print(f"输出目录: {landmark_pages.PAGES_DIR}")
 
 

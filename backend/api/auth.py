@@ -217,16 +217,18 @@ def public_profile(request, user_id: int):
         comments = [
             {
                 "id": c.id,
-                "landmark": c.landmark.name,
+                "landmark": c.landmark.name if c.landmark_id else "",
                 "landmark_id": c.landmark_id,
-                "lat": float(c.landmark.lat),
-                "lon": float(c.landmark.lon),
+                "journal_id": c.journal_id,
+                "journal_title": c.journal.title if c.journal_id else "",
+                "lat": float(c.landmark.lat) if c.landmark_id else None,
+                "lon": float(c.landmark.lon) if c.landmark_id else None,
                 "content": c.content,
                 "created_at": c.created_at.isoformat(),
             }
             for c in Comment.objects.filter(
                 user=u, is_hidden=False, deleted_at__isnull=True
-            ).select_related("landmark")[:50]
+            ).select_related("landmark", "journal")[:50]
         ]
 
     favorites = []

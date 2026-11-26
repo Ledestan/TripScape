@@ -324,6 +324,9 @@ interface ReviewItem {
   user: { nickname: string; username?: string };
   landmark?: { name: string; region?: string };
   landmark_name?: string;
+  source?: "landmark" | "journal";
+  journal_title?: string;
+  canvas_elements?: number;
   is_public?: boolean;
   status?: string;
   is_hidden?: boolean;
@@ -563,6 +566,17 @@ function ReviewTab() {
                     </span>
                   )}
                   {it.landmark?.region && <span className="rounded-full bg-muted px-1.5 py-0.5">{it.landmark.region}</span>}
+                  {it.source === "journal" && it.journal_title && (
+                    <span className="flex items-center gap-0.5">
+                      <NotebookPen className="h-3 w-3" />
+                      手账「{it.journal_title}」
+                    </span>
+                  )}
+                  {typeof it.canvas_elements === "number" && it.canvas_elements > 0 && (
+                    <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-primary">
+                      拼贴 {it.canvas_elements} 元素
+                    </span>
+                  )}
                   <span className="ml-auto">{new Date(it.created_at).toLocaleString("zh-CN")}</span>
                 </div>
                 {it.edit_pending && (

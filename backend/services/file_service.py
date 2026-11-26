@@ -9,6 +9,10 @@ MinIO 可用时写对象存储并把 public URL 返回）。
 """
 
 import logging
+
+# MinIO 探活超时（秒）：连不上就直接回落本地，避免每次上传等 20 秒
+MINIO_PROBE_SECONDS = 1.0
+_MINIO_DOWN = False
 import re
 import uuid
 from pathlib import Path
@@ -30,13 +34,21 @@ def get_minio():
     if _client is None and not _client_checked:
         _client_checked = True
         try:
+            import urllib3
             from minio import Minio
 
+            http_client = urllib3.PoolManager(
+                timeout=urllib3.Timeout(
+                    connect=MINIO_PROBE_SECONDS, read=MINIO_PROBE_SECONDS * 2
+                ),
+                retries=urllib3.Retry(total=0),
+            )
             client = Minio(
                 settings.MINIO_ENDPOINT,
                 access_key=settings.MINIO_ACCESS_KEY,
                 secret_key=settings.MINIO_SECRET_KEY,
                 secure=settings.MINIO_SECURE,
+                http_client=http_client,
             )
             if not client.bucket_exists(settings.MINIO_BUCKET):
                 client.make_bucket(settings.MINIO_BUCKET)

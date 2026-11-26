@@ -129,6 +129,7 @@ def review_journals(
     data = []
     for j in items:
         d = j.as_dict(with_content=True)
+        d["canvas_elements"] = len((j.canvas or {}).get("elements") or [])
         if j.edit_pending and j.pending_edit:
             pe = j.pending_edit
             # 待审核视图主展示新版；同时带上当前展示的旧版供对照
@@ -152,7 +153,7 @@ def review_comments(
 ):
     """评论列表：支持 展示/隐藏/全部 与 地区/地标 筛选，含风险预检。"""
     page_size = page_size or settings.PAGE_SIZE
-    qs = Comment.objects.select_related("landmark", "user").filter(
+    qs = Comment.objects.select_related("landmark", "journal", "user").filter(
         deleted_at__isnull=True
     )
     if hidden == "true":
@@ -172,6 +173,10 @@ def review_comments(
             {"name": c.landmark.name, "region": c.landmark.region}
             if c.landmark_id
             else None
+        )
+        d["source"] = "journal" if c.journal_id else "landmark"
+        d["journal"] = (
+            {"title": c.journal.title} if c.journal_id and c.journal else None
         )
         d["risk"] = _content_risk(c.user, "comment", c.id)
         data.append(d)

@@ -10,7 +10,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  ImagePlus, Send, X, Search as SearchIcon, MapPin, History, MessageSquare, Bell, Check,
+  ImagePlus, Send, X, Search as SearchIcon, MapPin, History, MessageSquare, Bell, Check, Trophy, FileText,
 } from "lucide-react";
 
 import { api, errMessage } from "@/api/client";
@@ -780,7 +780,15 @@ function NotificationTab({ token, onRead }: { token: string | null; onRead: () =
               }`}
             >
               <div className="mt-0.5 shrink-0">
-                {n.type === "badge" ? "🏆" : n.type === "reply" ? "💬" : n.type === "moderation" ? "📝" : "🔔"}
+                {n.type === "badge" ? (
+                  <Trophy className="h-4 w-4 text-amber-500" />
+                ) : n.type === "reply" ? (
+                  <MessageSquare className="h-4 w-4 text-sky-500" />
+                ) : n.type === "moderation" ? (
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <Bell className="h-4 w-4 text-muted-foreground" />
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="font-medium">{n.title}</div>

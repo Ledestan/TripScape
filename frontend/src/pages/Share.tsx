@@ -9,6 +9,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, CalendarDays, Globe2 } from "lucide-react";
 import { api } from "@/api/client";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -67,7 +68,7 @@ export default function SharePage() {
           <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
               {data.user.avatar ? (
-                <img src={data.user.avatar} className="h-5 w-5 rounded-full object-cover" alt="" />
+                <Avatar src={data.user.avatar} name={data.user.nickname} size={20} />
               ) : (
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px]">
                   {data.user.nickname[0]}

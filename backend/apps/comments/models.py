@@ -35,11 +35,19 @@ class Comment(models.Model):
     )
     parent = models.ForeignKey(
         "self",
-        verbose_name="回复目标",
+        verbose_name="所属顶层评论",
         null=True,
         blank=True,
         on_delete=models.CASCADE,
         related_name="replies",
+    )
+    reply_to = models.ForeignKey(
+        "self",
+        verbose_name="被回复的评论（用于 @ 提醒）",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="mentioned_in",
     )
     content = models.TextField("内容")
     is_hidden = models.BooleanField("是否隐藏", default=False, db_index=True)
@@ -70,6 +78,12 @@ class Comment(models.Model):
             "journal_id": self.journal_id,
             "journal_title": self.journal.title if self.journal_id else "",
             "parent_id": self.parent_id,
+            "reply_to_id": self.reply_to_id,
+            "reply_to_nickname": (
+                (self.reply_to.user.nickname or self.reply_to.user.username)
+                if self.reply_to_id
+                else ""
+            ),
             "content": self.content,
             "created_at": self.created_at.isoformat(),
         }

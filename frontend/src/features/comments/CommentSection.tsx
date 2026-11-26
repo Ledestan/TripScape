@@ -1,11 +1,11 @@
 /**
- * 行旅识景 TripScape / 评论树
+ * 行旅识景 TripScape / 评论树（两级平铺）
  * 创建日期: 2026-11-26
  *
  * 一份评论组件，地标与手账共用，完成:
- *     1. 一级评论 + 任意层级回复（后端返回树，这里递归渲染）
- *     2. 发表、回复（回复的回复也能回）、修改、删除自己的评论
- *     3. 给评论点赞，登录校验统一走 ts:open-login
+ *     1. 一级评论 + 回复（二级平铺）：回复的回复仍然在同一层，前面标"回复 @昵称"
+ *     2. 发表、回复任意一条、修改、删除自己的评论
+ *     3. 给评论点赞；登录校验统一走 ts:open-login
  *
  * 依赖:
  *     依赖库: @tanstack/react-query, lucide-react, sonner
@@ -15,16 +15,18 @@
  *     <CommentSection journalId={journalId} />
  *
  * 注意:
- *     1. 传 landmarkId 或 journalId，二选一；接口分别是 /comments/landmark/{id} 与 /comments/journal/{id}。
- *     2. 缩进最多 3 层，更深的回复继续显示在同一缩进，避免右侧被挤没。
+ *     1. 后端把"回复的回复"挂回顶层评论（parent=顶层），并用 reply_to 记住被回复的人，
+ *        所以这里只渲染两层，不做递归缩进。
+ *     2. 头像用 Avatar：没有头像或加载失败时显示昵称首字，不出现破图。
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Heart, Send } from "lucide-react";
 import { toast } from "sonner";
 
 import { api, errMessage } from "@/api/client";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/stores/auth";
@@ -33,12 +35,12 @@ export interface CommentNode {
   id: number;
   user: { id: number; nickname: string; avatar: string };
   parent_id: number | null;
+  reply_to_id?: number | null;
+  reply_to_nickname?: string;
   content: string;
   created_at: string;
   replies?: CommentNode[];
 }
-
-const MAX_DEPTH = 3;
 
 export default function CommentSection({
   landmarkId,
@@ -92,8 +94,7 @@ export default function CommentSection({
   });
 
   const updateComment = useMutation({
-    mutationFn: async (id: number) =>
-      api.put(`/comments/${id}`, { content: editText }),
+    mutationFn: async (id: number) => api.put(`/comments/${id}`, { content: editText }),
     onSuccess: () => {
       setEditing(null);
       refetch();
@@ -112,15 +113,22 @@ export default function CommentSection({
     onError: (error) => toast.error(errMessage(error, "删除失败")),
   });
 
-  const count = (nodes?: CommentNode[]): number =>
-    (nodes || []).reduce((sum, node) => sum + 1 + count(node.replies), 0);
+  const total = useMemo(() => {
+    const count = (nodes?: CommentNode[]): number =>
+      (nodes || []).reduce((sum, node) => sum + 1 + count(node.replies), 0);
+    return count(comments);
+  }, [comments]);
 
-  const renderNode = (node: CommentNode, depth = 0) => {
+  const renderNode = (node: CommentNode, isReply = false) => {
     const mine = me?.id === node.user.id;
     return (
-      <div key={node.id} className={depth > 0 ? "mt-2" : "mt-3"} data-testid={depth > 0 ? "comment-reply" : "comment-item"}>
+      <div
+        key={node.id}
+        className={isReply ? "mt-2" : "mt-3"}
+        data-testid={isReply ? "comment-reply" : "comment-item"}
+      >
         <div className="flex items-start gap-2">
-          <img src={node.user.avatar} alt="" className="h-6 w-6 rounded-full object-cover" />
+          <Avatar src={node.user.avatar} name={node.user.nickname} size={24} />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
               <span className="font-medium text-foreground">{node.user.nickname}</span>
@@ -146,6 +154,9 @@ export default function CommentSection({
               </div>
             ) : (
               <p className="mt-0.5 whitespace-pre-wrap text-[12px] leading-relaxed text-foreground/85">
+                {node.reply_to_nickname && (
+                  <span className="mr-1 text-sky-500">回复 @{node.reply_to_nickname}：</span>
+                )}
                 {node.content}
               </p>
             )}
@@ -201,12 +212,6 @@ export default function CommentSection({
             </div>
           </div>
         </div>
-
-        {node.replies?.length ? (
-          <div className={depth < MAX_DEPTH ? "ml-5 border-l border-border/50 pl-2" : "ml-2"}>
-            {node.replies.map((reply) => renderNode(reply, depth + 1))}
-          </div>
-        ) : null}
       </div>
     );
   };
@@ -214,7 +219,7 @@ export default function CommentSection({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-        <span>评论 {count(comments)}</span>
+        <span>评论 {total}</span>
         {replyTo && (
           <button
             type="button"
@@ -251,7 +256,16 @@ export default function CommentSection({
 
       <div className="max-h-[36vh] overflow-y-auto pr-1">
         {comments?.length ? (
-          comments.map((node) => renderNode(node))
+          comments.map((node) => (
+            <div key={node.id}>
+              {renderNode(node)}
+              {node.replies?.length ? (
+                <div className="ml-5 border-l border-border/50 pl-2">
+                  {node.replies.map((reply) => renderNode(reply, true))}
+                </div>
+              ) : null}
+            </div>
+          ))
         ) : (
           <p className="py-4 text-center text-[11px] text-muted-foreground">
             还没有评论，来写第一条。

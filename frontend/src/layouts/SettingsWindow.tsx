@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api, errMessage } from "@/api/client";
+import { Avatar } from "@/components/ui/avatar";
 import { useAuthStore } from "@/stores/auth";
 import { useThemeStore } from "@/stores/theme";
 import { FloatingWindow } from "@/components/FloatingWindow";
@@ -31,6 +32,8 @@ export default function SettingsWindow({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
 
   const [nick, setNick] = useState(user?.nickname ?? "");
+  const [avatar, setAvatar] = useState(user?.avatar ?? "");
+  const [uploading, setUploading] = useState(false);
   const [bio, setBio] = useState(user?.bio ?? "");
   const [saving, setSaving] = useState(false);
   const [privacy, setPrivacy] = useState<PrivacyFlags>({
@@ -51,8 +54,8 @@ export default function SettingsWindow({ onClose }: { onClose: () => void }) {
   const save = async () => {
     setSaving(true);
     try {
-      const r = await api.put("/auth/profile", { nickname: nick.trim(), bio: bio.trim() });
-      setUser({ ...user!, nickname: r.data.nickname, bio: r.data.bio });
+      const r = await api.put("/auth/profile", { nickname: nick.trim(), bio: bio.trim(), avatar });
+      setUser({ ...user!, nickname: r.data.nickname, bio: r.data.bio, avatar: r.data.avatar });
       toast.success("资料已更新");
     } catch (e) {
       toast.error(errMessage(e, "保存失败"));
@@ -89,6 +92,60 @@ export default function SettingsWindow({ onClose }: { onClose: () => void }) {
         {/* 个人资料 */}
         <div>
           <div className="mb-2 text-sm font-semibold">个人资料</div>
+          <div className="mb-2 flex items-center gap-3">
+            <Avatar src={avatar} name={nick || user?.nickname} size={52} />
+            <div className="flex flex-col gap-1">
+              <label className="cursor-pointer rounded-lg border border-border px-2.5 py-1 text-xs transition hover:border-primary/50 hover:text-primary">
+                {uploading ? "上传中…" : "更换头像"}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  className="hidden"
+                  disabled={uploading}
+                  data-testid="avatar-input"
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    setUploading(true);
+                    try {
+                      const form = new FormData();
+                      form.append("image", file);
+                      const uploaded = await api.post("/uploads/image", form, {
+                        headers: { "Content-Type": "multipart/form-data" },
+                      });
+                      setAvatar(uploaded.data.url);
+                      const saved = await api.put("/auth/profile", { avatar: uploaded.data.url });
+                      setUser({ ...user!, avatar: saved.data.avatar });
+                      qc.invalidateQueries({ queryKey: ["profile"] });
+                      toast.success("头像已更新");
+                    } catch (e) {
+                      toast.error(errMessage(e, "头像上传失败"));
+                    } finally {
+                      setUploading(false);
+                    }
+                  }}
+                />
+              </label>
+              {avatar && (
+                <button
+                  type="button"
+                  className="rounded-lg px-2.5 py-1 text-left text-[11px] text-muted-foreground transition hover:text-destructive"
+                  onClick={async () => {
+                    try {
+                      await api.put("/auth/profile", { avatar: "" });
+                      setAvatar("");
+                      setUser({ ...user!, avatar: "" });
+                      toast.success("已恢复默认头像");
+                    } catch (e) {
+                      toast.error(errMessage(e, "操作失败"));
+                    }
+                  }}
+                >
+                  恢复默认
+                </button>
+              )}
+            </div>
+          </div>
           <div className="space-y-1.5">
             <input
               value={nick}

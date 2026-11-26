@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { User, Moon, Sun, LogOut, LayoutDashboard, MapPin, LogIn, Settings } from "lucide-react";
 import { useAuthStore } from "@/stores/auth";
+import { Avatar } from "@/components/ui/avatar";
 import { useThemeStore } from "@/stores/theme";
 import LoginWindow from "@/layouts/LoginWindow";
 import ProfileWindow from "@/layouts/ProfileWindow";
@@ -124,7 +125,7 @@ export default function FloatingDock() {
 
               {user.avatar ? (
 
-                <img src={user.avatar} alt="" className="h-[75%] w-[75%] rounded-full object-cover" />
+                <Avatar src={user.avatar} name={user.nickname} size={26} />
 
               ) : (
 

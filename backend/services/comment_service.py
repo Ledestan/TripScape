@@ -71,18 +71,26 @@ def create_comment(
         if journal is not None and parent.journal_id != journal.id:
             return False, "回复与原评论不属于同一手账"
 
+    # 两级平铺：回复"回复"时，挂回顶层评论，同时记住被回复的人
+    reply_to = None
+    if parent is not None and parent.parent_id:
+        reply_to = parent
+        parent = parent.parent
+
     comment = Comment.objects.create(
         user=user,
         landmark=lm,
         journal=journal,
         parent=parent,
+        reply_to=reply_to,
         content=content[:2000],
     )
 
-    # 回复通知
-    if parent and parent.user_id != user.id:
+    # 回复通知：优先通知被 @ 的那位，其次才是顶层作者
+    target = reply_to or parent
+    if target and target.user_id != user.id:
         try:
-            notify_service.notify_reply(user, parent, comment)
+            notify_service.notify_reply(user, target, comment)
         except Exception as exc:
             logger.warning("回复通知失败：%s", exc)
 

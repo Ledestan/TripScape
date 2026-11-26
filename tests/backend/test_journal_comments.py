@@ -57,9 +57,14 @@ def test_journal_comment_and_nested_reply(api_client, user_token, journal):
     data = listing.json()["data"]
     assert len(data) == 1
     assert data[0]["content"] == "手账第一层评论"
-    reply = data[0]["replies"][0]
-    assert reply["content"] == "第二层回复"
-    assert reply["replies"][0]["content"] == "第三层回复"
+
+    # 两级平铺：第二层与第三层都是同一条顶层评论下的回复
+    replies = data[0]["replies"]
+    assert len(replies) == 2
+    assert replies[0]["content"] == "第二层回复"
+    assert replies[1]["content"] == "第三层回复"
+    assert replies[1]["parent_id"] == first_id
+    assert replies[1]["reply_to_nickname"] in ("tester", "测试用户")
 
 
 @pytest.mark.django_db
@@ -111,3 +116,29 @@ def test_profile_survives_journal_comment(api_client, user_token, journal):
     assert profile.status_code == 200
     comments = profile.json()["comments"]
     assert any(item.get("journal_id") == journal.id for item in comments)
+
+@pytest.mark.django_db
+def test_public_profile_survives_journal_comment(api_client, user, user_token, journal):
+    """公开主页（/auth/{id}/public）遇到手账评论不能再 500。"""
+    api_client.json_post(
+        "/api/comments/",
+        {"journal_id": journal.id, "content": "公开主页用评论"},
+        token=user_token,
+    )
+    response = api_client.json_get(f"/api/auth/{user.id}/public")
+    assert response.status_code == 200
+    assert response.json()["comments"][0]["journal_id"] == journal.id
+
+
+@pytest.mark.django_db
+def test_update_avatar(api_client, user_token):
+    """可以修改头像地址，也可以清空恢复默认。"""
+    set_avatar = api_client.json_put(
+        "/api/auth/profile", {"avatar": "/media/avatar.png"}, token=user_token
+    )
+    assert set_avatar.status_code == 200
+    assert set_avatar.json()["avatar"] == "/media/avatar.png"
+
+    clear = api_client.json_put("/api/auth/profile", {"avatar": ""}, token=user_token)
+    assert clear.status_code == 200
+    assert clear.json()["avatar"] == ""

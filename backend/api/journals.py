@@ -5,7 +5,7 @@
 手账 API。
 
 GET    /api/journals/mine              我的手账
-POST   /api/journals/                  创建手账
+POST   /api/journals/                  创建手账（可带 canvas 画布文档）
 GET    /api/journals/{id}              手账详情（公开可见或作者）
 PUT    /api/journals/{id}              更新（作者）
 DELETE /api/journals/{id}              删除（作者或管理员）
@@ -15,11 +15,13 @@ POST   /api/journals/{id}/share        生成公开分享链接
 
 from datetime import date
 from typing import Optional
+
 from apps.core.auth import OptionalAuth, is_any_admin, login_required
 from apps.journals.models import Journal
 from ninja import Router, Schema
 from ninja.errors import HttpError
 from services import journal_service, share_service
+from services.journal_canvas import CanvasError, normalize_canvas
 from services.audit_service import write_audit
 
 router = Router()
@@ -51,6 +53,7 @@ class JournalIn(Schema):
     images: list = None
     visited_at: Optional[str] = None  # 可空（TS-06：日期非必填）
     is_public: bool = True
+    canvas: dict = None  # 3:4 画布文档（可选）
 
 
 class JournalUpdateIn(Schema):
@@ -59,6 +62,7 @@ class JournalUpdateIn(Schema):
     images: list = None
     visited_at: Optional[str] = None  # None=未修改或清除，用 exclude_unset 区分
     is_public: bool = None
+    canvas: dict = None
 
 
 @router.get("/mine", summary="我的手账")
@@ -77,6 +81,11 @@ def my_journals(request):
 @login_required
 def create(request, payload: JournalIn):
     """创建手账（敏感词拦截；自动生成足迹与徽章进度）。"""
+    try:
+        canvas = normalize_canvas(payload.canvas)
+    except CanvasError as exc:
+        raise HttpError(422, str(exc))
+
     ok, result = journal_service.create_journal(
         user=request.auth,
         landmark_id=payload.landmark_id,
@@ -85,6 +94,7 @@ def create(request, payload: JournalIn):
         images=payload.images or [],
         visited_at=_parse_date(payload.visited_at),
         is_public=payload.is_public,
+        canvas=canvas,
     )
     if not ok:
         raise HttpError(400, str(result))
@@ -153,6 +163,11 @@ def update(request, journal_id: int, payload: JournalUpdateIn):
     fields = payload.dict(exclude_unset=True)
     if "visited_at" in fields:
         fields["visited_at"] = _parse_date(fields["visited_at"])
+    if "canvas" in fields:
+        try:
+            fields["canvas"] = normalize_canvas(fields["canvas"])
+        except CanvasError as exc:
+            raise HttpError(422, str(exc))
     ok, result = journal_service.update_journal(j, fields)
     if not ok:
         raise HttpError(400, str(result))

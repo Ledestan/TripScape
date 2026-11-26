@@ -37,6 +37,8 @@ class Journal(models.Model):
     title = models.CharField("标题", max_length=128)
     content = models.TextField("正文", blank=True, default="")
     images = models.JSONField("图片 URL 列表", default=list, blank=True)
+    # 画布文档：3:4 版式上的照片/文字/碎片卡片，结构由 services/journal_canvas 校验
+    canvas = models.JSONField("画布文档", default=dict, blank=True)
     visited_at = models.DateField("旅行日期", null=True, blank=True)
     is_public = models.BooleanField("是否公开", default=True)
     status = models.CharField(
@@ -105,6 +107,7 @@ class Journal(models.Model):
         }
         if with_content:
             data["content"] = self.content
+            data["canvas"] = self.canvas or {}
         return data
 
 

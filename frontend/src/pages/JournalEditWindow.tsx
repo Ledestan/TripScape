@@ -5,7 +5,7 @@
  * 该组件的界面与交互实现；结构与事件约定见下方代码。
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ImagePlus, X, Share2, Search } from "lucide-react";
@@ -16,6 +16,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+// 画布编辑器带 konva（约 450KB），只在真正打开写手账时加载，不拖慢地球首屏
+const JournalCanvasEditor = lazy(() => import("@/features/narrative/JournalCanvasEditor"));
+import {
+  emptyCanvas,
+  parseCanvas,
+  serializeCanvas,
+  type CanvasDoc,
+} from "@/features/narrative/canvas-types";
+
 import { FloatingWindow } from "@/components/FloatingWindow";
 
 interface LandmarkOption {
@@ -74,6 +83,8 @@ export default function JournalEditWindow({
 
   const [images, setImages] = useState<string[]>([]);
 
+  const [canvas, setCanvas] = useState<CanvasDoc>(emptyCanvas());
+
   const [uploading, setUploading] = useState(false);
 
   const [saving, setSaving] = useState(false);
@@ -95,6 +106,33 @@ export default function JournalEditWindow({
       (await api.get("/landmarks/", { params: { page_size: 100 } })).data.data as LandmarkOption[],
 
   });
+
+  // 当前地标的叙事卡片：画布里的"碎片"元素就贴这张卡片
+  const { data: fragmentCard } = useQuery({
+    queryKey: ["narrative", "card", landmarkId, "canvas"],
+    queryFn: async () =>
+      (
+        await api.get(`/narrative/card/${landmarkId}`)
+      ).data.data as {
+        title: string;
+        timeFragments?: { text: string; year: number | null }[];
+      },
+    enabled: !!landmarkId && /^\d+$/.test(landmarkId),
+    retry: 0,
+  });
+
+  const fragmentSource = fragmentCard
+    ? {
+        title: fragmentCard.title,
+        snippet: fragmentCard.timeFragments?.[0]?.text || "",
+        year: (() => {
+          const year = fragmentCard.timeFragments?.[0]?.year;
+          if (year === null || year === undefined) return "未记年";
+          return year < 0 ? `公元前 ${-year} 年` : year < 1000 ? `公元 ${year} 年` : `${year} 年`;
+        })(),
+        landmarkId: Number(landmarkId),
+      }
+    : null;
 
   // 编辑模式：加载已有手账
 
@@ -122,6 +160,8 @@ export default function JournalEditWindow({
 
         is_public: boolean;
 
+        canvas?: unknown;
+
       },
 
     enabled: !!presetJournalId,
@@ -139,6 +179,8 @@ export default function JournalEditWindow({
       setContent(existing.content);
 
       setImages(existing.images || []);
+
+      setCanvas(parseCanvas(existing.canvas));
 
       setIsPublic(existing.is_public);
 
@@ -229,6 +271,8 @@ export default function JournalEditWindow({
         visited_at: visitedAt || null,
 
         is_public: isPublic,
+
+        canvas: canvas.elements.length ? serializeCanvas(canvas) : undefined,
 
       };
 
@@ -443,6 +487,46 @@ export default function JournalEditWindow({
           <Label>标题 *</Label>
 
           <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={128} />
+
+        </div>
+
+        <div className="space-y-1.5">
+
+          <Label>手账画布（3:4）</Label>
+
+          <p className="text-[11px] text-muted-foreground">
+
+            拖拽移动，四角缩放，选中后可旋转；图层顺序即叠放顺序。
+
+          </p>
+
+          <Suspense
+
+            fallback={
+
+              <div className="flex h-56 items-center justify-center rounded-panel border border-border/70 text-[11px] text-muted-foreground">
+
+                画布加载中…
+
+              </div>
+
+            }
+
+          >
+
+            <JournalCanvasEditor
+
+              value={canvas}
+
+              onChange={setCanvas}
+
+              photos={images}
+
+              fragment={fragmentSource}
+
+            />
+
+          </Suspense>
 
         </div>
 

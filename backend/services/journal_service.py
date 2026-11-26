@@ -7,6 +7,7 @@
 
 import logging
 from datetime import date
+
 from apps.core import sensitive
 from apps.journals.models import Journal
 from django.utils import timezone
@@ -28,6 +29,7 @@ def create_journal(
     images=None,
     visited_at=None,
     is_public: bool = True,
+    canvas=None,
 ) -> tuple:
     """创建手账。
 
@@ -57,6 +59,7 @@ def create_journal(
         title=title[:128],
         content=content,
         images=images or [],
+        canvas=canvas or {},
         visited_at=visited_at,
         is_public=is_public,
         status="approved",  # 无敏感词直接通过；命中敏感词已在上方拒绝
@@ -65,7 +68,7 @@ def create_journal(
     return True, journal
 
 
-EDIT_FIELDS = ("title", "content", "images", "visited_at")
+EDIT_FIELDS = ("title", "content", "images", "visited_at", "canvas")
 
 
 def _json_safe_patch(patch: dict) -> dict:

@@ -17,6 +17,7 @@ from django.db import models
 
 class Journal(models.Model):
     STATUS = (
+        ("draft", "草稿"),
         ("pending", "待审核"),
         ("approved", "已通过"),
         ("rejected", "已驳回"),

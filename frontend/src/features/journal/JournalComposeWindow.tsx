@@ -62,6 +62,12 @@ export default function JournalComposeWindow({
   const [content, setContent] = useState("");
   const [visitedAt, setVisitedAt] = useState("");
   const [isPublic, setIsPublic] = useState(true);
+  // 草稿首存后的 id：再点保存/发布都用 PUT，不会重复创建
+  const [savedId, setSavedId] = useState<number | null>(presetJournalId ?? null);
+
+  useEffect(() => {
+    setSavedId(presetJournalId ?? null);
+  }, [presetJournalId, open]);
 
   // 编辑模式：取回已有手账
   const { data: existing } = useQuery({
@@ -148,7 +154,7 @@ export default function JournalComposeWindow({
   };
 
   const save = useMutation({
-    mutationFn: async (doc: ComposeDoc) => {
+    mutationFn: async ({ doc, publish }: { doc: ComposeDoc; publish: boolean }) => {
       if (!landmarkId) throw new Error("请先选择地标");
       if (!title.trim()) throw new Error("给这页手账起个标题");
       const canvas = composeToJournalCanvas(doc);
@@ -163,19 +169,24 @@ export default function JournalComposeWindow({
         content: content.trim(),
         images: Array.from(new Set([...(existing?.images || []), ...images])),
         visited_at: visitedAt || null,
-        is_public: isPublic,
+        is_public: publish ? isPublic : false,
+        is_draft: !publish,
         canvas,
       };
 
-      if (presetJournalId) {
-        const response = await api.put(`/journals/${presetJournalId}`, payload);
-        return response.data as { message?: string };
+      if (savedId) {
+        const response = await api.put(`/journals/${savedId}`, payload);
+        return { message: publish ? "已提交发布" : "草稿已保存" };
       }
-      await api.post("/journals/", payload);
-      return { message: "手账已发布，足迹 +1" };
+      const response = await api.post("/journals/", payload);
+      const created = response.data?.data as { id?: number } | undefined;
+      if (created?.id) setSavedId(created.id);
+      return {
+        message: publish ? "手账已发布，足迹 +1" : "草稿已保存",
+      };
     },
     onSuccess: (result) => {
-      toast.success(result?.message || "手账已保存", {
+      toast.success(result?.message || "已保存", {
         description: result?.message?.includes("审核") ? "审核通过前，读者看到的仍是原版本" : undefined,
       });
       qc.invalidateQueries({ queryKey: ["journals"] });
@@ -196,7 +207,10 @@ export default function JournalComposeWindow({
       assetSlots={assetSlots}
       onUploadPhoto={uploadPhoto}
       onSave={async (doc) => {
-        await save.mutateAsync(doc);
+        await save.mutateAsync({ doc, publish: false });
+      }}
+      onPublish={async (doc) => {
+        await save.mutateAsync({ doc, publish: true });
       }}
       onDirtyChange={() => undefined}
       onClose={onClose}

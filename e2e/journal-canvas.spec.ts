@@ -57,8 +57,8 @@ test.describe("S2 写手账（创作浮窗）", () => {
     // 标题 + 保存
     const title = `拼贴手账 ${Date.now()}`;
     await page.getByTestId("journal-compose-title").fill(title);
-    await page.getByRole("button", { name: "保存草稿" }).click();
-    await expect(page.getByText("已保存")).toBeVisible({ timeout: 20_000 });
+    await page.getByTestId("compose-save-draft").click();
+    await expect(page.getByText("草稿已保存")).toBeVisible({ timeout: 20_000 });
 
     const token = await page.evaluate(() => {
       const raw = localStorage.getItem("tripscape-auth");

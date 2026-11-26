@@ -73,9 +73,7 @@ def user_profile(user: User) -> dict:
     from apps.journals.models import Footprint, Journal
     from apps.landmarks.models import Landmark
 
-    journals_qs = Journal.objects.filter(
-        user=user, status="approved", deleted_at__isnull=True
-    )
+    journals_qs = Journal.objects.filter(user=user, deleted_at__isnull=True)
     footprints = Footprint.objects.filter(user=user).select_related("landmark")
     comments_qs = Comment.objects.filter(
         user=user, is_hidden=False, deleted_at__isnull=True
@@ -100,7 +98,7 @@ def user_profile(user: User) -> dict:
         "counts": {
             # MySQL 不支持 DISTINCT ON，用 values 去重计数
             "footprints": footprints.values("landmark_id").distinct().count(),
-            "journals": journals_qs.count(),
+            "journals": journals_qs.filter(status="approved").count(),
             "comments": comments_qs.count(),
             "favorites": favorites.count(),
         },

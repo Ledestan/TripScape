@@ -36,7 +36,7 @@ interface ProfileData {
   };
   counts: { footprints: number; journals: number; comments: number; favorites: number };
   footprints: { landmark_id: number; name: string; lat: number; lon: number; visits: number; hidden?: boolean; last_visited_at?: string }[];
-  journals: { id: number; title: string; landmark: string; landmark_id?: number; lat?: number; lon?: number; visited_at: string | null; is_public: boolean }[];
+  journals: { id: number; title: string; landmark: string; landmark_id?: number; lat?: number; lon?: number; visited_at: string | null; is_public: boolean; status?: string }[];
   comments: { id: number; landmark: string; landmark_id?: number | null; journal_id?: number | null; journal_title?: string; lat?: number | null; lon?: number | null; content: string; created_at: string }[];
   favorites: { id: number; name: string; lat?: number; lon?: number }[];
 }
@@ -175,7 +175,7 @@ export default function ProfileWindow({ onClose }: { onClose: () => void }) {
                         <button onClick={() => setViewJournal(j.id)} className="min-w-0 flex-1 text-left" title="查看手账">
                           <div className="truncate text-sm font-medium hover:underline">{j.title}</div>
                           <div className="mt-0.5 text-xs text-muted-foreground">
-                            {j.landmark} · {j.visited_at || "未记日期"} · {j.is_public ? "公开" : "私密"}
+                            {j.landmark} · {j.visited_at || "未记日期"} · {j.status === "draft" ? "草稿" : j.is_public ? "公开" : "私密"}
                           </div>
                         </button>
                         <div className="ml-2 flex shrink-0 items-center gap-1.5">

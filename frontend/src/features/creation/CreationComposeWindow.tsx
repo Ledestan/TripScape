@@ -84,6 +84,8 @@ export interface CreationComposeWindowProps {
   initialElements?: ComposeElement[];
   onClose: () => void;
   onSave?: (canvas: ComposeDoc) => Promise<void>;
+  /** 发布（不传则只有保存草稿） */
+  onPublish?: (canvas: ComposeDoc) => Promise<void>;
   onExport?: (canvas: ComposeDoc) => Promise<Blob>;
   onDirtyChange?: (dirty: boolean) => void;
   assetSlots?: AssetSlots;
@@ -116,6 +118,7 @@ export default function CreationComposeWindow({
   initialElements,
   onClose,
   onSave,
+  onPublish,
   onExport,
   onDirtyChange,
   assetSlots,
@@ -270,26 +273,35 @@ export default function CreationComposeWindow({
     [doc, history, selectedId]
   );
 
-  const save = useCallback(async () => {
-    if (status === "saving") return;
-    setStatus("saving");
-    setErrorText("");
-    const canvas = serializeDoc(doc);
-    try {
-      if (onSave) {
-        await onSave(canvas);
-      } else {
-        // 宿主没接保存：只在本地记为已保存，避免按钮点了没反应
-        await new Promise((resolve) => window.setTimeout(resolve, 200));
+  const persist = useCallback(
+    async (mode: "draft" | "publish") => {
+      if (status === "saving") return;
+      setStatus("saving");
+      setErrorText("");
+      const canvas = serializeDoc(doc);
+      try {
+        const handler = mode === "publish" ? onPublish : onSave;
+        if (handler) {
+          await handler(canvas);
+        } else {
+          // 宿主没接保存：只在本地记为已保存，避免按钮点了没反应
+          await new Promise((resolve) => window.setTimeout(resolve, 200));
+        }
+        savedSignature.current = docSignature(canvas);
+        // 保存成功后必须立刻清脏：否则退出仍提示"未保存"
+        setDirty(false);
+        setSavedAt(Date.now());
+        setStatus("saved");
+      } catch (error) {
+        setStatus("error");
+        setErrorText(error instanceof Error ? error.message : "保存失败，请重试");
       }
-      savedSignature.current = docSignature(canvas);
-      setSavedAt(Date.now());
-      setStatus("saved");
-    } catch (error) {
-      setStatus("error");
-      setErrorText(error instanceof Error ? error.message : "保存失败，请重试");
-    }
-  }, [doc, onSave, status]);
+    },
+    [doc, onPublish, onSave, status]
+  );
+
+  const save = useCallback(() => persist("draft"), [persist]);
+  const publish = useCallback(() => persist("publish"), [persist]);
 
   const exportImage = useCallback(async () => {
     if (status === "saving") return;
@@ -1048,9 +1060,27 @@ export default function CreationComposeWindow({
         {/* 底部动作栏 */}
         <footer className="flex h-11 shrink-0 items-center justify-between border-t border-border/70 px-3">
           <div className="flex items-center gap-1.5">
-            <Button size="sm" className="h-7 text-[11px]" onClick={save} disabled={status === "saving"}>
-              {status === "saving" ? "保存中…" : "保存草稿"}
-            </Button>
+            {onPublish ? (
+              <>
+                <Button size="sm" className="h-7 text-[11px]" onClick={publish} disabled={status === "saving"}>
+                  {status === "saving" ? "发布中…" : "发布"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px]"
+                  onClick={save}
+                  disabled={status === "saving"}
+                  data-testid="compose-save-draft"
+                >
+                  存草稿
+                </Button>
+              </>
+            ) : (
+              <Button size="sm" className="h-7 text-[11px]" onClick={save} disabled={status === "saving"}>
+                {status === "saving" ? "保存中…" : "保存草稿"}
+              </Button>
+            )}
             <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={exportImage} disabled={status === "saving"}>
               导出图片
             </Button>

@@ -53,6 +53,7 @@ class JournalIn(Schema):
     images: list = None
     visited_at: Optional[str] = None  # 可空（TS-06：日期非必填）
     is_public: bool = True
+    is_draft: bool = False  # 存草稿：不公开、不生成足迹
     canvas: dict = None  # 3:4 画布文档（可选）
 
 
@@ -62,6 +63,7 @@ class JournalUpdateIn(Schema):
     images: list = None
     visited_at: Optional[str] = None  # None=未修改或清除，用 exclude_unset 区分
     is_public: bool = None
+    is_draft: bool = None  # False=发布草稿，True/None=继续存草稿
     canvas: dict = None
 
 
@@ -95,6 +97,7 @@ def create(request, payload: JournalIn):
         visited_at=_parse_date(payload.visited_at),
         is_public=payload.is_public,
         canvas=canvas,
+        is_draft=payload.is_draft,
     )
     if not ok:
         raise HttpError(400, str(result))

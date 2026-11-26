@@ -30,6 +30,7 @@ def create_journal(
     visited_at=None,
     is_public: bool = True,
     canvas=None,
+    is_draft: bool = False,
 ) -> tuple:
     """创建手账。
 
@@ -61,10 +62,12 @@ def create_journal(
         images=images or [],
         canvas=canvas or {},
         visited_at=visited_at,
-        is_public=is_public,
-        status="approved",  # 无敏感词直接通过；命中敏感词已在上方拒绝
+        # 草稿不公开，也不生成足迹/徽章/通知
+        is_public=False if is_draft else is_public,
+        status="draft" if is_draft else "approved",
     )
-    _post_create(journal)
+    if not is_draft:
+        _post_create(journal)
     return True, journal
 
 
@@ -111,6 +114,23 @@ def update_journal(journal: Journal, data: dict) -> tuple:
     ok, hit = sensitive.check_text(f"{new_title} {new_content}")
     if not ok:
         return False, f"内容包含敏感词「{hit}」，请修改后发布"
+
+    if journal.status == "draft":
+        for field in EDIT_FIELDS:
+            if field in patch:
+                setattr(journal, field, patch[field])
+        if "is_public" in patch and data.get("is_draft") is not True:
+            journal.is_public = patch["is_public"]
+
+        # 显式传 is_draft=False 才是"发布"；否则继续存草稿
+        if data.get("is_draft") is False:
+            journal.status = "approved"
+            journal.is_public = True if data.get("is_public") is None else bool(data.get("is_public"))
+            journal.save()
+            _post_create(journal)
+            return True, journal
+        journal.save()
+        return True, journal
 
     if journal.status == "approved":
         snapshot = dict(journal.pending_edit or {})

@@ -16,6 +16,7 @@ import {
 import { api, errMessage } from "@/api/client";
 import { FloatingWindow } from "@/components/FloatingWindow";
 import { useAuthStore } from "@/stores/auth";
+import { SkeletonRows } from "@/components/ui/skeleton";
 
 /* ---------------- 筛选器（地区 + 地标级联，多 Tab 复用） ---------------- */
 interface LandmarkLite {
@@ -138,7 +139,7 @@ function ExcerptView({
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl border border-border/70 bg-card p-5 text-card-foreground shadow-xl">
+      <div className="relative w-full max-w-md rounded-panel border border-border/70 bg-card p-5 text-card-foreground shadow-xl">
         <div className="mb-2 flex items-center justify-between">
           <div className="text-sm font-semibold">{title}</div>
           <button onClick={onClose} className="rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted">
@@ -191,7 +192,7 @@ function ConfirmBox({
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
-      <div className="relative w-full max-w-sm rounded-2xl border border-border/70 bg-card p-5 text-card-foreground shadow-xl">
+      <div className="relative w-full max-w-sm rounded-panel border border-border/70 bg-card p-5 text-card-foreground shadow-xl">
         <div className="text-sm font-semibold">{title}</div>
         {hint && <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p>}
 
@@ -646,7 +647,7 @@ function OverviewTab({ onGoReports, onGoReview }: { onGoReports: () => void; onG
     refetchInterval: 60_000,
   });
 
-  if (!data) return <div className="py-10 text-center text-sm text-muted-foreground">加载中…</div>;
+  if (!data) return <SkeletonRows rows={3} className="py-6" />;
 
   const trendOption = {
     tooltip: { trigger: "axis" },
@@ -1452,7 +1453,7 @@ function LandmarkEditBox({ lm, onClose, onSaved }: { lm: AdminLandmark | null; o
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border/70 bg-card p-5 text-card-foreground shadow-xl">
+      <div className="relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-panel border border-border/70 bg-card p-5 text-card-foreground shadow-xl">
         <div className="mb-3 text-sm font-semibold">{lm ? `编辑：${lm.name}` : "新增地标"}</div>
         <div className="grid grid-cols-2 gap-3">
           {field("name", "中文名称 *")}

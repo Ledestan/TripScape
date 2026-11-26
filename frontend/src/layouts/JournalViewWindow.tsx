@@ -13,6 +13,7 @@ import { api, errMessage } from "@/api/client";
 import { useAuthStore } from "@/stores/auth";
 import { FloatingWindow } from "@/components/FloatingWindow";
 import ReportDialog from "@/features/comments/ReportDialog";
+import { SkeletonRows } from "@/components/ui/skeleton";
 
 /* ================================================================== */
 /* 手账查看浮窗（个人主页/详情页/搜索结果点手账弹出；含点赞与举报）       */
@@ -39,7 +40,7 @@ export function JournalViewWindow({ journalId, onClose }: { journalId: number; o
   return (
     <FloatingWindow open onClose={onClose} title={j ? `${j.title} · 手账` : "手账"} width={480} maxHeight="72vh">
       {!j ? (
-        <div className="py-10 text-center text-sm text-muted-foreground">加载中…</div>
+        <SkeletonRows rows={3} className="py-6" />
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">

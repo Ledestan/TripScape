@@ -53,22 +53,26 @@ export default defineConfig({
     rollupOptions: {
       output: {
         /**
-         * 用函数而不是包名数组：drei / fiber 大量走子路径导入
-         * （@react-three/drei/core/...），数组形式匹配不到，会继续留在业务分包里。
+         * 只拆"入口必需"的依赖（react / 数据层）。
+         *
+         * three 与 @react-three 故意不单独成 chunk：实测拆出来后入口会静态依赖它，
+         * 网络慢时首屏要等 700KB 的 3D 引擎才能挂载，片头反而被拖住。
+         * 让它留在 GlobeApp 的懒加载分包里，首屏只需等地球那一个 chunk。
+         * 也不兜底聚成 vendor：全量 vendor 会与 three/react 形成循环，运行时报 TDZ。
          */
         manualChunks(id) {
           if (!id.includes("node_modules")) return undefined;
-          if (
-            id.includes("@react-three") ||
-            id.includes("/three/") ||
-            id.includes("three-stdlib") ||
-            id.includes("@use-gesture")
-          ) {
-            return "three";
-          }
           if (id.includes("@tanstack")) return "query";
-          if (id.includes("/react") || id.includes("/scheduler")) return "react";
-          // 不再兜底聚成 vendor：全量 vendor 包会与 three/react 形成循环，运行时报 TDZ
+          // 必须精确匹配：宽泛的 /react 会把 lucide-react、@radix-ui/react-*、
+          // @react-three/* 一起吸进来（实测该 chunk 从 150KB 膨胀到 999KB）
+          if (
+            /node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(
+              id
+            )
+          ) {
+            return "react";
+          }
+          return undefined;
         },
       },
     },

@@ -17,6 +17,7 @@ import { useAuthStore } from "@/stores/auth";
 import { globeBus } from "@/features/globe/bus";
 import { FloatingWindow } from "@/components/FloatingWindow";
 import { JournalViewWindow } from "@/layouts/JournalViewWindow";
+import { SkeletonRows } from "@/components/ui/skeleton";
 
 /* ================================================================== */
 /* 个人主页（五 Tab：足迹/手账/评论/收藏/徽章，固定高度内容滚动）         */
@@ -94,7 +95,7 @@ export default function ProfileWindow({ onClose }: { onClose: () => void }) {
         fixedHeight="min(72vh, 620px)"
       >
         {!data ? (
-          <div className="py-10 text-center text-sm text-muted-foreground">加载中…</div>
+          <SkeletonRows rows={3} className="py-6" />
         ) : (
           <>
             {/* 账号状态（被封/禁言/限登时可见） */}

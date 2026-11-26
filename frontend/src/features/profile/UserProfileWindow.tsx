@@ -12,6 +12,7 @@ import { api } from "@/api/client";
 import { FloatingWindow } from "@/components/FloatingWindow";
 import { globeBus } from "@/features/globe/bus";
 import { JournalViewWindow } from "@/layouts/JournalViewWindow";
+import { SkeletonRows } from "@/components/ui/skeleton";
 
 interface PublicProfile {
   user: { id: number; username: string; nickname: string; avatar: string; bio: string; created_at: string };
@@ -55,7 +56,7 @@ export default function UserProfileWindow({ userId, onClose }: { userId: number;
       fixedHeight="min(72vh, 620px)"
     >
       {!data ? (
-        <div className="py-10 text-center text-sm text-muted-foreground">加载中…</div>
+        <SkeletonRows rows={3} className="py-6" />
       ) : (
         <>
           {/* 用户信息头 */}

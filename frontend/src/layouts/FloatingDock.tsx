@@ -136,7 +136,7 @@ export default function FloatingDock() {
 
             {menuOpen && (
 
-              <div className="absolute right-0 top-[calc(var(--icon-btn)+var(--ui-gap))] z-50 w-52 overflow-hidden rounded-2xl border border-border/70 bg-card p-1.5 text-card-foreground shadow-xl">
+              <div className="absolute right-0 top-[calc(var(--icon-btn)+var(--ui-gap))] z-50 w-52 overflow-hidden rounded-panel border border-border/70 bg-card p-1.5 text-card-foreground shadow-xl">
 
                 <div className="px-3 py-2">
 

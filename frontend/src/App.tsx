@@ -40,6 +40,11 @@ export default function App() {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
 
+  // 挂载即通知 main.tsx：可以开始给片头倒计时了（最短 2.6s，最长 8s 兜底）
+  useEffect(() => {
+    window.dispatchEvent(new Event("ts:app-ready"));
+  }, []);
+
   return (
     <BrowserRouter>
       <ScrollToTop />

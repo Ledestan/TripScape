@@ -48,7 +48,7 @@ export function FloatingWindow({
       <div className="absolute inset-0 bg-black/25" onClick={onClose} />
       <div
         className={cn(
-          "relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-card text-card-foreground shadow-[0_8px_40px_-8px_rgb(0_0_0/0.28)] dark:shadow-[0_8px_44px_-6px_rgb(0_0_0/0.65),0_0_0_1px_rgb(255_255_255/0.04)]",
+          "relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-panel border border-border/60 bg-card text-card-foreground shadow-panel",
           "animate-in zoom-in-95 fade-in duration-200"
         )}
         style={{ maxWidth: width, ...(fixedHeight ? { height: fixedHeight, maxHeight: fixedHeight } : {}) }}

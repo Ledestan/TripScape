@@ -41,9 +41,15 @@ export default {
         },
       },
       borderRadius: {
+        panel: "var(--radius-panel)",
+        card: "var(--radius-card)",
+        control: "var(--radius-control)",
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      boxShadow: {
+        panel: "var(--shadow-panel)",
       },
     },
   },

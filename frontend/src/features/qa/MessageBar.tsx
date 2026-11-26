@@ -18,6 +18,7 @@ import { FloatingWindow } from "@/components/FloatingWindow";
 import { useChatStore, ChatMessage } from "@/stores/chat";
 import { useAuthStore } from "@/stores/auth";
 import { globeBus } from "@/features/globe/bus";
+import { SkeletonRows } from "@/components/ui/skeleton";
 
 /* ------------------------------------------------------------------ */
 /* 识别结果卡（识别图 + 百科图 + 介绍 + 操作按钮 + 候选）                */
@@ -35,7 +36,7 @@ export function RecognitionResultCard({
   };
 
   return (
-    <div className="w-full self-start rounded-2xl border border-border/50 bg-muted/50 p-2.5 text-foreground shadow-sm">
+    <div className="w-full self-start rounded-panel border border-border/50 bg-muted/50 p-2.5 text-foreground shadow-sm">
       {/* 识别结果行：地标名（含置信度数字） */}
       <div className="flex items-center justify-between">
         <span className="text-[var(--ui-fs)] font-medium">{m.content}</span>
@@ -123,7 +124,7 @@ export function RecognitionResultCard({
 /** 识别中骨架屏 */
 export function RecognizingSkeleton() {
   return (
-    <div className="w-full self-start rounded-2xl border border-border/50 bg-muted/50 p-2.5">
+    <div className="w-full self-start rounded-panel border border-border/50 bg-muted/50 p-2.5">
       <div className="flex items-center gap-2">
         <span className="h-2 w-2 animate-ping rounded-full bg-sky-400" />
         <span className="text-[var(--ui-fs-sm)] text-foreground/60">正在识别图片，请稍候…</span>
@@ -527,11 +528,11 @@ export default function MessageBar({
                   <img
                     src={m.pending_image_url}
                     alt=""
-                    className="ml-auto max-h-32 w-auto rounded-2xl rounded-br-sm object-cover"
+                    className="ml-auto max-h-32 w-auto rounded-panel rounded-br-sm object-cover"
                   />
                 )}
                 {m.content && (
-                  <div className="self-end rounded-2xl rounded-br-sm bg-sky-500 px-3 py-1.5 text-[var(--ui-fs)] text-foreground">
+                  <div className="self-end rounded-panel rounded-br-sm bg-sky-500 px-3 py-1.5 text-[var(--ui-fs)] text-foreground">
                     {m.content}
                   </div>
                 )}
@@ -547,7 +548,7 @@ export default function MessageBar({
             ) : (
               <div
                 key={m.id}
-                className="max-w-[92%] cursor-pointer self-start rounded-2xl rounded-bl-sm border border-border/50 bg-muted/50 px-3 py-2 text-[var(--ui-fs)] text-foreground shadow-sm transition hover:border-primary/50"
+                className="max-w-[92%] cursor-pointer self-start rounded-panel rounded-bl-sm border border-border/50 bg-muted/50 px-3 py-2 text-[var(--ui-fs)] text-foreground shadow-sm transition hover:border-primary/50"
                 onClick={() => setViewMsg(m)}
                 title="点击查看全文"
               >
@@ -671,7 +672,7 @@ function HistoryList() {
         created_at: string;
       }[],
   });
-  if (isLoading) return <div className="py-10 text-center text-sm text-muted-foreground">加载中…</div>;
+  if (isLoading) return <SkeletonRows rows={3} className="py-6" />;
   if (!data?.length)
     return (
       <div className="flex flex-col items-center gap-1.5 py-12 text-center">

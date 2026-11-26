@@ -47,7 +47,7 @@ export default function ReportDialog({
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative w-full max-w-sm rounded-2xl border border-border/70 bg-card p-5 text-card-foreground shadow-xl">
+      <div className="relative w-full max-w-sm rounded-panel border border-border/70 bg-card p-5 text-card-foreground shadow-xl">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2 font-semibold">
             <Flag className="h-4 w-4 text-destructive" /> 举报{targetType === "comment" ? "评论" : "手账"}

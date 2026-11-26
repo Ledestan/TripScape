@@ -61,7 +61,7 @@ export default function SharePage() {
           </Button>
         </div>
 
-        <article className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
+        <article className="rounded-panel border bg-card p-6 shadow-sm md:p-8">
           <h1 className="text-2xl font-bold">{data.title}</h1>
 
           <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">

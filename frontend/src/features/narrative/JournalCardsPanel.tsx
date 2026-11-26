@@ -48,7 +48,7 @@ export default function JournalCardsPanel({
   return (
     <section
       data-testid="narrative-layer-journal"
-      className="flex max-h-[min(660px,calc(100vh-150px))] flex-col overflow-hidden rounded-[20px] border border-border/70 bg-card/95 shadow-[0_24px_60px_-28px_rgb(0_0_0/0.65)] backdrop-blur-xl"
+      className="flex max-h-[min(660px,calc(100vh-150px))] flex-col overflow-hidden rounded-panel border border-border/70 bg-card shadow-panel"
     >
       <header className="shrink-0 border-b border-border/60 px-3.5 py-2.5">
         <div className="flex items-start gap-2">

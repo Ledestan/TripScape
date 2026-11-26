@@ -13,7 +13,7 @@ import type { OrbitControls as OrbitControlsImpl } from "three/examples/jsm/cont
 import { useQuery } from "@tanstack/react-query";
 import { Flag } from "lucide-react";
 import { api } from "@/api/client";
-import { globeBus, subscribeBearing, subscribeFly, subscribeResetView } from "./bus";
+import { globeBus, subscribeBearing, subscribeFly, subscribeOverlay, subscribeResetView } from "./bus";
 import { FLY_TOTAL_SEC, flyAt } from "./fly";
 import type { FlyPayload } from "./bus";
 
@@ -75,16 +75,33 @@ function useBackfaceHide(markerCoords: { lat: number; lon: number }[]) {
     () => markerCoords.map((m) => latLonToVector3(m.lat, m.lon, 1).normalize()),
     [markerCoords]
   );
-  useFrame(() => {
-    const els = document.querySelectorAll<HTMLElement>("[data-marker-idx]");
-    els.forEach((el) => {
-      const idx = Number(el.dataset.markerIdx);
-      const n = dirs[idx];
-      if (!n) return;
-      // 可见 ⟺ 标记法线与"球心->相机"方向同侧（正面半球）
-      const camDir = camera.position.clone().normalize();
-      el.style.visibility = camDir.dot(n) > 0.12 ? "visible" : "hidden";
+
+  // 每帧 querySelectorAll 会强制样式重算，是之前卡顿的主要来源之一：
+  // 标记元素只在切换层级时变化，抓一次缓存即可
+  const elsRef = useRef<HTMLElement[]>([]);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      elsRef.current = Array.from(document.querySelectorAll<HTMLElement>("[data-marker-idx]"));
     });
+    return () => cancelAnimationFrame(raf);
+  }, [markerCoords]);
+
+  const lastCam = useRef(new THREE.Vector3(0, 0, 0));
+  const frameNo = useRef(0);
+
+  useFrame(() => {
+    frameNo.current += 1;
+    if (frameNo.current % 2) return; // 隔帧更新，肉眼无差
+    if (lastCam.current.distanceToSquared(camera.position) < 1e-7) return; // 镜头没动就不写 DOM
+    lastCam.current.copy(camera.position);
+
+    const camDir = camera.position.clone().normalize();
+    for (const el of elsRef.current) {
+      const n = dirs[Number(el.dataset.markerIdx)];
+      if (!n) continue;
+      // 可见 ⟺ 标记法线与"球心->相机"方向同侧（正面半球）
+      el.style.visibility = camDir.dot(n) > 0.12 ? "visible" : "hidden";
+    }
   });
 }
 
@@ -282,13 +299,19 @@ function EarthContent({
   const [zoomedIn, setZoomedIn] = useState(false);
   const controls = useThree((s) => s.controls) as any;
 
-  // 自转：转相机方位角（组静止，标记方向恒定；用户设定方位后停用）
+  // 自转：转相机方位角（组静止，标记方向恒定；用户设定方位或浮窗打开时停用）
   useFrame((state) => {
     if (window.__tsDragging) {
       idleRef.current = state.clock.elapsedTime;
     }
     const idle = state.clock.elapsedTime - idleRef.current > 3;
-    if (controls && idle && !globeBus.hasUserBearing && !window.__tsDragging) {
+    if (
+      controls &&
+      idle &&
+      !globeBus.hasUserBearing &&
+      !globeBus.hasOverlay &&
+      !window.__tsDragging
+    ) {
       controls.setAzimuthalAngle?.((controls.getAzimuthalAngle?.() ?? 0) + state.clock.getDelta() * 0.05);
       controls.update?.();
     }
@@ -314,7 +337,7 @@ function EarthContent({
       <CameraDistanceProbe distRef={camDistRef} />
       <group ref={groupRef}>
         <mesh>
-          <sphereGeometry args={[1, 64, 64]} />
+          <sphereGeometry args={[1, 48, 48]} />
           <meshBasicMaterial color="#2c5a8f" />
         </mesh>
         <Suspense fallback={<EarthTextureFallback />}>
@@ -357,7 +380,7 @@ function EarthContent({
 function EarthTextureFallback() {
   return (
     <mesh>
-      <sphereGeometry args={[1.001, 64, 64]} />
+      <sphereGeometry args={[1.001, 48, 48]} />
       <meshBasicMaterial color="#3a6ea5" toneMapped={false} />
     </mesh>
   );
@@ -369,7 +392,7 @@ function EarthTexture() {
   tex.anisotropy = 8;
   return (
     <mesh>
-      <sphereGeometry args={[1.001, 64, 64]} />
+      <sphereGeometry args={[1.001, 48, 48]} />
       <meshBasicMaterial map={tex} toneMapped={false} />
     </mesh>
   );
@@ -522,6 +545,9 @@ const Globe = ({
   const { data: spots } = useSpotList();
   const [flying, setFlying] = useState<{ lat: number; lon: number; dist?: number } | null>(null);
   const [flyTargetId, setFlyTargetId] = useState<number | null>(null);
+  // 浮窗压在地球上且不在运镜时，Canvas 切成按需渲染：静态画面不再占满 GPU
+  const [overlay, setOverlay] = useState(globeBus.hasOverlay);
+  useEffect(() => subscribeOverlay(setOverlay), []);
 
   useEffect(() => {
     const onFly = (p: FlyPayload) => {
@@ -560,7 +586,9 @@ const Globe = ({
       <div className="globe-bg pointer-events-none absolute inset-0" />
       <Canvas
         camera={{ position: [0, 0.6, 2.6], fov: 42 }}
-        dpr={[1, 1.75]}
+        dpr={[1, 1.5]}
+        performance={{ min: 0.5 }}
+        frameloop={overlay && !flying ? "demand" : "always"}
         gl={{ antialias: true, alpha: true }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}

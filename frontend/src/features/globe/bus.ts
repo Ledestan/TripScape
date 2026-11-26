@@ -23,8 +23,21 @@ const bearingChangeHooks = new Set<(hasUserBearing: boolean) => void>();
 
 /** 用户是否设定过方位（设定后本次会话停用自转，重置后恢复） */
 let userSetBearing = false;
+/** 是否有浮窗盖在地球上：有则停自转，省 GPU 也避免隔着面板看见地球在动 */
+let overlayOpen = false;
+const overlayHooks = new Set<(open: boolean) => void>();
 
 export const globeBus = {
+  /** 浮窗开合（叙事档案 / 手记）：打开时暂停自转，并让 Canvas 转入按需渲染 */
+  setOverlay(open: boolean) {
+    if (overlayOpen === open) return;
+    overlayOpen = open;
+    overlayHooks.forEach((fn) => fn(open));
+  },
+  /** 当前是否有浮窗盖在地球上 */
+  get hasOverlay() {
+    return overlayOpen;
+  },
   /** 飞到地标（点搜索结果/消息卡片/地标页） */
   flyTo(lat: number, lon: number, id?: number, dist?: number) {
     flyListeners.forEach((fn) => fn({ lat, lon, id, dist }));
@@ -69,4 +82,10 @@ export function subscribeResetView(fn: () => void): () => void {
 export function subscribeBearingChange(fn: (hasUserBearing: boolean) => void): () => void {
   bearingChangeHooks.add(fn);
   return () => bearingChangeHooks.delete(fn);
+}
+
+/** 订阅"浮窗开合"，返回取消函数（Canvas 据此切换按需渲染） */
+export function subscribeOverlay(fn: (open: boolean) => void): () => void {
+  overlayHooks.add(fn);
+  return () => overlayHooks.delete(fn);
 }

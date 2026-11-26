@@ -102,10 +102,11 @@ export default function LandmarkNarrativePanel({
     const dx = from.left + from.width / 2 - (to.left + to.width / 2);
     const dy = from.top + from.height / 2 - (to.top + to.height / 2);
 
+    // 只动 transform 与 opacity：两者走合成层，不会被大圆角/阴影的逐帧重绘拖慢
     el.animate(
       [
-        { transform: `translate(${dx}px, ${dy}px) scale(.22)`, opacity: 0.15, borderRadius: "999px" },
-        { transform: "none", opacity: 1, borderRadius: "16px" },
+        { transform: `translate(${dx}px, ${dy}px) scale(.22)`, opacity: 0.15 },
+        { transform: "none", opacity: 1 },
       ],
       { duration: 420, easing: "cubic-bezier(.22,.68,.28,1)" }
     );
@@ -114,7 +115,7 @@ export default function LandmarkNarrativePanel({
   return (
     <section
       ref={panelRef}
-      className="flex max-h-[min(660px,calc(100vh-150px))] flex-col overflow-hidden rounded-panel border border-border/70 bg-card/95 shadow-panel backdrop-blur-xl"
+      className="flex max-h-[min(660px,calc(100vh-150px))] flex-col overflow-hidden rounded-panel border border-border/70 bg-card shadow-panel"
     >
       {/* 封面 */}
       <header className="relative h-[124px] shrink-0 overflow-hidden">
@@ -123,6 +124,7 @@ export default function LandmarkNarrativePanel({
             src={card.photo}
             alt=""
             className="h-full w-full object-cover"
+            decoding="async"
             onError={(e) => ((e.target as HTMLImageElement).style.visibility = "hidden")}
           />
         ) : (

@@ -22,6 +22,7 @@ import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api, errMessage } from "@/api/client";
+import { globeBus } from "@/features/globe/bus";
 import { useAuthStore } from "@/stores/auth";
 import { useNarrativeStore } from "@/stores/narrative";
 import JournalCardsPanel from "./JournalCardsPanel";
@@ -42,6 +43,12 @@ export default function NarrativeHud() {
   const back = useNarrativeStore((s) => s.back);
   const token = useAuthStore((s) => s.token);
   const qc = useQueryClient();
+
+  // 档案/手记浮窗压在地球上时停掉自转：省 GPU，也不会隔着面板看见地球在转
+  useEffect(() => {
+    globeBus.setOverlay(layer !== "globe");
+    return () => globeBus.setOverlay(false);
+  }, [layer]);
 
   /** 未登录时的统一出口：先提示再打开登录浮窗，不把 401 当业务错误抛给用户 */
   const requireLogin = (action: string): boolean => {

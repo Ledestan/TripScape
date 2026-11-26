@@ -97,3 +97,17 @@ def test_private_journal_comments_hidden_from_others(
 
     other = api_client.json_get(f"/api/comments/journal/{journal.id}", token=admin_token)
     assert other.status_code == 200
+
+
+@pytest.mark.django_db
+def test_profile_survives_journal_comment(api_client, user_token, journal):
+    """手账评论不应该让 /auth/profile 500（landmark 为空的历史坑）。"""
+    api_client.json_post(
+        "/api/comments/",
+        {"journal_id": journal.id, "content": "手账评论"},
+        token=user_token,
+    )
+    profile = api_client.json_get("/api/auth/profile", token=user_token)
+    assert profile.status_code == 200
+    comments = profile.json()["comments"]
+    assert any(item.get("journal_id") == journal.id for item in comments)

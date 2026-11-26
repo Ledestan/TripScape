@@ -37,7 +37,7 @@ interface ProfileData {
   counts: { footprints: number; journals: number; comments: number; favorites: number };
   footprints: { landmark_id: number; name: string; lat: number; lon: number; visits: number; hidden?: boolean; last_visited_at?: string }[];
   journals: { id: number; title: string; landmark: string; landmark_id?: number; lat?: number; lon?: number; visited_at: string | null; is_public: boolean }[];
-  comments: { id: number; landmark: string; landmark_id?: number; lat?: number; lon?: number; content: string; created_at: string }[];
+  comments: { id: number; landmark: string; landmark_id?: number | null; journal_id?: number | null; journal_title?: string; lat?: number | null; lon?: number | null; content: string; created_at: string }[];
   favorites: { id: number; name: string; lat?: number; lon?: number }[];
 }
 
@@ -205,11 +205,11 @@ export default function ProfileWindow({ onClose }: { onClose: () => void }) {
                     data.comments.map((c) => (
                       <div key={c.id} className="rounded-xl border border-border bg-muted/40 px-3.5 py-2.5">
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span className="truncate">在 {c.landmark}</span>
+                          <span className="truncate">{c.journal_title ? `在手账「${c.journal_title}」` : `在 ${c.landmark}`}</span>
                           <div className="ml-2 flex shrink-0 items-center gap-1.5">
                             <span>{new Date(c.created_at).toLocaleString("zh-CN")}</span>
-                            {c.lat !== undefined && c.lon !== undefined && (
-                              <FlyButton onClick={() => flyTo(c.lat!, c.lon!, c.landmark_id)} />
+                            {c.lat != null && c.lon != null && (
+                              <FlyButton onClick={() => flyTo(c.lat!, c.lon!, c.landmark_id ?? undefined)} />
                             )}
                           </div>
                         </div>

@@ -44,7 +44,7 @@ test.describe("S4 文章详情页", () => {
 
     // 回复（限定在自己刚发的评论块内，避免命中历史评论）
     const mine = page.getByTestId("comment-item").first();
-    await mine.getByRole("button", { name: "回复" }).click();
+    await mine.getByRole("button", { name: "回复" }).first().click();
     await expect(page.getByTestId("comment-input")).toHaveAttribute(
       "placeholder",
       /回复 @/

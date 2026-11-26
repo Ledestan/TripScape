@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { User, Moon, Sun, LogOut, LayoutDashboard, MapPin, LogIn, Settings } from "lucide-react";
+import { User, Moon, Sun, LogOut, LayoutDashboard, MapPin, LogIn, Settings, Sparkles } from "lucide-react";
 import { useAuthStore } from "@/stores/auth";
 import { useThemeStore } from "@/stores/theme";
 import LoginWindow from "@/layouts/LoginWindow";
@@ -159,6 +159,23 @@ export default function FloatingDock() {
                     setMenuOpen(false);
 
                     setProfileOpen(true);
+
+                  }}
+
+                />
+
+                <MenuItem
+
+                  icon={<Sparkles className="h-3.5 w-3.5" />}
+
+                  label="旅行拼贴"
+                  testId="dock-menu-creation"
+
+                  onClick={() => {
+
+                    setMenuOpen(false);
+
+                    window.dispatchEvent(new CustomEvent("ts:open-creation"));
 
                   }}
 

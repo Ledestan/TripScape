@@ -5,7 +5,7 @@
  * 地标层的右侧档案浮窗：把「整体介绍 → 时间轴 → 材料」讲成一段可读的叙事，完成:
  *     1. 封面上给出地标、国家、坐标与卡片编号
  *     2. 正文先读故事，再读背后的文献材料
- *     3. 底部提供收进手记 / 拾取 / 匿名留下，以及评论收藏与写手账的入口
+ *     3. 底部提供收藏 / 拾取 / 匿名留下，以及评论、足迹与写手账的入口
  *
  * 依赖:
  *     依赖库: lucide-react
@@ -15,18 +15,19 @@
  *
  * 注意:
  *     1. 文案只来自接口字段，本组件不写任何历史解释。
- *     2. 浮窗自带关闭（✕）与手记入口，不依赖页面顶部的返回。
+ *     2. 浮窗自带关闭（✕）与收藏列表入口，不依赖页面顶部的返回。
  */
 
 import {
   AlertCircle,
-  BookmarkPlus,
   BookOpen,
+  Footprints,
   Loader2,
   MapPin,
   MessageSquare,
   NotebookPen,
   RefreshCw,
+  Star,
   X,
 } from "lucide-react";
 import { useLayoutEffect, useRef } from "react";
@@ -46,14 +47,16 @@ export default function LandmarkNarrativePanel({
   journalCount,
   onBack,
   onOpenJournal,
-  onAdd,
-  adding,
   onPick,
   picking,
   onDeliver,
   delivering,
   onOpenComments,
   onOpenJournalEditor,
+  favorited,
+  favoriteBusy,
+  onToggleFavorite,
+  onOpenFootprints,
 }: {
   card?: NarrativeCardData;
   loading: boolean;
@@ -65,14 +68,16 @@ export default function LandmarkNarrativePanel({
   journalCount: number;
   onBack: () => void;
   onOpenJournal: () => void;
-  onAdd: () => void;
-  adding: boolean;
   onPick: () => void;
   picking: boolean;
   onDeliver: (cardId: number) => void;
   delivering: boolean;
   onOpenComments: () => void;
   onOpenJournalEditor: () => void;
+  favorited: boolean;
+  favoriteBusy: boolean;
+  onToggleFavorite: () => void;
+  onOpenFootprints: () => void;
 }) {
   const title = card?.title || story?.title || landmarkName || "地标档案";
 
@@ -132,7 +137,7 @@ export default function LandmarkNarrativePanel({
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
-        {/* 浮窗自带的关闭与手记入口 */}
+        {/* 浮窗自带的关闭与收藏入口 */}
         <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
           <button
             data-testid="narrative-open-journal"
@@ -140,7 +145,7 @@ export default function LandmarkNarrativePanel({
             className="flex items-center gap-1 rounded-full bg-black/35 px-2 py-1 text-[10.5px] text-white/90 backdrop-blur transition hover:bg-black/50"
           >
             <BookOpen className="h-3 w-3" />
-            手记
+            收藏
             <span
               data-testid="narrative-journal-count"
               className="rounded-full bg-white/20 px-1 text-[10px] font-bold"
@@ -227,18 +232,9 @@ export default function LandmarkNarrativePanel({
         )}
       </div>
 
-      {/* 动作区 */}
-      <footer className="shrink-0 border-t border-border/60 bg-card/80 px-3 py-2.5">
+      {/* 动作区：上行是叙事动作，下行是评论 / 收藏 / 足迹 / 手账 */}
+      <footer className="shrink-0 border-t border-border/60 bg-card px-3 py-2.5">
         <div className="flex flex-wrap items-center gap-1.5">
-          <Button
-            size="sm"
-            data-testid="narrative-add-to-journal"
-            onClick={onAdd}
-            disabled={adding || !card}
-          >
-            <BookmarkPlus className="mr-1 h-3.5 w-3.5" />
-            {adding ? "收进中…" : "收进手记"}
-          </Button>
           <Button
             size="sm"
             variant="outline"
@@ -267,7 +263,30 @@ export default function LandmarkNarrativePanel({
             onClick={onOpenComments}
           >
             <MessageSquare className="mr-1 h-3 w-3" />
-            评论与收藏
+            评论
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className={`h-7 text-[11px] ${
+              favorited ? "text-amber-500 hover:text-amber-500" : "text-muted-foreground hover:text-foreground"
+            }`}
+            data-testid="narrative-favorite"
+            onClick={onToggleFavorite}
+            disabled={favoriteBusy}
+          >
+            <Star className={`mr-1 h-3 w-3 ${favorited ? "fill-amber-400 text-amber-400" : ""}`} />
+            {favorited ? "已收藏" : "收藏"}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-[11px] text-muted-foreground hover:text-foreground"
+            data-testid="narrative-footprints"
+            onClick={onOpenFootprints}
+          >
+            <Footprints className="mr-1 h-3 w-3" />
+            足迹
           </Button>
           <Button
             size="sm"

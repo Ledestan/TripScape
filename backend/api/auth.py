@@ -235,8 +235,11 @@ def public_profile(request, user_id: int):
             {
                 "id": f.landmark.id,
                 "name": f.landmark.name,
+                "country": f.landmark.country or "",
+                "photo": f.landmark.image_url or "",
                 "lat": float(f.landmark.lat),
                 "lon": float(f.landmark.lon),
+                "favorited_at": f.created_at.isoformat(),
             }
             for f in u.favorite_landmarks.select_related("landmark")[:50]
         ]

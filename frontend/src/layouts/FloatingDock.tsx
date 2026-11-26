@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { User, Moon, Sun, LogOut, LayoutDashboard, MapPin, LogIn, Settings, BookOpen } from "lucide-react";
+import { User, Moon, Sun, LogOut, LayoutDashboard, MapPin, LogIn, Settings, BookOpen, Footprints } from "lucide-react";
 import { useAuthStore } from "@/stores/auth";
 import { useThemeStore } from "@/stores/theme";
 import LoginWindow from "@/layouts/LoginWindow";
@@ -176,6 +176,23 @@ export default function FloatingDock() {
                     setMenuOpen(false);
 
                     window.dispatchEvent(new CustomEvent("ts:open-journal"));
+
+                  }}
+
+                />
+
+                <MenuItem
+
+                  icon={<Footprints className="h-3.5 w-3.5" />}
+
+                  label="我的足迹"
+                  testId="dock-menu-footprints"
+
+                  onClick={() => {
+
+                    setMenuOpen(false);
+
+                    window.dispatchEvent(new CustomEvent("ts:open-footprints"));
 
                   }}
 

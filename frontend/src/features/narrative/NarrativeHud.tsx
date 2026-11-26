@@ -18,14 +18,15 @@
  *     2. 未登录执行写操作时先提示并打开登录浮窗，不发无意义的 401 请求。
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api, errMessage } from "@/api/client";
 import { globeBus } from "@/features/globe/bus";
 import { useAuthStore } from "@/stores/auth";
 import { useNarrativeStore } from "@/stores/narrative";
-import JournalCardsPanel from "./JournalCardsPanel";
+import FavoritesPanel, { FavoriteItem } from "./FavoritesPanel";
+import FootprintWindow from "./FootprintWindow";
 import LandmarkNarrativePanel from "./LandmarkNarrativePanel";
 import type {
   JournalEntry,
@@ -61,8 +62,13 @@ export default function NarrativeHud() {
   /** 头像菜单的「旅行手记」通过事件唤起手记层，避免把层状态散到多个组件 */
   useEffect(() => {
     const onOpenJournal = () => showJournal();
+    const onOpenFootprints = () => setFootprintsOpen(true);
     window.addEventListener("ts:open-journal", onOpenJournal);
-    return () => window.removeEventListener("ts:open-journal", onOpenJournal);
+    window.addEventListener("ts:open-footprints", onOpenFootprints);
+    return () => {
+      window.removeEventListener("ts:open-journal", onOpenJournal);
+      window.removeEventListener("ts:open-footprints", onOpenFootprints);
+    };
   }, [showJournal]);
 
   const {
@@ -87,21 +93,28 @@ export default function NarrativeHud() {
     retry: 0,
   });
 
-  const { data: journal = [] } = useQuery({
-    queryKey: ["narrative", "journal"],
-    queryFn: async () => (await api.get("/narrative/journal")).data.data as JournalEntry[],
+  /** 收藏列表来自个人主页聚合接口（只读，已按收藏时间倒序） */
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => (await api.get("/auth/profile")).data as { favorites?: FavoriteItem[] },
     enabled: !!token,
     retry: 0,
   });
+  const favorites = profile?.favorites || [];
 
-  const addToJournal = useMutation({
-    mutationFn: async (cardId: number) =>
-      api.post("/narrative/journal/cards", { card_id: cardId }),
-    onSuccess: () => {
-      toast.success("已收进手记", { description: "这段叙事以只读快照保留，刷新不会丢失" });
-      qc.invalidateQueries({ queryKey: ["narrative", "journal"] });
+  const [footprintsOpen, setFootprintsOpen] = useState(false);
+
+  /** 收藏开关：与「收藏」按钮同源，收藏后可在手记里找到 */
+  const toggleFavorite = useMutation({
+    mutationFn: async (lmId: number) => api.post(`/landmarks/${lmId}/favorite`),
+    onSuccess: (r) => {
+      const favorited = (r.data as { favorited?: boolean } | undefined)?.favorited;
+      toast.success(favorited === false ? "已取消收藏" : "已收藏", {
+        description: favorited === false ? undefined : "可以在「手记」里找到它",
+      });
+      qc.invalidateQueries({ queryKey: ["profile"] });
     },
-    onError: (e) => toast.error(errMessage(e, "收进手记失败")),
+    onError: (e) => toast.error(errMessage(e, "收藏失败")),
   });
 
   const deliver = useMutation({
@@ -151,13 +164,9 @@ export default function NarrativeHud() {
             onRetry={() => refetchCard()}
             landmarkName={landmarkName}
             story={story}
-            journalCount={journal.length}
+            journalCount={favorites.length}
             onBack={back}
             onOpenJournal={showJournal}
-            adding={addToJournal.isPending}
-            onAdd={() => {
-              if (card && requireLogin("收进手记")) addToJournal.mutate(card.id);
-            }}
             picking={pick.isPending}
             onPick={() => {
               if (requireLogin("拾取碎片")) pick.mutate(landmarkId);
@@ -172,26 +181,35 @@ export default function NarrativeHud() {
             onOpenJournalEditor={() => {
               if (requireLogin("写手账")) openLegacyWindow("ts:open-journal-edit");
             }}
+            favorited={favorites.some((f) => f.id === landmarkId)}
+            favoriteBusy={toggleFavorite.isPending}
+            onToggleFavorite={() => {
+              if (landmarkId !== null && requireLogin("收藏")) toggleFavorite.mutate(landmarkId);
+            }}
+            onOpenFootprints={() => setFootprintsOpen(true)}
           />
         </div>
       )}
 
+      <FootprintWindow
+        open={footprintsOpen}
+        onClose={() => setFootprintsOpen(false)}
+        onLocate={(id, name) => {
+          setFootprintsOpen(false);
+          enterLandmark(id, name);
+        }}
+      />
+
       {layer === "journal" && (
         <div className="pointer-events-auto absolute right-3 top-1/2 z-30 w-[min(430px,calc(100vw-24px))] -translate-y-1/2">
-          <JournalCardsPanel
-            entries={journal}
-            delivering={deliver.isPending}
+          <FavoritesPanel
+            items={favorites}
+            removing={toggleFavorite.isPending}
             onClose={back}
-            onDeliver={(cardId, lmId) => {
-              if (requireLogin("投递碎片")) {
-                deliver.mutate({ card_id: cardId, landmark_id: lmId });
-              }
+            onOpen={(id, name) => enterLandmark(id, name)}
+            onRemove={(id) => {
+              if (requireLogin("取消收藏")) toggleFavorite.mutate(id);
             }}
-            onWake={(lmId, name) => enterLandmark(lmId, name)}
-            onPickHere={() => {
-              if (landmarkId !== null && requireLogin("拾取碎片")) pick.mutate(landmarkId);
-            }}
-            canPick={landmarkId !== null}
           />
         </div>
       )}

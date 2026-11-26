@@ -148,7 +148,7 @@ TripScape/
 │  ├─ src/
 │  │  ├─ main.tsx / App.tsx              # 入口与路由（全部功能浮窗化，旧网页路由重定向回地球）
 │  │  ├─ api/                            # axios 客户端
-│  │  ├─ components/                     # FloatingWindow 浮窗容器、LoadingScreen、ui/ 基础组件
+│  │  ├─ components/                     # FloatingWindow 浮窗容器、ui/ 基础组件
 │  │  ├─ features/                       # 按业务域组织
 │  │  │  ├─ globe/                       # Globe.tsx 三维地球、GlobeControls 控件排
 │  │  │  ├─ narrative/                   # 叙事层：故事胶片、地标档案、旅行手记、故事渲染

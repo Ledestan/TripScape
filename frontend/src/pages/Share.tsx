@@ -9,7 +9,6 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, CalendarDays, Globe2 } from "lucide-react";
 import { api } from "@/api/client";
-import LoadingScreen from "@/components/LoadingScreen";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -34,7 +33,9 @@ export default function SharePage() {
     retry: false,
   })
 
-  if (isLoading) return <LoadingScreen text="打开分享…" />
+  // 加载态只铺深色底：分享页是站外入口，不弹"加载中"文字，避免与片头抢戏
+  if (isLoading)
+    return <div className="fixed inset-0 bg-[#04070d]" aria-hidden="true" />;
   if (isError || !data)
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-gradient-to-br from-[#9bb7d7] to-[#6a8caf] text-white">

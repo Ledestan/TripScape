@@ -8,7 +8,6 @@
 import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
 import { useThemeStore } from "@/stores/theme";
-import LoadingScreen from "@/components/LoadingScreen";
 
 // 地球 + 浮窗类页面（全部功能在浮窗内，无独立网页版）
 const GlobeApp = lazy(() => import("@/pages/GlobeApp"));
@@ -16,6 +15,16 @@ const SearchWindow = lazy(() => import("@/features/search/SearchWindow"));
 
 // 独立页（仅分享，供站外打开）
 const SharePage = lazy(() => import("@/pages/Share"));
+
+/**
+ * 分包加载期间的占位：只铺一层深色底，不放任何文字与转圈。
+ *
+ * 首屏的片头由 index.html 里的 #boot-screen 负责（5 秒后淡出），
+ * 这里如果放"加载中"组件，会在片头之上再叠一层旧界面，形成闪屏。
+ */
+function LazyFallback() {
+  return <div className="fixed inset-0 bg-[#04070d]" aria-hidden="true" />;
+}
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -34,7 +43,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <Suspense fallback={<LoadingScreen />}>
+      <Suspense fallback={<LazyFallback />}>
         <Routes>
           {/* 公开分享页（独立布局，站外入口） */}
           <Route path="/share/:token" element={<SharePage />} />

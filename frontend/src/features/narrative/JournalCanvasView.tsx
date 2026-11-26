@@ -3,7 +3,7 @@
  * 创建日期: 2026-11-26
  *
  * 把已保存的 3:4 手账画布渲染成只读的一页，完成:
- *     1. 五类元素：照片 / 文字 / 碎片卡片 / 贴纸 / 胶带（含圆角、投影、边框）
+ *     1. 五类元素：照片 / 文字 / 贴纸 / 胶带（含圆角、投影、边框）
  *     2. 按容器宽度等比缩放，永远保持 3:4
  *     3. 不响应拖拽与缩放，只用于查看/分享
  *
@@ -35,7 +35,6 @@ import {
   CANVAS_W,
   parseCanvas,
   type CanvasElement,
-  type FragmentElement,
   type PhotoElement,
   type StickerElement,
   type TapeElement,
@@ -101,47 +100,6 @@ function TextNode({ element }: { element: TextElement }) {
       lineHeight={1.5}
       wrap="word"
     />
-  );
-}
-
-function FragmentNode({ element }: { element: FragmentElement }) {
-  return (
-    <>
-      <Rect
-        width={element.width}
-        height={element.height}
-        cornerRadius={element.cornerRadius}
-        fill="#12161d"
-        stroke="rgba(216,178,106,0.55)"
-        strokeWidth={1}
-      />
-      <Rect x={0} y={0} width={4} height={element.height} fill="#d8b26a" cornerRadius={2} />
-      <Text
-        x={16}
-        y={14}
-        width={element.width - 32}
-        text={element.title}
-        fontSize={18}
-        fontStyle="bold"
-        fontFamily="serif"
-        fill="#f5f2ea"
-        wrap="word"
-      />
-      {element.snippet ? (
-        <Text
-          x={16}
-          y={44}
-          width={element.width - 32}
-          height={element.height - 72}
-          text={element.snippet}
-          fontSize={12}
-          lineHeight={1.6}
-          fill="rgba(245,242,234,0.72)"
-          wrap="word"
-          ellipsis
-        />
-      ) : null}
-    </>
   );
 }
 
@@ -223,7 +181,6 @@ function TapeNode({ element }: { element: TapeElement }) {
 export function ElementNode({ element }: { element: CanvasElement }) {
   if (element.type === "photo") return <PhotoNode element={element} />;
   if (element.type === "text") return <TextNode element={element} />;
-  if (element.type === "fragment") return <FragmentNode element={element} />;
   if (element.type === "sticker") return <StickerNode element={element} />;
   return <TapeNode element={element} />;
 }

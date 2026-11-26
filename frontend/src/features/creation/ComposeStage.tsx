@@ -4,7 +4,7 @@
  *
  * 拼贴画布的 Konva 渲染层，完成:
  *     1. 720×960 逻辑画布，等比适配容器，支持缩放与平移查看
- *     2. 五类元素渲染：照片 / 碎片卡片 / 文字 / 贴纸 / 胶带
+ *     2. 四类元素渲染：照片 / 文字 / 贴纸 / 胶带
  *     3. 选中挂 Transformer：拖拽、角点缩放、旋转（15° 吸附）
  *     4. 拖拽时吸附画布中线并显示参考线
  *     5. 导出：按 3:4 原尺寸返回 PNG（不受当前缩放/平移影响）
@@ -44,7 +44,6 @@ import {
   type ComposeDoc,
   type ComposeElement,
   type PhotoElement,
-  type FragmentElement,
   type TextElement,
   type StickerElement,
   type TapeElement,
@@ -139,51 +138,6 @@ function PhotoNode({ element }: { element: PhotoElement }) {
         </>
       )}
     </Group>
-  );
-}
-
-function FragmentNode({ element }: { element: FragmentElement }) {
-  return (
-    <>
-      <Rect
-        width={element.width}
-        height={element.height}
-        cornerRadius={element.cornerRadius}
-        fill="#12161d"
-        stroke="rgba(216,178,106,0.55)"
-        strokeWidth={1}
-        shadowColor="rgba(0,0,0,0.35)"
-        shadowBlur={16}
-        shadowOffsetY={8}
-      />
-      <Rect x={0} y={0} width={4} height={element.height} fill={element.accent} cornerRadius={2} />
-      <Text
-        x={16}
-        y={14}
-        width={element.width - 32}
-        text={element.title}
-        fontSize={18}
-        fontStyle="bold"
-        fontFamily="serif"
-        fill="#f5f2ea"
-        wrap="word"
-      />
-      {element.snippet ? (
-        <Text
-          x={16}
-          y={44}
-          width={element.width - 32}
-          height={element.height - 74}
-          text={element.snippet}
-          fontSize={12}
-          lineHeight={1.6}
-          fill="rgba(245,242,234,0.72)"
-          wrap="word"
-          ellipsis
-        />
-      ) : null}
-      <Text x={16} y={element.height - 24} text={element.year} fontSize={11} fill={element.accent} />
-    </>
   );
 }
 
@@ -428,7 +382,6 @@ export default forwardRef<ComposeStageHandle, ComposeStageProps>(function Compos
               onTransformEnd={() => commit(element)}
             >
               {element.kind === "photo" && <PhotoNode element={element} />}
-              {element.kind === "fragment" && <FragmentNode element={element} />}
               {element.kind === "text" && <TextNode element={element} />}
               {element.kind === "sticker" && <StickerNode element={element} />}
               {element.kind === "tape" && <TapeNode element={element} />}

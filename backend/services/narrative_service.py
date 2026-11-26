@@ -6,8 +6,7 @@
     1. build_narrative_card / latest_card：卡片组装与读取
     2. _time_fragments / _rag_snippets / _geo：三个切面的取值与降级
     3. add_card_to_journal / journal_cards：卡片与手记的持久化
-    4. deliver_fragment / pick_fragment / pick_fragment_by_id：碎片投递与单次拾取
-    5. as_card / journal_payload / fragment_payload：对外序列化口径
+    4. as_card / journal_payload：对外序列化口径
 
 依赖:
     需求文件: requirements.txt
@@ -27,10 +26,8 @@
 
 import logging
 from apps.narrative.models import (
-    FragmentPickup,
     JournalCard,
     NarrativeCard,
-    NarrativeFragment,
 )
 from django.conf import settings
 
@@ -258,101 +255,3 @@ def journal_cards(user):
 # ======================================================================
 # S3：碎片投递与拾取
 # ======================================================================
-def fragment_limit() -> int:
-    """单用户单地标投递上限（SPEC §2 S3：最多 3 条）。"""
-    return int(getattr(settings, "NARRATIVE_MAX_FRAGMENTS_PER_LANDMARK", 3))
-
-
-def deliver_fragment(user, card_id: int, landmark_id: int) -> dict:
-    """把手账卡片匿名投递到地标（同用户同地标上限 fragment_limit()）。"""
-    card = NarrativeCard.objects.filter(id=card_id).first()
-    if card is None:
-        raise NarrativeError("叙事卡片不存在", 404)
-    from apps.landmarks.models import Landmark
-
-    landmark = Landmark.objects.filter(id=landmark_id).first()
-    if landmark is None:
-        raise NarrativeError("地标不存在", 404)
-    if not JournalCard.objects.filter(user=user, card=card).exists():
-        raise NarrativeError("只能投递手账中的叙事卡片", 403)
-
-    limit = fragment_limit()
-    used = NarrativeFragment.objects.filter(
-        delivered_by=user, landmark=landmark
-    ).count()
-    if used >= limit:
-        raise NarrativeError(
-            f"同一地标最多投递 {limit} 条叙事碎片，你已投递 {used} 条", 409
-        )
-
-    frag = NarrativeFragment.objects.create(
-        card=card, landmark=landmark, delivered_by=user
-    )
-    logger.info("叙事碎片投递：fragment=%s landmark=%s", frag.id, landmark.id)
-    return {
-        "fragmentId": frag.id,
-        "landmarkId": landmark.id,
-        "deliveredCount": used + 1,
-        "remaining": limit - used - 1,
-    }
-
-
-def _unpicked_queryset(user, landmark_id: int):
-    """该地标下"非本人投递、且本人未拾取"的碎片。"""
-    picked = FragmentPickup.objects.filter(user=user).values_list(
-        "fragment_id", flat=True
-    )
-    return (
-        NarrativeFragment.objects.filter(landmark_id=landmark_id)
-        .exclude(delivered_by=user)
-        .exclude(id__in=picked)
-        .select_related("card")
-        .order_by("created_at", "id")
-    )
-
-
-def pick_fragment(user, landmark_id: int) -> dict:
-    """拾取一条未被自己拾取过的碎片（无可用碎片则 404）。"""
-    frag = _unpicked_queryset(user, landmark_id).first()
-    if frag is None:
-        raise NarrativeError("该地标暂无可拾取的叙事碎片", 404)
-    FragmentPickup.objects.create(fragment=frag, user=user)
-    return fragment_payload(frag)
-
-
-def pick_fragment_by_id(user, fragment_id: int) -> dict:
-    """按 ID 拾取碎片；同一碎片对同一用户第二次拾取被拒绝（409）。"""
-    frag = (
-        NarrativeFragment.objects.filter(id=fragment_id).select_related("card").first()
-    )
-    if frag is None:
-        raise NarrativeError("叙事碎片不存在", 404)
-    if FragmentPickup.objects.filter(fragment=frag, user=user).exists():
-        raise NarrativeError("该碎片已被你拾取过，不能重复拾取", 409)
-    FragmentPickup.objects.create(fragment=frag, user=user)
-    return fragment_payload(frag)
-
-
-def fragment_payload(frag: NarrativeFragment) -> dict:
-    """碎片序列化：含来源卡片摘要，绝不含投递者身份（匿名性）。"""
-    card = frag.card
-    snippets = card.rag_snippets or []
-    return {
-        "id": frag.id,
-        "landmarkId": frag.landmark_id,
-        "createdAt": frag.created_at.isoformat(),
-        "anonymous": True,
-        "sourceCard": {
-            "id": card.id,
-            "title": card.title,
-            "photo": card.photo,
-            "landmarkId": card.landmark_id,
-            "confidence": float(card.confidence),
-            "snippet": (snippets[0].get("text", "") if snippets else "")[:120],
-        },
-    }
-
-
-def pickup_count(user) -> int:
-    """我的拾取总数（界面提示用）。"""
-    return FragmentPickup.objects.filter(user=user).count()

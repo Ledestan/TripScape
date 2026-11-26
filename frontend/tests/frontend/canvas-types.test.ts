@@ -21,8 +21,9 @@ import {
   CANVAS_W,
   MAX_ELEMENTS,
   clampElement,
-  createFragment,
   createPhoto,
+  createSticker,
+  createTape,
   createText,
   emptyCanvas,
   moveLayer,
@@ -41,10 +42,11 @@ describe("画布数据", () => {
     expect(doc.elements).toEqual([]);
   });
 
-  it("三种元素的 type 与默认尺寸正确", () => {
+  it("四种元素的 type 与默认尺寸正确", () => {
     expect(createText().type).toBe("text");
     expect(createPhoto("/uploads/a.jpg").type).toBe("photo");
-    expect(createFragment({ title: "阿布辛贝神庙" }).type).toBe("fragment");
+    expect(createSticker("star").type).toBe("sticker");
+    expect(createTape().type).toBe("tape");
     expect(createText().fontSize).toBeGreaterThan(0);
   });
 

@@ -4,7 +4,7 @@
 
 手账画布（3:4 版式）的服务端归一化，完成:
     1. 固定版式：逻辑尺寸 720×960、比例 "3:4"，前端传什么都按此校准
-    2. 元素白名单：photo / text / fragment 三类，各自只保留允许的字段
+    2. 元素白名单：photo / text / sticker / tape 四类，各自只保留允许的字段
     3. 数值夹取：位置、缩放、旋转限制在合理区间，元素数量上限 40
     4. 内容限制：文字 ≤200 字，图片只接受站内路径或 http(s)
 
@@ -34,7 +34,7 @@ CANVAS_RATIO = "3:4"
 MAX_ELEMENTS = 40
 MAX_TEXT_LENGTH = 200
 
-ELEMENT_TYPES = ("photo", "text", "fragment", "sticker", "tape")
+ELEMENT_TYPES = ("photo", "text", "sticker", "tape")
 
 # 元素允许的字段（其余键一律丢弃）
 COMMON_FIELDS = (
@@ -56,7 +56,6 @@ COMMON_FIELDS = (
 TYPE_FIELDS = {
     "photo": ("src", "color"),
     "text": ("text", "fontSize", "color", "align", "fontFamily", "fontStyle"),
-    "fragment": ("title", "snippet", "year", "landmarkId", "color"),
     "sticker": ("variant", "color"),
     "tape": ("color", "pattern"),
 }
@@ -168,13 +167,6 @@ def normalize_element(raw, index: int) -> dict:
         pattern = str(raw.get("pattern") or "plain")
         element["pattern"] = pattern if pattern in TAPE_PATTERNS else "plain"
         element["color"] = _color(raw.get("color"), "#d6ba84")
-    else:  # fragment
-        element["title"] = _text(element.get("title"), 60)
-        element["snippet"] = _text(element.get("snippet"), MAX_TEXT_LENGTH)
-        element["year"] = _text(element.get("year"), 16)
-        element["landmarkId"] = int(_clamp(element.get("landmarkId"), 0, 10**9, 0))
-        element["color"] = _color(raw.get("color"), "#12161d")
-
     return element
 
 

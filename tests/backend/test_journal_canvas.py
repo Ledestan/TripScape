@@ -135,7 +135,7 @@ def test_layer_order_follows_array_order():
         {
             "elements": [
                 {"type": "text", "text": "第一层", "z": 9},
-                {"type": "fragment", "title": "碎片", "z": 9},
+                {"type": "tape", "pattern": "plain", "z": 9},
             ]
         }
     )
@@ -212,7 +212,7 @@ def test_create_journal_with_canvas(api_client, user_token, landmark):
                 "background": "#101820",
                 "elements": [
                     {"type": "text", "text": "在黄昏抵达", "x": 24, "y": 40},
-                    {"type": "fragment", "title": "阿布辛贝神庙", "snippet": "拉美西斯二世", "year": "前1264"},
+                    {"type": "sticker", "variant": "star", "color": "#d9a441"},
                 ],
             },
         },
@@ -226,7 +226,7 @@ def test_create_journal_with_canvas(api_client, user_token, landmark):
     canvas = detail.json()["data"]["canvas"]
     assert canvas["ratio"] == "3:4"
     assert canvas["background"] == "#101820"
-    assert [element["type"] for element in canvas["elements"]] == ["text", "fragment"]
+    assert [element["type"] for element in canvas["elements"]] == ["text", "sticker"]
 
 
 @pytest.mark.django_db

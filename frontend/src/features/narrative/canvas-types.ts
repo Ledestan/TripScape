@@ -3,8 +3,8 @@
  * 创建日期: 2026-11-26
  *
  * 手账画布的数据模型与纯函数，与渲染（react-konva）解耦，完成:
- *     1. CanvasDoc / CanvasElement：3:4 版式上的照片、文字、碎片卡片、贴纸、胶带
- *     2. 工厂函数：createText / createPhoto / createFragment / createSticker / createTape
+ *     1. CanvasDoc / CanvasElement：3:4 版式上的照片、文字、贴纸、胶带
+ *     2. 工厂函数：createText / createPhoto / createSticker / createTape
  *     3. 编辑操作：updateElement / removeElement / moveLayer
  *     4. 序列化与容错解析：serializeCanvas / parseCanvas（与后端字段一一对应）
  *
@@ -25,7 +25,7 @@ export const CANVAS_H = 960;
 export const CANVAS_RATIO = "3:4" as const;
 export const MAX_ELEMENTS = 40;
 
-export type CanvasElementType = "photo" | "text" | "fragment" | "sticker" | "tape";
+export type CanvasElementType = "photo" | "text" | "sticker" | "tape";
 
 export type StickerVariant = "star" | "heart" | "circle" | "pin" | "burst";
 export type TapePattern = "plain" | "stripe" | "dot";
@@ -70,15 +70,6 @@ export interface TextElement extends BaseElement {
   fontStyle?: "normal" | "italic";
 }
 
-export interface FragmentElement extends BaseElement {
-  type: "fragment";
-  title: string;
-  snippet: string;
-  year: string;
-  landmarkId: number;
-  color?: string;
-}
-
 export interface StickerElement extends BaseElement {
   type: "sticker";
   variant: StickerVariant;
@@ -94,7 +85,6 @@ export interface TapeElement extends BaseElement {
 export type CanvasElement =
   | PhotoElement
   | TextElement
-  | FragmentElement
   | StickerElement
   | TapeElement;
 
@@ -178,24 +168,6 @@ export function createPhoto(src: string, x = 120, y = 140): PhotoElement {
     type: "photo",
     src,
     color: "#1b1b1b",
-  };
-}
-
-/** 新建碎片卡片元素（来自某个地标的叙事卡片） */
-export function createFragment(
-  data: { title: string; snippet?: string; year?: string; landmarkId?: number },
-  x = 90,
-  y = 300
-): FragmentElement {
-  return {
-    ...baseOf("fragment", x, y, 360, 150),
-    type: "fragment",
-    title: data.title.slice(0, 60),
-    snippet: (data.snippet || "").slice(0, 200),
-    year: (data.year || "").slice(0, 16),
-    landmarkId: data.landmarkId ?? 0,
-    color: "#12161d",
-    cornerRadius: 10,
   };
 }
 
@@ -325,7 +297,7 @@ export function parseCanvas(raw: unknown): CanvasDoc {
   const source = raw as Partial<CanvasDoc>;
   if (!Array.isArray(source.elements)) return base;
 
-  const allowed: CanvasElementType[] = ["photo", "text", "fragment", "sticker", "tape"];
+  const allowed: CanvasElementType[] = ["photo", "text", "sticker", "tape"];
   const elements = source.elements
     .filter((item): item is CanvasElement => {
       if (!item || typeof item !== "object") return false;

@@ -5,8 +5,6 @@
 叙事层的四张表（2.0 本体，无特性开关），提供:
     1. NarrativeCard：叙事卡片（识别成功后的结构化对象，只读持久化）
     2. JournalCard：卡片收进手记（用户 × 卡片唯一）
-    3. NarrativeFragment：匿名留在原地的叙事碎片
-    4. FragmentPickup：单次拾取记录（碎片 × 用户唯一）
 
 依赖:
     需求文件: requirements.txt
@@ -114,67 +112,3 @@ class JournalCard(models.Model):
 
     def __str__(self):
         return f"{self.user_id}·card:{self.card_id}"
-
-
-class NarrativeFragment(models.Model):
-    """叙事碎片（S3）：某用户把一张手账卡片匿名投递到某地标。
-
-    匿名性：投递者只用于限额统计，不进入任何响应体（service 层负责剥离）。
-    """
-
-    card = models.ForeignKey(
-        NarrativeCard,
-        verbose_name="来源卡片",
-        on_delete=models.CASCADE,
-        related_name="fragments",
-    )
-    landmark = models.ForeignKey(
-        Landmark,
-        verbose_name="投递地标",
-        on_delete=models.CASCADE,
-        related_name="narrative_fragments",
-    )
-    delivered_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        verbose_name="投递者（仅用于限额，对外匿名）",
-        on_delete=models.CASCADE,
-        related_name="delivered_fragments",
-    )
-    created_at = models.DateTimeField("投递时间", auto_now_add=True, db_index=True)
-
-    class Meta:
-        db_table = "ts_narrative_fragment"
-        ordering = ["-created_at"]
-        indexes = [
-            models.Index(fields=["landmark", "-created_at"]),
-            models.Index(fields=["delivered_by", "landmark"]),
-        ]
-
-    def __str__(self):
-        return f"fragment:{self.id}@{self.landmark_id}"
-
-
-class FragmentPickup(models.Model):
-    """碎片拾取记录（S3）：同一碎片对同一用户只能拾取一次。"""
-
-    fragment = models.ForeignKey(
-        NarrativeFragment,
-        verbose_name="碎片",
-        on_delete=models.CASCADE,
-        related_name="pickups",
-    )
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        verbose_name="拾取者",
-        on_delete=models.CASCADE,
-        related_name="fragment_pickups",
-    )
-    picked_at = models.DateTimeField("拾取时间", auto_now_add=True)
-
-    class Meta:
-        db_table = "ts_narrative_fragment_pickup"
-        unique_together = [("fragment", "user")]
-        ordering = ["-picked_at"]
-
-    def __str__(self):
-        return f"pickup:{self.fragment_id}->{self.user_id}"

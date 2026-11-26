@@ -70,7 +70,7 @@ export default function JournalComposeWindow({
     enabled: !!presetJournalId,
   });
 
-  // 地标名（回显与碎片卡片来源）
+  // 地标名（回显用）
   const { data: landmarks } = useQuery({
     queryKey: ["landmarks", "all"],
     queryFn: async () =>
@@ -84,17 +84,6 @@ export default function JournalComposeWindow({
     existing?.landmark?.name ||
     landmarks?.find((item) => item.id === landmarkId)?.name ||
     "";
-
-  // 叙事卡片：碎片元素从这里来
-  const { data: card } = useQuery({
-    queryKey: ["narrative", "card", landmarkId, "compose"],
-    queryFn: async () =>
-      (
-        await api.get(`/narrative/card/${landmarkId}`)
-      ).data.data as { title: string; timeFragments?: { text: string; year: number | null }[] },
-    enabled: !!landmarkId,
-    retry: 0,
-  });
 
   // 已有手账回填（标题、日期、公开、正文、地标）
   useEffect(() => {
@@ -124,19 +113,6 @@ export default function JournalComposeWindow({
         kind: "photo",
         src,
       })),
-      fragments: card
-        ? [
-            {
-              id: "fragment-current",
-              label: card.title,
-              kind: "fragment" as const,
-              title: card.title,
-              snippet: card.timeFragments?.[0]?.text || "",
-              year: formatYear(card.timeFragments?.[0]?.year ?? null),
-              color: "#b8863b",
-            },
-          ]
-        : [],
       stickers: [
         { id: "st-star", label: "星标", kind: "sticker" as const, variant: "star" as const, color: "#d9a441" },
         { id: "st-heart", label: "心形", kind: "sticker" as const, variant: "heart" as const, color: "#c05a4a" },
@@ -152,7 +128,7 @@ export default function JournalComposeWindow({
         { id: "bg-night", label: "深空", kind: "background" as const, color: "#141a24" },
       ],
     }),
-    [card, existing?.images]
+    [existing?.images]
   );
 
   /** 上传照片：接口返回站内地址，包成素材给创作浮窗 */
@@ -269,7 +245,7 @@ export default function JournalComposeWindow({
   );
 }
 
-/** 年份显示：公元前负数、1–999 补"公元" */
+
 function formatYear(year: number | null): string {
   if (year === null) return "未记年";
   if (year < 0) return `公元前 ${-year} 年`;

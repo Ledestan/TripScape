@@ -3,8 +3,8 @@
  * 创建日期: 2026-11-26
  *
  * 覆盖写手账的文档映射，完成:
- *     1. 编辑器文档 → 后端 canvas：kind 变 type、fragment 的 accent 变 color
- *     2. 后端 canvas → 编辑器文档：scale 折进宽高、颜色字段换回 accent
+ *     1. 编辑器文档 → 后端 canvas：kind 变 type
+ *     2. 后端 canvas → 编辑器文档：scale 折进宽高
  *     3. 空画布与脏数据不崩
  *
  * 依赖:
@@ -20,7 +20,6 @@ import {
   journalCanvasToCompose,
 } from "@/features/journal/canvas-map";
 import {
-  createFragment,
   createPhoto,
   createSticker,
   createTape,
@@ -36,7 +35,6 @@ describe("写手账文档映射", () => {
       elements: [
         { ...createText("一句话"), id: "t1" },
         { ...createPhoto("/uploads/a.jpg"), id: "p1" },
-        { ...createFragment({ title: "地名", snippet: "摘录", year: "2026" }), id: "f1" },
         { ...createSticker("heart", "#c05a4a"), id: "s1" },
         { ...createTape("#d6ba84"), id: "tp1" },
       ],
@@ -46,12 +44,9 @@ describe("写手账文档映射", () => {
     expect(canvas.elements.map((element) => element.type)).toEqual([
       "text",
       "photo",
-      "fragment",
       "sticker",
       "tape",
     ]);
-    const fragment = canvas.elements.find((element) => element.type === "fragment");
-    expect(fragment && "color" in fragment ? fragment.color : "").toBe("#b8863b");
     // 后端不认识 kind 字段
     expect(JSON.stringify(canvas)).not.toContain('"kind"');
   });

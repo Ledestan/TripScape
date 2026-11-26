@@ -51,7 +51,7 @@ describe("旅行拼贴数据", () => {
       const doc = createTemplate(template.id);
       expect(doc.elements.length).toBeGreaterThan(0);
       for (const element of doc.elements) {
-        expect(["photo", "fragment", "text", "sticker", "tape"]).toContain(element.kind);
+        expect(["photo", "text", "sticker", "tape"]).toContain(element.kind);
         expect(element.z).toBeGreaterThanOrEqual(0);
         expect(JSON.stringify(element)).not.toContain("landmarkId");
       }
@@ -59,17 +59,15 @@ describe("旅行拼贴数据", () => {
     }
   });
 
-  it("素材转元素覆盖五种类型", () => {
+  it("素材转元素覆盖四种类型", () => {
     const assets: AssetItem[] = [
       { id: "a", label: "照片", kind: "photo", src: "/uploads/a.jpg" },
-      { id: "b", label: "碎片", kind: "fragment", title: "地名", snippet: "一句", year: "2026" },
       { id: "c", label: "贴纸", kind: "sticker", variant: "heart", color: "#c05a4a" },
       { id: "d", label: "胶带", kind: "tape", color: "rgba(0,0,0,0.2)" },
       { id: "e", label: "文字", kind: "text", text: "一句" },
     ];
     expect(assets.map((asset) => createFromAsset(asset).kind)).toEqual([
       "photo",
-      "fragment",
       "sticker",
       "tape",
       "text",

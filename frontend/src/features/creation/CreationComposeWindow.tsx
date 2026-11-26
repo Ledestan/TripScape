@@ -17,7 +17,7 @@
  *     <CreationComposeWindow
  *       open={open}
  *       initialElements={elements}
- *       assetSlots={{ photos, fragments, stickers, tapes, backgrounds }}
+ *       assetSlots={{ photos, stickers, tapes, backgrounds }}
  *       onSave={async (canvas) => { await api.post("/journals/", { canvas }); }}
  *       onExport={async () => new Blob()}
  *       onDirtyChange={(dirty) => setDirty(dirty)}
@@ -51,6 +51,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
+import { saveBlob } from "@/utils/save-file";
 import ComposeStage, { type ComposeStageHandle } from "./ComposeStage";
 import { useHistory } from "./useHistory";
 import {
@@ -106,16 +107,6 @@ const STATUS_CLASS: Record<Status, string> = {
   saved: "text-emerald-500",
   error: "text-red-500",
 };
-
-/** 触发浏览器下载 */
-function download(url: string, filename: string) {
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-}
 
 export default function CreationComposeWindow({
   open,
@@ -305,18 +296,22 @@ export default function CreationComposeWindow({
     setErrorText("");
     try {
       const canvas = serializeDoc(doc);
-      let url = "";
+      let blob: Blob;
       if (onExport) {
-        const blob = await onExport(canvas);
-        url = URL.createObjectURL(blob);
+        blob = await onExport(canvas);
       } else {
         const dataUrl = stageRef.current?.exportDataUrl();
         if (!dataUrl) throw new Error("画布还没有准备好");
-        url = dataUrl;
+        blob = await (await fetch(dataUrl)).blob();
       }
-      download(url, `tripscape-collage-${Date.now()}.png`);
-      if (url.startsWith("blob:")) window.setTimeout(() => URL.revokeObjectURL(url), 4000);
-      toast.success("图片已生成");
+      // 交给浏览器选择保存位置；用户取消时不算失败
+      const filename = `tripscape-collage-${Date.now()}.png`;
+      const result = await saveBlob(blob, filename);
+      if (result === "cancelled") {
+        setStatus("draft");
+        return;
+      }
+      toast.success("图片已保存");
       setStatus("draft");
     } catch (error) {
       setStatus("error");
@@ -602,15 +597,13 @@ export default function CreationComposeWindow({
             )}
           >
             <span className="truncate">
-              {element.kind === "fragment"
-                ? element.title || "碎片"
-                : element.kind === "text"
-                  ? element.text.slice(0, 12) || "文字"
-                  : element.kind === "photo"
-                    ? "照片"
-                    : element.kind === "sticker"
-                      ? "贴纸"
-                      : "胶带"}
+              {element.kind === "text"
+                ? element.text.slice(0, 12) || "文字"
+                : element.kind === "photo"
+                  ? "照片"
+                  : element.kind === "sticker"
+                    ? "贴纸"
+                    : "胶带"}
             </span>
             <span className="ml-2 shrink-0 tabular-nums text-muted-foreground">{element.z + 1}</span>
           </button>
@@ -691,7 +684,7 @@ export default function CreationComposeWindow({
         className="mt-2 text-[10.5px] leading-relaxed text-muted-foreground"
         title="贴纸、胶带、纸纹都由窗口内置绘制，没有引用第三方素材"
       >
-        贴纸与胶带为内置绘制，未引用第三方素材；照片与碎片由宿主注入。
+        贴纸与胶带为内置绘制，未引用第三方素材；照片由宿主注入。
       </p>
 
       <div className="min-h-0 flex-1 overflow-y-auto pt-2">
@@ -882,7 +875,7 @@ export default function CreationComposeWindow({
               {doc.elements.length === 0 ? (
                 <div className="flex w-full max-w-[420px] flex-col items-center gap-3 text-center">
                   <p className="text-[12px] leading-relaxed text-muted-foreground">
-                    从左侧拖入照片或地标碎片开始
+                    从左侧拖入照片，或先加一段文字
                     <br />
                     也可以先套一个模板
                   </p>

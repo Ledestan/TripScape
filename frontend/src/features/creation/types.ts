@@ -3,7 +3,7 @@
  * 创建日期: 2026-11-26
  *
  * 旅行拼贴画布（CreationComposeWindow）的数据模型与纯函数，完成:
- *     1. ComposeDoc / ComposeElement：照片、地标碎片、文字、贴纸、胶带五类元素
+ *     1. ComposeDoc / ComposeElement：照片、文字、贴纸、胶带四类元素
  *     2. 素材插槽 AssetSlots：由宿主注入，窗口自己不请求接口
  *     3. 模板：2—3 套只含图形与占位的版面组合
  *     4. 文档操作：增删改、图层排序、夹取、序列化、脏检查
@@ -53,14 +53,6 @@ export interface PhotoElement extends ComposeBase {
   src: string;
 }
 
-export interface FragmentElement extends ComposeBase {
-  kind: "fragment";
-  title: string;
-  snippet: string;
-  year: string;
-  accent: string;
-}
-
 export interface TextElement extends ComposeBase {
   kind: "text";
   text: string;
@@ -85,7 +77,6 @@ export interface TapeElement extends ComposeBase {
 
 export type ComposeElement =
   | PhotoElement
-  | FragmentElement
   | TextElement
   | StickerElement
   | TapeElement;
@@ -108,17 +99,12 @@ export interface AssetItem {
   variant?: StickerVariant;
   color?: string;
   pattern?: TapeElement["pattern"];
-  /** 碎片卡片正文 */
-  title?: string;
-  snippet?: string;
-  year?: string;
   /** 文字素材的默认内容 */
   text?: string;
 }
 
 export interface AssetSlots {
   photos?: AssetItem[];
-  fragments?: AssetItem[];
   stickers?: AssetItem[];
   tapes?: AssetItem[];
   backgrounds?: AssetItem[];
@@ -134,7 +120,6 @@ export const TEXT_ASSET: AssetItem = {
 
 export const ASSET_TABS: { key: keyof AssetSlots; label: string }[] = [
   { key: "photos", label: "照片" },
-  { key: "fragments", label: "碎片" },
   { key: "stickers", label: "贴纸" },
   { key: "tapes", label: "胶带" },
   { key: "backgrounds", label: "底纹" },
@@ -200,22 +185,6 @@ export function createPhoto(src: string, x = 90, y = 80): PhotoElement {
   return { ...baseOf("photo", x, y, 340, 420), kind: "photo", src };
 }
 
-export function createFragment(
-  data: { title: string; snippet?: string; year?: string; accent?: string },
-  x = 80,
-  y = 300
-): FragmentElement {
-  return {
-    ...baseOf("fragment", x, y, 380, 160),
-    kind: "fragment",
-    title: data.title.slice(0, 60),
-    snippet: (data.snippet || "").slice(0, 200),
-    year: (data.year || "").slice(0, 16),
-    accent: data.accent || "#b8863b",
-    cornerRadius: 10,
-  };
-}
-
 export function createSticker(
   variant: StickerVariant = "star",
   color = "#d9a441",
@@ -248,12 +217,6 @@ export function createTape(color = "rgba(214,186,132,0.62)", x = 80, y = 60): Ta
 export function createFromAsset(asset: AssetItem, index = 0): ComposeElement {
   const offset = (index % 6) * 24;
   if (asset.kind === "photo") return createPhoto(asset.src || "", 80 + offset, 90 + offset);
-  if (asset.kind === "fragment")
-    return createFragment(
-      { title: asset.title || asset.label, snippet: asset.snippet, year: asset.year, accent: asset.color },
-      70 + offset,
-      260 + offset
-    );
   if (asset.kind === "sticker")
     return createSticker(asset.variant || "star", asset.color || "#d9a441", 110 + offset, 140 + offset);
   if (asset.kind === "tape") {
@@ -389,17 +352,13 @@ export const COMPOSE_TEMPLATES: ComposeTemplate[] = [
   {
     id: "scrapbook",
     name: "手账拼贴",
-    description: "两张照片斜贴 + 胶带 + 碎片卡片",
+    description: "两张照片斜贴 + 胶带 + 一句说明",
     background: "#efe6d6",
     build: () => {
       const left = { ...createPhoto("", 60, 90), width: 300, height: 360, rotation: -4 };
       const right = { ...createPhoto("", 360, 150), width: 300, height: 340, rotation: 5 };
       const tape = { ...createTape("rgba(198,166,110,0.7)", 120, 84), width: 190 };
-      const card = {
-        ...createFragment({ title: "在这里写地名", snippet: "补一句当时看到的东西，比如光线、气味、声音。" }, 120, 560),
-        width: 480,
-      };
-      return [left, right, tape, card];
+      return [left, right, tape];
     },
   },
   {
@@ -424,4 +383,4 @@ export function createTemplate(id: string): ComposeDoc {
 }
 
 /** 空态提示文案（画布中央） */
-export const EMPTY_HINT = "从左侧拖入照片或地标碎片开始";
+export const EMPTY_HINT = "从左侧拖入照片，或先加一段文字";

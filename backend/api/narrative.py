@@ -45,11 +45,6 @@ class AddCardIn(Schema):
     card_id: int
 
 
-class DeliverIn(Schema):
-    card_id: int
-    landmark_id: int
-
-
 @router.get("/card/{landmark_id}", summary="地标叙事卡片", auth=OptionalAuth())
 def get_card(request, landmark_id: int):
     """取该地标最新卡片；没有则按真实种子数据现建一张（source=landmark）。"""
@@ -92,42 +87,3 @@ def add_card(request, payload: AddCardIn):
 def my_journal(request):
     """我的手账卡片列表（服务端持久化，刷新不丢失）。"""
     return {"success": True, "data": narrative.journal_cards(request.auth)}
-
-
-@router.post("/fragments", summary="匿名投递叙事碎片")
-@login_required
-def deliver(request, payload: DeliverIn):
-    """把手账卡片匿名投递到地标（同一地标最多 3 条；第 4 条 409）。"""
-    try:
-        data = narrative.deliver_fragment(
-            request.auth, payload.card_id, payload.landmark_id
-        )
-    except narrative.NarrativeError as exc:
-        raise HttpError(exc.status, exc.message)
-    return {
-        "success": True,
-        "data": data,
-        "message": f"碎片已匿名投递，该地标还剩 {data['remaining']} 个投递名额",
-    }
-
-
-@router.get("/fragments/pick", summary="拾取一条未被拾取过的碎片")
-@login_required
-def pick(request, landmark_id: int):
-    """随机序（按投递时间）拾取一条未被本人拾取过的碎片。"""
-    try:
-        data = narrative.pick_fragment(request.auth, landmark_id)
-    except narrative.NarrativeError as exc:
-        raise HttpError(exc.status, exc.message)
-    return {"success": True, "data": data}
-
-
-@router.post("/fragments/{fragment_id}/pick", summary="按 ID 拾取碎片")
-@login_required
-def pick_by_id(request, fragment_id: int):
-    """按 ID 拾取：同一碎片对同一用户第二次拾取返回 409。"""
-    try:
-        data = narrative.pick_fragment_by_id(request.auth, fragment_id)
-    except narrative.NarrativeError as exc:
-        raise HttpError(exc.status, exc.message)
-    return {"success": True, "data": data}

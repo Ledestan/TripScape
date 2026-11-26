@@ -6,6 +6,7 @@
  *     1. composeToJournalCanvas：把创作画布（kind 字段）转成 /api/journals 的 canvas（type 字段）
  *     2. journalCanvasToCompose：把已保存的画布转回编辑器文档（编辑已有手账）
  *     3. scale 折叠：编辑器没有 scale，读取时把 scale 乘进宽高，避免尺寸丢失
+ *     4. 手账只收照片/文字/贴纸/胶带；文章摘录不进画布
  *
  * 依赖:
  *     依赖库: 无（纯 TS）
@@ -46,17 +47,6 @@ export function composeToJournalCanvas(doc: ComposeDoc): JournalCanvasDoc {
       borderColor: element.borderColor,
     };
 
-    if (element.kind === "fragment") {
-      return {
-        ...common,
-        type: "fragment",
-        title: element.title,
-        snippet: element.snippet,
-        year: element.year,
-        landmarkId: Number((element as { landmarkId?: number }).landmarkId) || 0,
-        color: element.accent,
-      };
-    }
     if (element.kind === "text") {
       return {
         ...common,
@@ -106,16 +96,6 @@ export function journalCanvasToCompose(raw: unknown): ComposeDoc {
       borderColor: element.borderColor,
     };
 
-    if (element.type === "fragment") {
-      return {
-        ...common,
-        kind: "fragment",
-        title: element.title,
-        snippet: element.snippet,
-        year: element.year,
-        accent: element.color || "#b8863b",
-      };
-    }
     if (element.type === "text") {
       return {
         ...common,

@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Compass, Maximize2, Minimize2, Navigation, RotateCcw, ChevronUp, X, Minus, Plus } from "lucide-react";
-import { globeBus } from "@/features/globe/Globe";
+import { globeBus } from "@/features/globe/bus";
 
 /**
  * 右下角地球控件（一行布局）：

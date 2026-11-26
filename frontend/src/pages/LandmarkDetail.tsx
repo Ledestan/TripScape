@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { MapPin, Eye, Star, Send, Flag, NotebookPen, MessageSquare, Compass } from "lucide-react";
 import { api, errMessage } from "@/api/client";
 import { useAuthStore } from "@/stores/auth";
-import { globeBus } from "@/features/globe/Globe";
+import { globeBus } from "@/features/globe/bus";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";

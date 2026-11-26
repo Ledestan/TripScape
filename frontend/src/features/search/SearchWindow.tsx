@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { MapPin, User as UserIcon, Search as SearchIcon } from "lucide-react";
 import { api } from "@/api/client";
 import { FloatingWindow } from "@/components/FloatingWindow";
-import { globeBus } from "@/features/globe/Globe";
+import { globeBus } from "@/features/globe/bus";
 import UserProfileWindow from "@/features/profile/UserProfileWindow";
 
 interface SearchItem {

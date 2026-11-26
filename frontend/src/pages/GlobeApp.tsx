@@ -8,7 +8,8 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";import { useQuery } from "@tanstack/react-query";
 import { Globe2 } from "lucide-react";
-import Globe, { Spot, globeBus } from "@/features/globe/Globe";
+import Globe, { Spot } from "@/features/globe/Globe";
+import { globeBus } from "@/features/globe/bus";
 const SearchWindow = lazy(() => import("@/features/search/SearchWindow"));
 import DynamicIslandSearch from "@/features/search/DynamicIslandSearch";
 import FloatingDock from "@/layouts/FloatingDock";

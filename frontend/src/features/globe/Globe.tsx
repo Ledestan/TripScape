@@ -13,6 +13,8 @@ import type { OrbitControls as OrbitControlsImpl } from "three/examples/jsm/cont
 import { useQuery } from "@tanstack/react-query";
 import { Flag } from "lucide-react";
 import { api } from "@/api/client";
+import { globeBus, subscribeBearing, subscribeFly, subscribeResetView } from "./bus";
+import type { FlyPayload } from "./bus";
 
 export interface Spot {
   id: number;
@@ -49,40 +51,6 @@ function latLonToVector3(lat: number, lon: number, radius = 1.02): THREE.Vector3
     radius * Math.sin(phi) * Math.sin(theta)
   );
 }
-
-/* ================================================================== */
-/* 事件桥（外部 <-> Canvas 内）                                        */
-/* ================================================================== */
-type FlyPayload = { lat: number; lon: number; id?: number; dist?: number };
-const flyListeners = new Set<(p: FlyPayload) => void>();
-const bearingListeners = new Set<(deg: number) => void>();
-const resetViewListeners = new Set<() => void>();
-/** 用户是否设定过方位（设定后本次会话停用自转，重置后恢复） */
-let userSetBearing = false;
-const bearingChangeHooks = new Set<(v: boolean) => void>();
-
-export const globeBus = {
-  /** 飞到地标（点搜索结果/消息卡片） */
-  flyTo(lat: number, lon: number, id?: number, dist?: number) {
-    flyListeners.forEach((fn) => fn({ lat, lon, id, dist }));
-  },
-  /** 设定方向角（0-360，真实旋转相机方位） */
-  setBearing(deg: number) {
-    userSetBearing = true;
-    bearingChangeHooks.forEach((fn) => fn(true));
-    bearingListeners.forEach((fn) => fn(deg));
-  },
-  /** 重置：只恢复方向角与缩放距离，不改变看向的地点 */
-  resetView() {
-    userSetBearing = false;
-    bearingChangeHooks.forEach((fn) => fn(false));
-    resetViewListeners.forEach((fn) => fn());
-  },
-  /** 当前是否处于用户设定方位状态（控件禁用自转用） */
-  get hasUserBearing() {
-    return userSetBearing;
-  },
-};
 
 /* ================================================================== */
 /* 相机距离探针                                                        */
@@ -391,7 +359,7 @@ function EarthTextureFallback() {
 }
 
 function EarthTexture() {
-  const tex = useLoader(THREE.TextureLoader, "/earth.png");
+  const tex = useLoader(THREE.TextureLoader, "/earth.webp");
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 8;
   return (
@@ -482,10 +450,7 @@ function CameraRig({
         c.update();
       }
     };
-    bearingListeners.add(onBearing);
-    return () => {
-      bearingListeners.delete(onBearing);
-    };
+    return subscribeBearing(onBearing);
   }, [controls]);
 
   // ---- 重置：方向角(极角)归零 + 距离恢复默认（不改变看向经度） ----
@@ -501,10 +466,7 @@ function CameraRig({
       camera.position.copy(dir.multiplyScalar(2.6));
       c?.update();
     };
-    resetViewListeners.add(onReset);
-    return () => {
-      resetViewListeners.delete(onReset);
-    };
+    return subscribeResetView(onReset);
   }, [controls, camera]);
 
   useFrame(() => {
@@ -553,10 +515,7 @@ const Globe = ({
       setFlying({ lat: p.lat, lon: p.lon });
       setFlyTargetId(p.id ?? null);
     };
-    flyListeners.add(onFly);
-    return () => {
-      flyListeners.delete(onFly);
-    };
+    return subscribeFly(onFly);
   }, []);
 
   // 拖拽与点击分离：只有按住(button>0)移动才算拖动，纯悬停不影响

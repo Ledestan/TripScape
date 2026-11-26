@@ -14,7 +14,7 @@ import {
 
 import { api, errMessage } from "@/api/client";
 import { useAuthStore } from "@/stores/auth";
-import { globeBus } from "@/features/globe/Globe";
+import { globeBus } from "@/features/globe/bus";
 import { FloatingWindow } from "@/components/FloatingWindow";
 import { JournalViewWindow } from "@/layouts/JournalViewWindow";
 

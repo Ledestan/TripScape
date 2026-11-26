@@ -11,7 +11,7 @@ URL 路由总入口。
 - /lmimg/...    地标百科图片（frontend/public/landmarks）
 - 其余路径      React SPA（frontend/dist/index.html，前端路由兜底）
 
-公共静态资源（earth.png / stars.jpg / earth-arc.jpg / favicon 等）
+公共静态资源（earth.webp / stars.jpg / earth-arc.jpg / favicon 等）
 优先从 frontend/public/ 读取：改图后无需重新构建即可生效，
 打包后也不会拿到 dist 里的旧副本。
 """
@@ -30,7 +30,7 @@ def _resolve_public(rel: str, subdir: str = "") -> Path:
     """定位公共静态资源：frontend/public 优先，dist 兜底。
 
     参数：
-        rel    : str，资源相对路径（如 "earth.png"）
+        rel    : str，资源相对路径（如 "earth.webp"）
         subdir : str，资源子目录（landmarks 图用）
 
     返回：
@@ -120,12 +120,12 @@ urlpatterns = [
     # 公共根文件（earth.png 贴图 / 启动背景 / 图标）：
     # public 优先——换图后源码运行与打包都立即取新文件
     re_path(
-        r"^(?P<path>favicon\.svg|earth\.png|earth3\.png|earth4\.png|stars\.jpg|earth-arc\.jpg|manifest\.webmanifest)$",
+        r"^(?P<path>favicon\.svg|earth\.webp|earth\.png|earth3\.png|earth4\.png|stars\.jpg|earth-arc\.jpg|manifest\.webmanifest)$",
         serve_public,
     ),
     # React SPA 兜底（前端路由；/landmarks/:id 深链正常进入 SPA）
     re_path(
-        r"^(?!api/|admin/|media/|lmimg/|assets/|healthz|readyz|static/|favicon\.svg|earth[0-9]*\.png|stars\.jpg|earth-arc\.jpg|manifest\.webmanifest).*$",
+        r"^(?!api/|admin/|media/|lmimg/|assets/|healthz|readyz|static/|favicon\.svg|earth[0-9]*\.(?:png|webp)|stars\.jpg|earth-arc\.jpg|manifest\.webmanifest).*$",
         spa,
     ),
 ]

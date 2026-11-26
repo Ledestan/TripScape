@@ -17,7 +17,7 @@ import { api, errMessage } from "@/api/client";
 import { FloatingWindow } from "@/components/FloatingWindow";
 import { useChatStore, ChatMessage } from "@/stores/chat";
 import { useAuthStore } from "@/stores/auth";
-import { globeBus } from "@/features/globe/Globe";
+import { globeBus } from "@/features/globe/bus";
 
 /* ------------------------------------------------------------------ */
 /* 识别结果卡（识别图 + 百科图 + 介绍 + 操作按钮 + 候选）                */

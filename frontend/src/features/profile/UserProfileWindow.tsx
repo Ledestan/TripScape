@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { MapPin, NotebookPen, MessageSquare, Star, Award, Compass, EyeOff } from "lucide-react";
 import { api } from "@/api/client";
 import { FloatingWindow } from "@/components/FloatingWindow";
-import { globeBus } from "@/features/globe/Globe";
+import { globeBus } from "@/features/globe/bus";
 import { JournalViewWindow } from "@/layouts/JournalViewWindow";
 
 interface PublicProfile {

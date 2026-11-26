@@ -14,7 +14,7 @@
         Pillow
     外部数据（仅生成时需要，产物已入库）:
         HYG 星表 CSV：https://github.com/astronexus/HYG-Database（CC BY-SA 4.0）
-        地球贴图：frontend/public/earth.png
+        地球贴图：frontend/public/earth.webp
 
 用法（在项目根目录执行）:
     python scripts/make_boot_art.py --catalog D:/tmp/hyg_v41.csv
@@ -384,7 +384,7 @@ def main() -> None:
     """命令行入口：默认生成两张图。"""
     parser = argparse.ArgumentParser(description="生成启动页星野与地球弧")
     parser.add_argument("--catalog", type=Path, help="HYG 星表 CSV 路径（生成星野需要）")
-    parser.add_argument("--earth", type=Path, default=PUBLIC / "earth.png", help="地球贴图路径")
+    parser.add_argument("--earth", type=Path, default=PUBLIC / "earth.webp", help="地球贴图路径")
     parser.add_argument("--out", type=Path, default=PUBLIC, help="输出目录，默认 frontend/public")
     parser.add_argument(
         "--only", choices=("stars", "arc"), help="只生成其中一张（另一张需已有数据）"

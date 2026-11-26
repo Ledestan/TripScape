@@ -80,7 +80,11 @@ def readyz(request):
 
 
 def spa(request, **kwargs):
-    """React SPA 入口（前端路由兜底）。"""
+    """React SPA 入口（前端路由兜底）。
+
+    必须禁止缓存：index.html 是"外壳"，引用的是带哈希的构建产物；
+    一旦浏览器缓存了旧外壳，重开页面会先闪一下上一版界面再替换。
+    """
     from django.http import FileResponse
 
     index = settings.BASE_DIR / "frontend" / "dist" / "index.html"
@@ -91,7 +95,9 @@ def spa(request, **kwargs):
             },
             status=503,
         )
-    return FileResponse(open(index, "rb"), content_type="text/html")
+    resp = FileResponse(open(index, "rb"), content_type="text/html")
+    resp["Cache-Control"] = "no-store, must-revalidate"
+    return resp
 
 
 urlpatterns = [

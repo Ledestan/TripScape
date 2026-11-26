@@ -306,18 +306,24 @@
   </head>
   <body>
     <!-- 启动片头放在 #root 之外：React 挂载会清空 #root，不会波及此节点 -->
-    <div class="boot-loading" id="boot-screen">
+    <!-- 容器内联星野背景：CSS 生效前的第一帧就只显示星空，不闪白、不闪文字 -->
+    <div
+      class="boot-loading"
+      id="boot-screen"
+      style="background: #04070d url('/stars.jpg') center center / cover no-repeat"
+    >
       <div class="stars" aria-hidden="true"></div>
       <div class="vignette" aria-hidden="true"></div>
       <div class="horizon" aria-hidden="true"></div>
       <div class="arc" aria-hidden="true"></div>
+      <!-- 内联 opacity:0 是兜底：动画会覆盖它，但样式未就绪时文字绝不提前出现 -->
       <div class="stage" role="status" aria-live="polite">
-        <p class="kicker">世界著名地标 · 识别与叙事档案</p>
-        <h1 class="title">行旅识景</h1>
-        <div class="rule" aria-hidden="true"></div>
-        <p class="subtitle">把每一座地标，读成一段被讲述的地方</p>
-        <div class="progress" aria-hidden="true"><i></i></div>
-        <p class="tip">正在展开世界…</p>
+        <p class="kicker" style="opacity: 0">世界著名地标 · 识别与叙事档案</p>
+        <h1 class="title" style="opacity: 0">行旅识景</h1>
+        <div class="rule" aria-hidden="true" style="opacity: 0"></div>
+        <p class="subtitle" style="opacity: 0">把每一座地标，读成一段被讲述的地方</p>
+        <div class="progress" aria-hidden="true" style="opacity: 0"><i></i></div>
+        <p class="tip" style="opacity: 0">正在展开世界…</p>
       </div>
     </div>
     <div id="root"></div>

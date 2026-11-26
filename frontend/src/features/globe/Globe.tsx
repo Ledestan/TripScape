@@ -14,6 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Flag } from "lucide-react";
 import { api } from "@/api/client";
 import { globeBus, subscribeBearing, subscribeFly, subscribeResetView } from "./bus";
+import { FLY_TOTAL_SEC, flyAt } from "./fly";
 import type { FlyPayload } from "./bus";
 
 export interface Spot {
@@ -107,7 +108,11 @@ function SpotBadge({
   onClick: (s: Spot) => void;
 }) {
   return (
-    <div className="group relative flex items-center justify-center" style={{ width: 22, height: 22 }}>
+    <div
+      className="group relative flex items-center justify-center"
+      style={{ width: 22, height: 22 }}
+      data-ts-spot={spot.id}
+    >
       <div className="absolute inset-0 rounded-full transition group-hover:bg-white/20" />
       <button
         onClick={(e) => {
@@ -472,15 +477,23 @@ function CameraRig({
   useFrame(() => {
     const a = anim.current;
     if (!a) return;
-    const t = Math.min(1, (performance.now() - a.start) / 1100);
-    const eased = 1 - Math.pow(1 - t, 3);
+
+    // 运镜计算在 fly.ts 里（纯函数、可单测），这里只负责套到相机与四元数上
+    const elapsed = (performance.now() - a.start) / 1000;
     const fromDir = a.from.clone().normalize();
     const toDir = a.to.clone().normalize();
-    const dir = fromDir.lerp(toDir, eased).normalize();
-    const radius = THREE.MathUtils.lerp(a.from.length(), a.to.length(), eased);
+    const { radius, dirT } = flyAt(elapsed, a.from.length(), a.to.length());
+
+    let dir = toDir;
+    if (dirT < 1) {
+      const delta = new THREE.Quaternion().setFromUnitVectors(fromDir, toDir);
+      dir = fromDir.clone().applyQuaternion(new THREE.Quaternion().slerp(delta, dirT));
+    }
+
     camera.position.copy(dir.multiplyScalar(radius));
     controls?.update?.();
-    if (t >= 1) {
+
+    if (elapsed >= FLY_TOTAL_SEC) {
       anim.current = null;
       onFlyDone();
     }

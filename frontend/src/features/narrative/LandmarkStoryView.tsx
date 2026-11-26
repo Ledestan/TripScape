@@ -19,11 +19,38 @@
  */
 
 import { Clock3 } from "lucide-react";
+import { useEffect, useRef } from "react";
 import type { LandmarkStoryData } from "./types";
 
 export default function LandmarkStoryView({ story }: { story: LandmarkStoryData }) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  // 阅读浮现：每块内容进入视口时上浮 10px 淡入，长页面读起来像在翻文献。
+  // 只做一次（observe 后立即 unobserve），滚动回来不会反复闪。
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const blocks = Array.from(root.children) as HTMLElement[];
+    blocks.forEach((el) => el.classList.add("ts-reveal"));
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("is-in");
+          observer.unobserve(entry.target);
+        });
+      },
+      { rootMargin: "0px 0px -12% 0px", threshold: 0.12 }
+    );
+    blocks.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [story]);
+
   return (
-    <div data-testid="narrative-story" className="space-y-3.5">
+    <div ref={rootRef} data-testid="narrative-story" className="space-y-3.5">
       {/* 整体介绍 */}
       {story.intro && (
         <p className="text-[12.5px] leading-[1.8] text-foreground/85">{story.intro}</p>

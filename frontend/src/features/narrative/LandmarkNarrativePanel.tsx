@@ -29,6 +29,7 @@ import {
   RefreshCw,
   X,
 } from "lucide-react";
+import { useLayoutEffect, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import LandmarkStoryView from "./LandmarkStoryView";
@@ -75,8 +76,46 @@ export default function LandmarkNarrativePanel({
 }) {
   const title = card?.title || story?.title || landmarkName || "地标档案";
 
+  const panelRef = useRef<HTMLElement | null>(null);
+
+  // 共享元素：档案从被点的那个光点"长出来"，而不是凭空出现在右边。
+  // 拿光点的屏幕坐标算位移，再缩放到原尺寸；找不到光点（比如深链进入）就只做淡入。
+  useLayoutEffect(() => {
+    const el = panelRef.current;
+    if (!el) return;
+    const id = card?.landmarkId;
+    const marker = id ? document.querySelector<HTMLElement>(`[data-ts-spot="${id}"]`) : null;
+
+    if (!marker) {
+      el.animate(
+        [
+          { opacity: 0, transform: "translateX(14px) scale(.98)" },
+          { opacity: 1, transform: "none" },
+        ],
+        { duration: 260, easing: "cubic-bezier(.22,.68,.28,1)" }
+      );
+      return;
+    }
+
+    const from = marker.getBoundingClientRect();
+    const to = el.getBoundingClientRect();
+    const dx = from.left + from.width / 2 - (to.left + to.width / 2);
+    const dy = from.top + from.height / 2 - (to.top + to.height / 2);
+
+    el.animate(
+      [
+        { transform: `translate(${dx}px, ${dy}px) scale(.22)`, opacity: 0.15, borderRadius: "999px" },
+        { transform: "none", opacity: 1, borderRadius: "16px" },
+      ],
+      { duration: 420, easing: "cubic-bezier(.22,.68,.28,1)" }
+    );
+  }, [card?.landmarkId]);
+
   return (
-    <section className="flex max-h-[min(660px,calc(100vh-150px))] flex-col overflow-hidden rounded-[18px] border border-border/70 bg-card/95 shadow-[0_24px_60px_-28px_rgb(0_0_0/0.65)] backdrop-blur-xl">
+    <section
+      ref={panelRef}
+      className="flex max-h-[min(660px,calc(100vh-150px))] flex-col overflow-hidden rounded-panel border border-border/70 bg-card/95 shadow-panel backdrop-blur-xl"
+    >
       {/* 封面 */}
       <header className="relative h-[124px] shrink-0 overflow-hidden">
         {card?.photo ? (

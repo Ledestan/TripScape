@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-10-08
+"""
+行旅识景 TripScape / tests/backend/test_retrieval_qa
+创建日期: 2025-10-08
 
 检索式识别与文章式问答的单元测试，覆盖:
     1. 问答：主题提取 / 意图切分 / 复合问题 / 拒答（索引不可用回退）
@@ -16,7 +17,6 @@
 import os
 import sys
 from pathlib import Path
-
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "backend"))
@@ -40,7 +40,11 @@ pytestmark = pytest.mark.django_db
 class TestIntentParsing:
     """主题提取与意图切分的规则行为。"""
 
-    NAME_MAP = {"埃菲尔铁塔": "EiffelTower", "eiffeltower": "EiffelTower", "长城": "GreatWall"}
+    NAME_MAP = {
+        "埃菲尔铁塔": "EiffelTower",
+        "eiffeltower": "EiffelTower",
+        "长城": "GreatWall",
+    }
 
     def test_single_topic(self):
         from services.article_qa import extract_topics
@@ -142,9 +146,7 @@ class TestArticleQa:
         from django.conf import settings as dj_settings
         from services import article_qa
 
-        monkeypatch.setattr(
-            article_qa, "get_index", lambda: None, raising=True
-        )
+        monkeypatch.setattr(article_qa, "get_index", lambda: None, raising=True)
         r = article_qa.answer_question("埃菲尔铁塔有多高")
         # 回退旧管线：返回结构完整即可（known 与知识库内容有关）
         assert "answer" in r and "known" in r
@@ -177,7 +179,9 @@ class TestRetrievalEngine:
 
         index = faiss.read_index(str(faiss_file))
         meta = json.loads((idx_dir / "landmarks.meta.json").read_text(encoding="utf-8"))
-        assert index.ntotal == len(meta), f"索引 {index.ntotal} 与元数据 {len(meta)} 不一致，请重跑 register_landmarks.py"
+        assert index.ntotal == len(
+            meta
+        ), f"索引 {index.ntotal} 与元数据 {len(meta)} 不一致，请重跑 register_landmarks.py"
 
     def test_predict_shape(self):
         if not django_setup_done:
@@ -193,7 +197,13 @@ class TestRetrievalEngine:
         data = Path(settings.BASE_DIR) / "data"
         sample = next(
             iter(
-                sorted(p for d in data.iterdir() if d.is_dir() and d.name not in ("train", "_rejected", "valid", "_pending") for p in d.glob("*.jpg"))
+                sorted(
+                    p
+                    for d in data.iterdir()
+                    if d.is_dir()
+                    and d.name not in ("train", "_rejected", "valid", "_pending")
+                    for p in d.glob("*.jpg")
+                )
             ),
             None,
         )

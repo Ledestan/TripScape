@@ -1,5 +1,6 @@
-"""行旅识景 TripScape / Beta 测试报告必修项回归
-创建日期：2026-10-10
+"""
+行旅识景 TripScape / Beta 测试报告必修项回归
+创建日期: 2026-10-10
 
 覆盖 TripScape_Beta1.0 测试报告 20 项必修问题（TS-01 ~ TS-20）
 的自动化回归：账号处罚、可见性边界、手账日期契约、分页、
@@ -48,8 +49,15 @@ def landmark(db):
     from apps.landmarks.models import Landmark
 
     return Landmark.objects.create(
-        target_id="BetaLm", name="回归塔", name_en="Beta", region="亚洲",
-        country="测试", lat=0, lon=0, intro="回归", is_active=True,
+        target_id="BetaLm",
+        name="回归塔",
+        name_en="Beta",
+        region="亚洲",
+        country="测试",
+        lat=0,
+        lon=0,
+        intro="回归",
+        is_active=True,
     )
 
 
@@ -71,7 +79,9 @@ class TestTS01AccountStatus:
         u1, u2 = users
         u2.banned = True
         u2.save()
-        r = api_client.json_post("/api/comments/", {"landmark_id": 1, "content": "x"}, token=t2)
+        r = api_client.json_post(
+            "/api/comments/", {"landmark_id": 1, "content": "x"}, token=t2
+        )
         assert r.status_code in (401, 403)
 
     def test_locked_old_token_rejected(self, api_client, users, tokens):
@@ -92,8 +102,14 @@ class TestTS01AccountStatus:
 # ----------------------------------------------------------------------
 class TestTS0203JournalVisibility:
     def _create(self, api_client, token, lm, **kw):
-        payload = {"landmark_id": lm.id, "title": "T", "content": "C",
-                   "visited_at": None, "is_public": True, **kw}
+        payload = {
+            "landmark_id": lm.id,
+            "title": "T",
+            "content": "C",
+            "visited_at": None,
+            "is_public": True,
+            **kw,
+        }
         return api_client.json_post("/api/journals/", payload, token=token)
 
     def test_pending_edit_not_leaked(self, api_client, tokens, landmark):
@@ -107,7 +123,9 @@ class TestTS0203JournalVisibility:
         j.status = "approved"
         j.save()
         # 更新进审核
-        r2 = api_client.json_put(f"/api/journals/{jid}", {"content": "SECRET_DRAFT"}, token=t1)
+        r2 = api_client.json_put(
+            f"/api/journals/{jid}", {"content": "SECRET_DRAFT"}, token=t1
+        )
         assert r2.status_code == 200
         j.refresh_from_db()
         assert j.edit_pending
@@ -116,7 +134,9 @@ class TestTS0203JournalVisibility:
         assert r3.status_code == 200
         assert "SECRET_DRAFT" not in str(r3.json())
 
-    def test_softdeleted_not_editable_nor_visible(self, api_client, tokens, landmark, admin_user):
+    def test_softdeleted_not_editable_nor_visible(
+        self, api_client, tokens, landmark, admin_user
+    ):
         from apps.core.auth import make_token
         from apps.journals.models import Journal
 
@@ -143,7 +163,12 @@ class TestTS0506JournalDate:
     def _create(self, api_client, token, lm, visited_at="2026-10-01"):
         return api_client.json_post(
             "/api/journals/",
-            {"landmark_id": lm.id, "title": "T", "content": "C", "visited_at": visited_at},
+            {
+                "landmark_id": lm.id,
+                "title": "T",
+                "content": "C",
+                "visited_at": visited_at,
+            },
             token=token,
         )
 
@@ -156,7 +181,9 @@ class TestTS0506JournalDate:
         t1, _ = tokens
         r = self._create(api_client, t1, landmark)
         jid = r.json()["data"]["id"]
-        r2 = api_client.json_put(f"/api/journals/{jid}", {"visited_at": "2026-10-02"}, token=t1)
+        r2 = api_client.json_put(
+            f"/api/journals/{jid}", {"visited_at": "2026-10-02"}, token=t1
+        )
         assert r2.status_code == 200, r2.content
 
     def test_invalid_date_422_not_500(self, api_client, tokens, landmark):
@@ -172,8 +199,13 @@ class TestTS0809Qa:
     def test_pronoun_followup(self):
         from services.article_qa import answer_question
 
-        history = [{"question": "埃菲尔铁塔在哪里？", "answer": "位于法国巴黎",
-                    "landmark_name": "埃菲尔铁塔"}]
+        history = [
+            {
+                "question": "埃菲尔铁塔在哪里？",
+                "answer": "位于法国巴黎",
+                "landmark_name": "埃菲尔铁塔",
+            }
+        ]
         r = answer_question("它有多高？", history=history)
         assert "330" in r["answer"] or "埃菲尔" in r["answer"]
 
@@ -193,8 +225,15 @@ class TestTS1011Pagination:
 
         for i in range(7):
             Landmark.objects.create(
-                target_id=f"PageLm{i}", name=f"分页塔{i}", name_en=f"P{i}",
-                region="亚洲", country="测试", lat=0, lon=0, intro="p", is_active=True,
+                target_id=f"PageLm{i}",
+                name=f"分页塔{i}",
+                name_en=f"P{i}",
+                region="亚洲",
+                country="测试",
+                lat=0,
+                lon=0,
+                intro="p",
+                is_active=True,
             )
         r1 = api_client.json_get("/api/search/?kind=landmark&page=1&page_size=5")
         r2 = api_client.json_get("/api/search/?kind=landmark&page=2&page_size=5")
@@ -236,7 +275,11 @@ class TestTS16Stats:
         u1, _ = users
         for i in range(2):
             Journal.objects.create(
-                user=u1, landmark=landmark, title=f"T{i}", content="C", status="approved"
+                user=u1,
+                landmark=landmark,
+                title=f"T{i}",
+                content="C",
+                status="approved",
             )
         rebuild_user_footprints(u1)
         from apps.journals.models import Footprint
@@ -278,8 +321,12 @@ class TestTS20LikeTarget:
         t1, _ = tokens
         r = api_client.json_post(
             "/api/comments/report",
-            {"target_type": "journal", "target_id": 999999,
-             "reason": "spam", "detail": ""},
+            {
+                "target_type": "journal",
+                "target_id": 999999,
+                "reason": "spam",
+                "detail": "",
+            },
             token=t1,
         )
         assert r.status_code == 404

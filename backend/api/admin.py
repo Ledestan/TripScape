@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / api/admin
+创建日期: 2025-09-01
 
 审核中心 + 管理端 API（/api/admin）。
 
@@ -11,11 +12,9 @@
 - 审计日志查询
 """
 
-
 from apps.admin_panel.models import AuditLog, SensitiveWord
 from apps.comments.models import Comment, CommentReport
-from apps.core.auth import (admin_required, any_admin_required, is_admin,
-                            is_any_admin)
+from apps.core.auth import admin_required, any_admin_required, is_admin, is_any_admin
 from apps.core.ratelimit import login_limiter
 from apps.core.sensitive import BUILTIN_WORDS
 from apps.core.views import paginate
@@ -764,6 +763,7 @@ def trash_purge(request):
     total = cj + cc
     write_audit(request, "trash.purge", "trash", f"{total} items")
     return {"success": True, "purged": total}
+
 
 # ----------------------------------------------------------------------
 # 地标管理（路由函数定义在 admin_landmarks.py，挂在本 router 的 /landmarks/* 下；

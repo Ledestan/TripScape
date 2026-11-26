@@ -1,3 +1,10 @@
+/**
+ * 行旅识景 TripScape / e2e/journeys.spec
+ * 创建日期: 2026-10-09
+ *
+ * 该模块的工具函数与类型定义；对外导出见文件内 export。
+ */
+
 import { test, expect } from "@playwright/test";
 
 test("进入 app 页：5 秒加载动画 -> 3D 地球 -> 搜索 -> 消息条", async ({ page }) => {

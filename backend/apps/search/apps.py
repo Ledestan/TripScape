@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / apps/search/apps
+创建日期: 2025-09-01
 
 全局搜索：Meilisearch 索引配置与同步钩子。
 """

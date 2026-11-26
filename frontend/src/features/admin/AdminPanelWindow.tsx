@@ -1,3 +1,10 @@
+/**
+ * 行旅识景 TripScape / src/features/admin/AdminPanelWindow
+ * 创建日期: 2026-10-09
+ *
+ * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ */
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ReactECharts from "echarts-for-react";
@@ -1253,7 +1260,6 @@ function AuditTab() {
   );
 }
 
-
 /* ---------------- 地标管理 ---------------- */
 interface AdminLandmark {
   id: number;
@@ -1277,7 +1283,6 @@ function LandmarksTab() {
   const [active, setActive] = useState<"" | "true" | "false">("");
   const [editing, setEditing] = useState<AdminLandmark | null>(null);
   const [creating, setCreating] = useState(false);
-  const [delBox, setDelBox] = useState<AdminLandmark | null>(null);
 
   const { data } = useQuery({
     queryKey: ["admin-landmarks", submitted, region, active],

@@ -1,4 +1,9 @@
-"""健康检查 + 认证 + 权限测试。"""
+"""
+行旅识景 TripScape / tests/backend/test_auth
+创建日期: 2026-10-09
+
+健康检查 + 认证 + 权限测试。
+"""
 
 
 class TestHealth:

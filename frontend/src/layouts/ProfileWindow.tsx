@@ -1,3 +1,10 @@
+/**
+ * 行旅识景 TripScape / src/layouts/ProfileWindow
+ * 创建日期: 2026-10-09
+ *
+ * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ */
+
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";

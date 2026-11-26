@@ -1,3 +1,10 @@
+/**
+ * 行旅识景 TripScape / src/features/globe/Globe
+ * 创建日期: 2026-10-09
+ *
+ * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ */
+
 import { useEffect, useMemo, useRef, useState, Suspense, useCallback } from "react";
 import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import * as THREE from "three";
@@ -5,7 +12,6 @@ import { Html, OrbitControls } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three/examples/jsm/controls/OrbitControls.js";
 import { useQuery } from "@tanstack/react-query";
 import { Flag } from "lucide-react";
-import { createRoot } from "react-dom/client";
 import { api } from "@/api/client";
 
 export interface Spot {
@@ -113,15 +119,6 @@ function useBackfaceHide(markerCoords: { lat: number; lon: number }[]) {
   });
 }
 
-/** 给 group 的每个子节点挂 Html 元素引用（供背面隐藏） */
-function HtmlRefBinder({ el }: { el: HTMLElement }) {
-  useEffect(() => {
-    // 父 group 上标记，由 useBackfaceHide 读取
-    const holder = (el as any).__tsHolder as THREE.Group | undefined;
-    if (holder) (holder as any).__htmlEl = el;
-  }, [el]);
-  return null;
-}
 
 /* ================================================================== */
 /* 点位徽章（DOM 徽章：散点=旗子圆 / 气泡=旗子+数字）                  */

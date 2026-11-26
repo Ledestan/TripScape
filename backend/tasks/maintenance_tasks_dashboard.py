@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / tasks/maintenance_tasks_dashboard
+创建日期: 2025-09-01
 
 看板定时任务。
 """

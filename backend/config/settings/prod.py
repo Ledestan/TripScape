@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / config/settings/prod
+创建日期: 2025-09-01
 
 生产环境覆盖：DEBUG 关闭 + 安全头（密钥从 .env 注入）。
 """

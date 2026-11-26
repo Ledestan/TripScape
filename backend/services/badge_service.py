@@ -1,11 +1,11 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / services/badge_service
+创建日期: 2025-09-01
 
 徽章服务：行为触发 -> 检查阈值 -> 发放 + 通知。
 """
 
 import logging
-
 from apps.badges.models import Badge, UserBadge
 from apps.comments.models import Comment
 from apps.journals.models import Footprint, Journal

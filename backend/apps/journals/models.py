@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / apps/journals/models
+创建日期: 2025-09-01
 
 手账模型 —— 替代手动打卡的核心功能。
 
@@ -97,7 +98,9 @@ class Journal(models.Model):
             "is_public": self.is_public,
             "status": self.status,
             "edit_pending": self.edit_pending if can_see_pending else False,
-            "pending_edit": self.pending_edit if (self.edit_pending and can_see_pending) else None,
+            "pending_edit": (
+                self.pending_edit if (self.edit_pending and can_see_pending) else None
+            ),
             "created_at": self.created_at.isoformat(),
         }
         if with_content:

@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / api/__init__
+创建日期: 2025-09-01
 
 Django Ninja API 聚合。
 
@@ -24,7 +25,6 @@ Django Ninja API 聚合。
     /api/docs            自动生成的 OpenAPI 文档
 """
 
-
 from apps.core.auth import GlobalAuth
 from ninja import NinjaAPI
 
@@ -36,6 +36,7 @@ api = NinjaAPI(
 )
 
 from api.admin import router as audit_router
+
 # admin_landmarks 的路由函数已直接挂在 admin router（/landmarks/*），无需单独挂载
 from api.auth import router as accounts_router
 from api.badges import router as badges_router

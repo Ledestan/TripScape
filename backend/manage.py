@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / manage
+创建日期: 2025-09-01
 
 Django 管理入口（backend/）。
 
@@ -9,7 +10,6 @@ Django 管理入口（backend/）。
     python backend/manage.py init_tripscape
     python backend/manage.py runserver
 """
-
 
 """Django 管理入口
 

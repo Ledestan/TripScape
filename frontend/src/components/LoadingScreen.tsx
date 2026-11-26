@@ -1,3 +1,10 @@
+/**
+ * 行旅识景 TripScape / src/components/LoadingScreen
+ * 创建日期: 2026-10-09
+ *
+ * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ */
+
 export default function LoadingScreen({ text = "加载中…" }: { text?: string }) {
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden bg-[#04070f] text-white">

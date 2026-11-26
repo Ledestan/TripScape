@@ -69,10 +69,16 @@ def main() -> None:
     from services import landmark_pages
 
     if args.check:
-        files = sorted(landmark_pages.PAGES_DIR.glob("*.json")) if landmark_pages.PAGES_DIR.exists() else []
+        files = (
+            sorted(landmark_pages.PAGES_DIR.glob("*.json"))
+            if landmark_pages.PAGES_DIR.exists()
+            else []
+        )
         print(f"页面文件数量: {len(files)}")
         if not files:
-            sys.exit("错误: 还没有页面文件，请运行 python scripts/build_landmark_pages.py")
+            sys.exit(
+                "错误: 还没有页面文件，请运行 python scripts/build_landmark_pages.py"
+            )
         return
 
     try:

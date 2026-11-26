@@ -1,24 +1,19 @@
+/**
+ * 行旅识景 TripScape / src/layouts/FloatingDock
+ * 创建日期: 2026-10-09
+ *
+ * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ */
+
 import { useEffect, useRef, useState } from "react";
-
 import { toast } from "sonner";
-
 import { User, Moon, Sun, LogOut, LayoutDashboard, MapPin, LogIn, Settings, BookOpen } from "lucide-react";
-
-
-
 import { useAuthStore } from "@/stores/auth";
-
 import { useThemeStore } from "@/stores/theme";
-
 import LoginWindow from "@/layouts/LoginWindow";
-
 import ProfileWindow from "@/layouts/ProfileWindow";
-
 import SettingsWindow from "@/layouts/SettingsWindow";
-
 import AdminPanelWindow from "@/features/admin/AdminPanelWindow";
-
-
 
 /**
 
@@ -50,8 +45,6 @@ export default function FloatingDock() {
 
   const menuRef = useRef<HTMLDivElement>(null);
 
-
-
   useEffect(() => {
 
     const onOpenLogin = () => setLoginOpen(true);
@@ -61,8 +54,6 @@ export default function FloatingDock() {
     return () => window.removeEventListener("ts:open-login", onOpenLogin);
 
   }, []);
-
-
 
   useEffect(() => {
 
@@ -80,17 +71,11 @@ export default function FloatingDock() {
 
   }, [menuOpen]);
 
-
-
   const is_admin = user?.role === "admin" || user?.role === "local_admin";
-
-
 
   const btn =
 
     "flex items-center justify-center rounded-full border border-border/70 bg-card text-card-foreground shadow-md transition hover:bg-accent hover:text-accent-foreground active:scale-95";
-
-
 
   return (
 
@@ -120,8 +105,6 @@ export default function FloatingDock() {
 
         </button>
 
-
-
         {token && user ? (
 
           <div className="relative" ref={menuRef}>
@@ -150,8 +133,6 @@ export default function FloatingDock() {
               )}
 
             </button>
-
-
 
             {menuOpen && (
 
@@ -294,8 +275,6 @@ export default function FloatingDock() {
 
       </div>
 
-
-
       <LoginWindow open={loginOpen} onClose={() => setLoginOpen(false)} />
 
       {profileOpen && <ProfileWindow onClose={() => setProfileOpen(false)} />}
@@ -309,8 +288,6 @@ export default function FloatingDock() {
   );
 
 }
-
-
 
 function MenuItem({ icon, label, onClick, testId }: { icon: React.ReactNode; label: string; onClick: () => void; testId?: string }) {
 

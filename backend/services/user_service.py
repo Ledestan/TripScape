@@ -1,11 +1,11 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / services/user_service
+创建日期: 2025-09-01
 
 用户服务：注册 / 登录 / 个人资料。
 """
 
 import re
-
 from apps.accounts.models import User
 from django.contrib.auth import authenticate
 from django.db import IntegrityError

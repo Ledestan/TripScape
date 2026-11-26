@@ -21,10 +21,9 @@
     2. 碎片不向使用者暴露投递者身份，匿名性由 service 层序列化保证。
 """
 
+from apps.landmarks.models import Landmark
 from django.conf import settings
 from django.db import models
-
-from apps.landmarks.models import Landmark
 
 
 class NarrativeCard(models.Model):
@@ -56,7 +55,9 @@ class NarrativeCard(models.Model):
         on_delete=models.SET_NULL,
         related_name="narrative_cards",
     )
-    photo = models.CharField("照片 URL（引用，不复制文件）", max_length=512, blank=True, default="")
+    photo = models.CharField(
+        "照片 URL（引用，不复制文件）", max_length=512, blank=True, default=""
+    )
     title = models.CharField("卡片标题", max_length=128)
     geo = models.JSONField("地理坐标与归属", default=dict, blank=True)
     time_fragments = models.JSONField("时间碎片", default=list, blank=True)

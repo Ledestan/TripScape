@@ -1,4 +1,8 @@
-"""A4 技术可信度证据 · 低置信度候选机制（SPEC §3.7）。
+"""
+行旅识景 TripScape / tests/backend/test_a4_low_confidence_gate
+创建日期: 2026-11-25
+
+A4 技术可信度证据 · 低置信度候选机制（SPEC §3.7）。
 
 这不是新能力的测试，而是对**既有识别闸门**的可运行证据：
     settings.RECOG_CONFIDENCE_THRESHOLD（默认 0.35）
@@ -18,11 +22,11 @@
 """
 
 import pytest
-from django.core.files.uploadedfile import SimpleUploadedFile
 
 # 与 settings.RECOG_CONFIDENCE_THRESHOLD 的默认值一致；同时从测试内直接读取
 # settings，避免实现改动阈值后证据失配（阈值本身是配置，不是实现字段列表）。
 from django.conf import settings
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 
 class _FakeEngine:
@@ -38,16 +42,28 @@ def two_landmarks(db):
     from apps.landmarks.models import Landmark
 
     first = Landmark.objects.create(
-        target_id="LowConfA", name="低置信甲", lat=1.0, lon=2.0, intro="甲简介", image_url="/lmimg/A.jpg"
+        target_id="LowConfA",
+        name="低置信甲",
+        lat=1.0,
+        lon=2.0,
+        intro="甲简介",
+        image_url="/lmimg/A.jpg",
     )
     second = Landmark.objects.create(
-        target_id="LowConfB", name="低置信乙", lat=3.0, lon=4.0, intro="乙简介", image_url="/lmimg/B.jpg"
+        target_id="LowConfB",
+        name="低置信乙",
+        lat=3.0,
+        lon=4.0,
+        intro="乙简介",
+        image_url="/lmimg/B.jpg",
     )
     return first, second
 
 
 def _post(client):
-    image = SimpleUploadedFile("a4.jpg", b"\xff\xd8\xff\xe0" + b"0" * 64, content_type="image/jpeg")
+    image = SimpleUploadedFile(
+        "a4.jpg", b"\xff\xd8\xff\xe0" + b"0" * 64, content_type="image/jpeg"
+    )
     return client.post("/api/recognition/recognize", {"image": image})
 
 
@@ -62,7 +78,10 @@ def test_low_confidence_returns_candidates(monkeypatch, api_client, two_landmark
     """低于阈值 -> 拒答硬判，改给候选（含字段完整性与阈值一致性）。"""
     threshold = float(settings.RECOG_CONFIDENCE_THRESHOLD)
     first, second = two_landmarks
-    _patch_engine(monkeypatch, [(first.target_id, threshold - 0.1), (second.target_id, threshold - 0.2)])
+    _patch_engine(
+        monkeypatch,
+        [(first.target_id, threshold - 0.1), (second.target_id, threshold - 0.2)],
+    )
 
     resp = _post(api_client)
     assert resp.status_code == 200, resp.content
@@ -83,7 +102,10 @@ def test_high_confidence_has_no_candidates(monkeypatch, api_client, two_landmark
     """高于阈值 -> 正常给出结果，不附加候选（避免噪声推荐）。"""
     threshold = float(settings.RECOG_CONFIDENCE_THRESHOLD)
     first, second = two_landmarks
-    _patch_engine(monkeypatch, [(first.target_id, min(0.99, threshold + 0.5)), (second.target_id, 0.1)])
+    _patch_engine(
+        monkeypatch,
+        [(first.target_id, min(0.99, threshold + 0.5)), (second.target_id, 0.1)],
+    )
 
     resp = _post(api_client)
     assert resp.status_code == 200, resp.content

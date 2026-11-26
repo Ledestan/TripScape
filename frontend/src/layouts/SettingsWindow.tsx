@@ -1,7 +1,13 @@
+/**
+ * 行旅识景 TripScape / src/layouts/SettingsWindow
+ * 创建日期: 2026-10-09
+ *
+ * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ */
+
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-
 import { api, errMessage } from "@/api/client";
 import { useAuthStore } from "@/stores/auth";
 import { useThemeStore } from "@/stores/theme";

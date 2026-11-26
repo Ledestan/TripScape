@@ -1,4 +1,9 @@
-"""PyInstaller hook：收集 torch 全家（DLL/数据/子模块）。"""
+"""
+行旅识景 TripScape / hooks/hook-torch
+创建日期: 2026-10-10
+
+PyInstaller hook：收集 torch 全家（DLL/数据/子模块）。
+"""
 
 from PyInstaller.utils.hooks import collect_all, collect_submodules
 

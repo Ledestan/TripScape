@@ -1,6 +1,6 @@
 """
-行旅识景 TripScape
-创建日期：2025-09-01
+行旅识景 TripScape / desktop
+创建日期: 2025-09-01
 
 项目名称: 行旅识景：世界著名地标智能识别
 
@@ -142,7 +142,9 @@ def main():
     if not ready:
         reason = _STARTUP_ERROR[-1] if _STARTUP_ERROR else "服务未在 120 秒内就绪"
         print("\n启动失败：" + reason)
-        print("常见原因：数据库不可用、端口 8000 被占用、前端未构建（frontend/dist 缺失）。")
+        print(
+            "常见原因：数据库不可用、端口 8000 被占用、前端未构建（frontend/dist 缺失）。"
+        )
         sys.exit(1)
 
     webview.create_window(

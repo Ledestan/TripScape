@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / api/journals
+创建日期: 2025-09-01
 
 手账 API。
 
@@ -12,11 +13,9 @@ GET    /api/journals/landmark/{id}     地标下的公开手账
 POST   /api/journals/{id}/share        生成公开分享链接
 """
 
-
 from datetime import date
 from typing import Optional
-
-from apps.core.auth import is_any_admin, login_required, OptionalAuth
+from apps.core.auth import OptionalAuth, is_any_admin, login_required
 from apps.journals.models import Journal
 from ninja import Router, Schema
 from ninja.errors import HttpError

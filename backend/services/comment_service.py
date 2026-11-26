@@ -1,11 +1,11 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / services/comment_service
+创建日期: 2025-09-01
 
 评论服务：发评论（敏感词拦截）、回复通知、搜索索引。
 """
 
 import logging
-
 from apps.comments.models import Comment
 from apps.core import sensitive
 from services import notification_service as notify_service

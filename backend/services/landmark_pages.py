@@ -24,16 +24,25 @@
 """
 
 import json
-import re
 from datetime import datetime
 from pathlib import Path
-
 from django.conf import settings
+
+from services.text_utils import extract_year, split_sentences
 
 PAGES_DIR = Path(settings.BASE_DIR) / "backend" / "content" / "landmarks"
 CORPUS_PATH = Path(settings.BASE_DIR) / "runtime" / "index" / "qa_chunks.json"
 
-SECTION_ORDER = ["概述", "前言", "更多介绍", "历史沿革", "地理位置", "基本参数", "参观信息", "百科补充"]
+SECTION_ORDER = [
+    "概述",
+    "前言",
+    "更多介绍",
+    "历史沿革",
+    "地理位置",
+    "基本参数",
+    "参观信息",
+    "百科补充",
+]
 # 章节 -> 小标题：顺序即页面上的阅读顺序（intro 之后依次展开）
 SECTION_TITLES = {
     "前言": "写在前面",
@@ -45,29 +54,10 @@ SECTION_TITLES = {
     "更多介绍": "再看一眼",
 }
 TIME_SECTIONS = ("历史沿革", "概述", "前言")
-BC_PATTERN = re.compile(r"公元前\s*(\d{1,4})\s*年")
-YEAR_PATTERN = re.compile(r"(\d{3,4})\s*年")
 SOURCE_LABEL = "仓库文章库 runtime/index/qa_chunks.json（Wikipedia 摘编）"
 
 # 进程内缓存：文件 mtime 未变就不重复读盘
 _CACHE: dict[str, dict] = {}
-
-
-def split_sentences(text: str) -> list[str]:
-    """按中文句末标点切句，保留标点；空句丢弃。"""
-    parts = re.split(r"(?<=[。！？；])", text.strip())
-    return [part.strip() for part in parts if part and part.strip()]
-
-
-def extract_year(text: str) -> int | None:
-    """从句子中取年份：公元前记为负数，取不到返回 None（不猜）。"""
-    if not text:
-        return None
-    bc = BC_PATTERN.search(text)
-    if bc:
-        return -int(bc.group(1))
-    match = YEAR_PATTERN.search(text)
-    return int(match.group(1)) if match else None
 
 
 def group_chunks(index_path: Path = CORPUS_PATH) -> dict[str, list[dict]]:
@@ -109,7 +99,10 @@ def build_page(landmark, chunks: list[dict]) -> dict:
 
     # 整体介绍：概述（或前言）三段 + 更多介绍两段，让开篇先讲清楚"这是什么地方"
     intro = "".join(
-        unique(_section_sentences(chunks, "概述", 3) or _section_sentences(chunks, "前言", 3))
+        unique(
+            _section_sentences(chunks, "概述", 3)
+            or _section_sentences(chunks, "前言", 3)
+        )
         + unique(_section_sentences(chunks, "更多介绍", 2))
     ).strip()
 
@@ -128,7 +121,12 @@ def build_page(landmark, chunks: list[dict]) -> dict:
         if len(timeline) >= 6:
             break
     # 有年份的在前（升序），未记年的在后，保证 None 不参与比较
-    timeline.sort(key=lambda item: (item["year"] is None, item["year"] if item["year"] is not None else 0))
+    timeline.sort(
+        key=lambda item: (
+            item["year"] is None,
+            item["year"] if item["year"] is not None else 0,
+        )
+    )
 
     if not timeline:
         # 语料里确实没有年份：用两句未记年的材料撑起时间轴的阅读节奏，明确标注未记年
@@ -152,7 +150,9 @@ def build_page(landmark, chunks: list[dict]) -> dict:
     # 语料很薄的地标（只有概述 + 百科补充）也要有段落结构：
     # 把最长的一节拆成两节，标题用中性的导航词，内容仍是原句
     if len(sections) < 2:
-        richest = max(sections, key=lambda item: len(item["items"])) if sections else None
+        richest = (
+            max(sections, key=lambda item: len(item["items"])) if sections else None
+        )
         if richest and len(richest["items"]) >= 2:
             tail = richest["items"][1:]
             richest["items"] = richest["items"][:1]
@@ -239,7 +239,9 @@ def build_pages(verbose: bool = False) -> dict:
             continue
         page = build_page(landmark, chunks)
         target = PAGES_DIR / f"{landmark.target_id}.json"
-        target.write_text(json.dumps(page, ensure_ascii=False, indent=2), encoding="utf-8")
+        target.write_text(
+            json.dumps(page, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         written += 1
         if verbose:
             print(f"页面已生成: {target.name}（{len(page['timeline'])} 条时间轴）")

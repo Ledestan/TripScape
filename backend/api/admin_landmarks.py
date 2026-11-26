@@ -1,17 +1,16 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / api/admin_landmarks
+创建日期: 2025-09-01
 
 地标管理区块（并入 admin.py 主路由）。
 
 从 admin_landmarks.py 合并而来；路由路径与原先 /api/admin/landmarks/* 完全一致。
 """
 
-
+from api.admin import admin_required, router, write_audit
 from apps.landmarks.models import Landmark
 from ninja import Schema
 from ninja.errors import HttpError
-
-from api.admin import router, write_audit, admin_required
 
 
 class LandmarkIn(Schema):
@@ -46,13 +45,22 @@ def _lm_dict(lm: Landmark, with_intro=False):
 
 @router.get("/landmarks", summary="地标列表")
 @admin_required
-def list_landmarks(request, q: str = "", region: str = "", is_active: str = "", page: int = 1, page_size: int = 50):
+def list_landmarks(
+    request,
+    q: str = "",
+    region: str = "",
+    is_active: str = "",
+    page: int = 1,
+    page_size: int = 50,
+):
     """地标列表（管理端）：支持 名称/地区/上下架 筛选与分页。"""
     qs = Landmark.objects.all().order_by("id")
     if q:
         from django.db.models import Q
 
-        qs = qs.filter(Q(name__icontains=q) | Q(name_en__icontains=q) | Q(country__icontains=q))
+        qs = qs.filter(
+            Q(name__icontains=q) | Q(name_en__icontains=q) | Q(country__icontains=q)
+        )
     if region:
         qs = qs.filter(region=region)
     if is_active == "true":
@@ -61,7 +69,11 @@ def list_landmarks(request, q: str = "", region: str = "", is_active: str = "", 
         qs = qs.filter(is_active=False)
     total = qs.count()
     items = qs[(page - 1) * page_size : page * page_size]
-    return {"success": True, "data": [_lm_dict(lm, with_intro=True) for lm in items], "meta": {"total": total, "page": page}}
+    return {
+        "success": True,
+        "data": [_lm_dict(lm, with_intro=True) for lm in items],
+        "meta": {"total": total, "page": page},
+    }
 
 
 @router.post("/landmarks", summary="新增地标")
@@ -97,8 +109,12 @@ def update_landmark(request, landmark_id: int, payload: LandmarkUpdateIn):
         raise HttpError(404, "地标不存在")
     changed = []
     for f, v in (
-        ("name", payload.name), ("name_en", payload.name_en), ("region", payload.region),
-        ("country", payload.country), ("intro", payload.intro), ("image_url", payload.image_url),
+        ("name", payload.name),
+        ("name_en", payload.name_en),
+        ("region", payload.region),
+        ("country", payload.country),
+        ("intro", payload.intro),
+        ("image_url", payload.image_url),
     ):
         if v:
             setattr(lm, f, v)

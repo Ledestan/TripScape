@@ -19,7 +19,6 @@
  */
 
 import { Clock3 } from "lucide-react";
-
 import type { LandmarkStoryData } from "./types";
 
 export default function LandmarkStoryView({ story }: { story: LandmarkStoryData }) {

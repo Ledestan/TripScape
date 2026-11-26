@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / tasks/recognition_tasks
+创建日期: 2025-09-01
 
 landmarks 异步任务：识别 + 知识库重建向量索引。
 """
@@ -7,7 +8,6 @@ landmarks 异步任务：识别 + 知识库重建向量索引。
 import logging
 import os
 from pathlib import Path
-
 from celery import shared_task
 from django.conf import settings
 

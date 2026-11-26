@@ -1,7 +1,13 @@
+/**
+ * 行旅识景 TripScape / src/features/search/DynamicIslandSearch
+ * 创建日期: 2026-10-09
+ *
+ * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ */
+
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search as SearchIcon, X, User as UserIcon, MapPin, NotebookPen } from "lucide-react";
-
 import { api } from "@/api/client";
 import UserProfileWindow from "@/features/profile/UserProfileWindow";
 

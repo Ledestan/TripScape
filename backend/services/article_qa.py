@@ -1,5 +1,6 @@
-"""行旅识景 TripScape / 文章式问答服务
-创建日期：2025-10-08
+"""
+行旅识景 TripScape / 文章式问答服务
+创建日期: 2025-10-08
 
 以"每地标一篇章节式文章"为知识源的新问答管线，完成:
     1. 离线建库：解析 backend/content/articles/*.md -> 按章节分块（问答用全文，与地标页分离）
@@ -39,7 +40,6 @@ import logging
 import re
 import time
 from pathlib import Path
-
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -88,7 +88,10 @@ class ArticleIndex:
         by_lm = {}
         for c in self.chunks:
             by_lm.setdefault(c["target_id"], c)
-        self.landmarks = {c["target_id"]: {"name": c["name"], "region": c["region"]} for c in by_lm.values()}
+        self.landmarks = {
+            c["target_id"]: {"name": c["name"], "region": c["region"]}
+            for c in by_lm.values()
+        }
         # 名称 -> target_id（含中文名与英文 ID）
         self.name_map = {}
         for tid, info in self.landmarks.items():
@@ -189,10 +192,75 @@ class ArticleIndex:
 # ======================================================================
 # 意图 -> 章节标签 + 检索增强词（短疑问词向量表达弱，扩写后检索更稳）
 INTENT_SECTIONS = [
-    (["多高", "高度", "多长", "多宽", "多大", "多少级", "多重", "面积", "多深", "海拔", "几米", "多远"], "基本参数", "高度 尺寸 长度 米 公里 面积 海拔"),
-    (["什么时候", "哪年", "建于", "历史", "谁建", "为什么", "由来", "传说", "朝代", "多久", "起源", "是啥", "是什么", "介绍"], "历史沿革", "历史 建造 年代 建于 起源 由来"),
-    (["在哪里", "在哪", "位于", "哪个国家", "哪个城市", "怎么去", "位置", "地址", "什么地方"], "地理位置", "位于 位置 地址 坐落 国家 城市 省份"),
-    (["门票", "开放时间", "开放", "参观", "游览", "怎么玩", "最佳", "季节", "几点", "攻略"], "参观信息", "门票 开放时间 参观 游览 价格"),
+    (
+        [
+            "多高",
+            "高度",
+            "多长",
+            "多宽",
+            "多大",
+            "多少级",
+            "多重",
+            "面积",
+            "多深",
+            "海拔",
+            "几米",
+            "多远",
+        ],
+        "基本参数",
+        "高度 尺寸 长度 米 公里 面积 海拔",
+    ),
+    (
+        [
+            "什么时候",
+            "哪年",
+            "建于",
+            "历史",
+            "谁建",
+            "为什么",
+            "由来",
+            "传说",
+            "朝代",
+            "多久",
+            "起源",
+            "是啥",
+            "是什么",
+            "介绍",
+        ],
+        "历史沿革",
+        "历史 建造 年代 建于 起源 由来",
+    ),
+    (
+        [
+            "在哪里",
+            "在哪",
+            "位于",
+            "哪个国家",
+            "哪个城市",
+            "怎么去",
+            "位置",
+            "地址",
+            "什么地方",
+        ],
+        "地理位置",
+        "位于 位置 地址 坐落 国家 城市 省份",
+    ),
+    (
+        [
+            "门票",
+            "开放时间",
+            "开放",
+            "参观",
+            "游览",
+            "怎么玩",
+            "最佳",
+            "季节",
+            "几点",
+            "攻略",
+        ],
+        "参观信息",
+        "门票 开放时间 参观 游览 价格",
+    ),
 ]
 
 
@@ -243,7 +311,13 @@ def split_intents(question: str) -> list:
     返回：
         list of (意图文本, 章节标签 or None)
     """
-    parts = [p for p in re.split(r"[？?；;。！!，,、]|(?<=[^和与跟])[和与跟](?=[^和与跟])", question) if p.strip()]
+    parts = [
+        p
+        for p in re.split(
+            r"[？?；;。！!，,、]|(?<=[^和与跟])[和与跟](?=[^和与跟])", question
+        )
+        if p.strip()
+    ]
     out = []
     for p in parts:
         p = p.strip()
@@ -284,7 +358,9 @@ def _split_sentences(text: str) -> list:
     return out
 
 
-def _extract_answer(chunk: dict, intent_text: str, embed_fn, section: str = None) -> str:
+def _extract_answer(
+    chunk: dict, intent_text: str, embed_fn, section: str = None
+) -> str:
     """从 chunk 中挑与意图最相关的句子。
 
     打分策略：向量相似度为主，按意图类型调整：
@@ -305,7 +381,9 @@ def _extract_answer(chunk: dict, intent_text: str, embed_fn, section: str = None
     for i, s in enumerate(sents):
         if section == "基本参数" and re.search(r"\d", s):
             sims[i] += 0.08
-        if section == "参观信息" and not re.search(r"门票|价格|开放|免票|收费|美元|欧元|卢比|元", s):
+        if section == "参观信息" and not re.search(
+            r"门票|价格|开放|免票|收费|美元|欧元|卢比|元", s
+        ):
             sims[i] -= 0.12
     return sents[int(np.argmax(sims))]
 
@@ -356,15 +434,22 @@ def answer_question(question: str, history=None):
 
     question = (question or "").strip()
     if not question:
-        return {"answer": "请输入有效的问题。", "confidence": 0.0, "known": False,
-                "landmark": None, "source": "article"}
+        return {
+            "answer": "请输入有效的问题。",
+            "confidence": 0.0,
+            "known": False,
+            "landmark": None,
+            "source": "article",
+        }
 
     # 0. 指代消解（TS-08）：问题无地标名且含代词/省略主语时，
     #    用会话历史最近一轮的地标补全（"它有多高" -> "埃菲尔铁塔有多高"）。
     #    仅在当前问题确实无主题时替换，不跨主题污染。
     resolved_landmark = None
     if not extract_topics(question, idx.name_map) and history:
-        pronoun_pat = re.compile(r"^(它|他|她|这个|那个|这座|该|此地|那里)|它|这座|该塔|该建筑")
+        pronoun_pat = re.compile(
+            r"^(它|他|她|这个|那个|这座|该|此地|那里)|它|这座|该塔|该建筑"
+        )
         if pronoun_pat.search(question):
             for row in reversed(history[-3:]):
                 lm_name = (row.get("landmark_name") or "").strip()
@@ -379,10 +464,18 @@ def answer_question(question: str, history=None):
         # 无地标主题且非问句：直接拒答。
         # 理由：文章库全部内容都围绕地标，闲聊类输入命中的必然是弱相似噪声
         # （实测"聊聊天气"能弱命中弯曲金字塔高度），宁可拒答不可错答。
-        has_question_mark = any(k in question for k in ("什么", "哪", "怎么", "为什么", "几", "多", "?", "？", "吗"))
+        has_question_mark = any(
+            k in question
+            for k in ("什么", "哪", "怎么", "为什么", "几", "多", "?", "？", "吗")
+        )
         if not has_question_mark:
-            return {"answer": UNKNOWN_ANSWER, "confidence": 0.0, "known": False,
-                    "landmark": None, "source": "article"}
+            return {
+                "answer": UNKNOWN_ANSWER,
+                "confidence": 0.0,
+                "known": False,
+                "landmark": None,
+                "source": "article",
+            }
         # 泛问句（如"最高的塔是什么"）：全库检索，置信要求更高（0.55）
         # 域外拒答（TS-09）：命中句必须与问题共享至少一个实词（2 字以上
         # 非停用词），防止"今天股票怎么买"凭弱相似命中随机地标百科。
@@ -397,8 +490,13 @@ def answer_question(question: str, history=None):
                     "landmark": _lm_info(top["target_id"]),
                     "source": "article",
                 }
-        return {"answer": UNKNOWN_ANSWER, "confidence": 0.0, "known": False,
-                "landmark": None, "source": "article"}
+        return {
+            "answer": UNKNOWN_ANSWER,
+            "confidence": 0.0,
+            "known": False,
+            "landmark": None,
+            "source": "article",
+        }
 
     # 2. 逐主题作答
     #    - 纯主题（无疑问词，如"长城"或"长城和天坛"）：各回一句概述；
@@ -412,7 +510,10 @@ def answer_question(question: str, history=None):
         for nm in other_names:
             if nm != idx.landmarks[tid]["name"]:
                 sub_q = sub_q.replace(nm, "")
-        sub_q = re.sub(r"[和与跟、，,？?\s]+$|^[和与跟、，,]", "", sub_q.strip()) or question
+        sub_q = (
+            re.sub(r"[和与跟、，,？?\s]+$|^[和与跟、，,]", "", sub_q.strip())
+            or question
+        )
 
         # 复合问题（顿号/问号分隔多问）：逐子问检索作答后合并
         parts_q = [p for p, _ in split_intents(sub_q) if p.strip()]
@@ -446,7 +547,9 @@ def answer_question(question: str, history=None):
 
     merged = "；".join(answers) if answers else UNKNOWN_ANSWER
     known = any("未提及" not in a for a in answers)
-    logger.info("文章问答耗时 %.0fms（主题 %s）", (time.time() - started) * 1000, topics)
+    logger.info(
+        "文章问答耗时 %.0fms（主题 %s）", (time.time() - started) * 1000, topics
+    )
     return {
         "answer": merged,
         "confidence": 0.85 if known else 0.0,
@@ -490,9 +593,13 @@ def _answer_single_topic(idx, target_id: str, question: str) -> dict:
     #     实测"雷峰塔在哪"被"始建于977年"句以 0.840 抢走）
     if re.search(r"在哪|哪里|什么地方|哪个国家|哪个城市|位于", question):
         for i, s in enumerate(all_sents):
-            has_pos = bool(re.search(r"(位于|坐落|横跨)[^。；，,]{2,}|东起[^。；，,]{2,}西至", s))
+            has_pos = bool(
+                re.search(r"(位于|坐落|横跨)[^。；，,]{2,}|东起[^。；，,]{2,}西至", s)
+            )
             short_pure = has_pos and len(s) <= 30
-            has_time = bool(re.search(r"始建于|建于|建成|倒塌|重建|公元\d|年份|\d{3,4}年", s))
+            has_time = bool(
+                re.search(r"始建于|建于|建成|倒塌|重建|公元\d|年份|\d{3,4}年", s)
+            )
             if has_pos:
                 sims[i] += 0.15
             if short_pure:
@@ -535,12 +642,18 @@ def _best_sentence(chunk: dict, question: str, embed_fn):
     import numpy as np
 
     qv = embed_fn([question])[0]
-    sims = embed_fn(sents) @ qv if len(sents) > 1 else np.array([float(embed_fn([sents[0]])[0] @ qv)])
+    sims = (
+        embed_fn(sents) @ qv
+        if len(sents) > 1
+        else np.array([float(embed_fn([sents[0]])[0] @ qv)])
+    )
     # 位置问句加权：只认句首/主语位置表达（"位于X""东起X西至X"），
     # 泛词（省/市）会让遗产统计句反超真正的位置句
     if re.search(r"在哪|哪里|位于|什么地方|哪个国家|哪个城市", question):
         for i, s in enumerate(sents):
-            if re.search(r"(位于|坐落|横跨|始自|起于)[^。；]{2,}|东起[^。；]{2,}西至", s):
+            if re.search(
+                r"(位于|坐落|横跨|始自|起于)[^。；]{2,}|东起[^。；]{2,}西至", s
+            ):
                 sims[i] += 0.15
     i = int(np.argmax(sims))
     return sents[i], float(sims[i])
@@ -588,9 +701,27 @@ def _shares_content_word(question: str, text: str) -> bool:
     即认为相关。纯向量相似对域外问题（"今天股票怎么买"）会命中
     随机地标百科，词面校验是最后一道拒答闸门。
     """
-    stop = {"什么", "怎么", "为什么", "哪里", "哪个", "多少", "可以",
-            "能够", "还是", "有没有", "请问", "一下", "今天", "现在",
-            "告诉", "我想", "知道", "如何", "怎样"}
+    stop = {
+        "什么",
+        "怎么",
+        "为什么",
+        "哪里",
+        "哪个",
+        "多少",
+        "可以",
+        "能够",
+        "还是",
+        "有没有",
+        "请问",
+        "一下",
+        "今天",
+        "现在",
+        "告诉",
+        "我想",
+        "知道",
+        "如何",
+        "怎样",
+    }
     # 简易中文二元切分取实词片段
     words = set()
     q = re.sub(r"[？?！!。，,、\s]", "", question)
@@ -628,6 +759,11 @@ def _lm_info(target_id: str):
 
     try:
         lm = Landmark.objects.get(target_id__iexact=target_id)
-        return {"id": lm.id, "name": lm.name, "image_url": lm.image_url, "intro": lm.intro}
+        return {
+            "id": lm.id,
+            "name": lm.name,
+            "image_url": lm.image_url,
+            "intro": lm.intro,
+        }
     except Landmark.DoesNotExist:
         return None

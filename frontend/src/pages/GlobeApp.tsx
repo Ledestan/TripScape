@@ -1,7 +1,13 @@
+/**
+ * 行旅识景 TripScape / src/pages/GlobeApp
+ * 创建日期: 2026-10-09
+ *
+ * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ */
+
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";import { useQuery } from "@tanstack/react-query";
 import { Globe2 } from "lucide-react";
-
 import Globe, { Spot, globeBus } from "@/features/globe/Globe";
 const SearchWindow = lazy(() => import("@/features/search/SearchWindow"));
 import DynamicIslandSearch from "@/features/search/DynamicIslandSearch";
@@ -52,14 +58,14 @@ export default function GlobeApp() {
     enterLandmark(id, spot?.name ?? "");
   };
 
-  // 路由直达 /landmarks/:id -> 进入该地标叙事层
+  // 路由直达 /landmarks/:id：等 spots 就绪后再进入，才能带上地标名与飞行动画
   useEffect(() => {
     const id = Number(routeParams.id || 0);
     if (id) openNarrative(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeParams.id, spots]);
 
-  // 离开页面时复位叙事层（避免下次进入仍停在旧地标）
+  // 离开页面时复位叙事层：层状态只在本次会话有效，下次进入从地球层开始
   useEffect(() => () => resetNarrative(), [resetNarrative]);
 
   // 消息卡/搜索结果"查看"事件 -> 进入地标叙事层

@@ -163,7 +163,9 @@ def reset_database() -> None:
             if candidate.exists():
                 candidate.unlink()
                 print(f"已删除 {candidate.relative_to(ROOT)}")
-        code = run([PYTHON, str(BACKEND / "manage.py"), "migrate", "--noinput"], "migrate")
+        code = run(
+            [PYTHON, str(BACKEND / "manage.py"), "migrate", "--noinput"], "migrate"
+        )
         if code == 0:
             code = run(
                 [PYTHON, str(BACKEND / "manage.py"), "init_tripscape"],
@@ -241,8 +243,12 @@ def main() -> None:
     )
     parser.add_argument("--yes", action="store_true", help="跳过确认，直接执行")
     parser.add_argument("--no-frontend", action="store_true", help="不重建前端产物")
-    parser.add_argument("--skip-db", action="store_true", help="只清运行产物，不动数据库")
-    parser.add_argument("--with-tests", action="store_true", help="重置完成后跑后端测试")
+    parser.add_argument(
+        "--skip-db", action="store_true", help="只清运行产物，不动数据库"
+    )
+    parser.add_argument(
+        "--with-tests", action="store_true", help="重置完成后跑后端测试"
+    )
     args = parser.parse_args()
 
     overall_start = time.time()

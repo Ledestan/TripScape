@@ -1,5 +1,6 @@
-"""行旅识景 TripScape / 地标注册图索引构建脚本
-创建日期：2025-10-08
+"""
+行旅识景 TripScape / 地标注册图索引构建脚本
+创建日期: 2025-10-08
 
 从注册图清单构建 FAISS 检索索引，完成:
     1. 读取注册图清单（scripts/db/register_images.json，外置可扩展）
@@ -53,6 +54,7 @@ import django
 
 django.setup()
 
+
 # ======================================================================
 # 清单生成：优先精选目录，回退 data/train 采样
 # ======================================================================
@@ -79,7 +81,8 @@ def build_manifest_from_dataset(max_per_landmark: int) -> list:
         curated = data_dir / cls
         if curated.is_dir():
             imgs = sorted(
-                p for p in curated.iterdir()
+                p
+                for p in curated.iterdir()
                 if p.suffix.lower() in (".jpg", ".jpeg", ".png")
             )
             source = "精选目录"
@@ -87,7 +90,11 @@ def build_manifest_from_dataset(max_per_landmark: int) -> list:
             # 2) train 采样回退
             class_dir = train_dir / cls
             imgs = sorted(
-                (p for p in class_dir.iterdir() if p.suffix.lower() in (".jpg", ".jpeg", ".png")),
+                (
+                    p
+                    for p in class_dir.iterdir()
+                    if p.suffix.lower() in (".jpg", ".jpeg", ".png")
+                ),
                 key=lambda p: p.stat().st_size,
             )
             lo = max(0, len(imgs) // 10)
@@ -139,7 +146,9 @@ class IndexBuilder:
         if not force_rebuild and Path(self.paths["manifest"]).exists():
             old = json.loads(Path(self.paths["manifest"]).read_text(encoding="utf-8"))
             if old.get("fingerprint") == fp and Path(self.paths["faiss"]).exists():
-                print(f"发现索引且清单未变（指纹 {fp}），直接复用；--force-rebuild 可强制重建")
+                print(
+                    f"发现索引且清单未变（指纹 {fp}），直接复用；--force-rebuild 可强制重建"
+                )
                 return
             print("清单已变化，旧索引失效，开始重建 ...")
 

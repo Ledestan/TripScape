@@ -1,4 +1,9 @@
-/** @type {import('tailwindcss').Config} */
+/**
+ * 行旅识景 TripScape / tailwind.config
+ * 创建日期: 2026-10-09
+ *
+ * @type {import('tailwindcss').Config}
+ */
 export default {
   darkMode: "class",
   content: ["./index.html", "./src/**/*.{ts,tsx}"],

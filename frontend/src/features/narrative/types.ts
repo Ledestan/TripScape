@@ -1,20 +1,18 @@
 /**
- * 叙事层数据类型（与后端字段一一对应，不做本地改名）
+ * 行旅识景 TripScape / src/features/narrative/types
  * 创建日期: 2026-11-25
  *
+ * 叙事层数据类型（与后端字段一一对应，不做本地改名）
  * 定义叙事接口返回的卡片、手记、碎片与故事结构，提供:
- *     1. NarrativeCardData：地标卡片（九字段 + createdAt）
- *     2. JournalEntry / PickedFragment：手记条目与碎片
- *     3. LandmarkStoryData：预设故事（整体介绍 → 时间轴 → 分节材料）
- *
+ * 1. NarrativeCardData：地标卡片（九字段 + createdAt）
+ * 2. JournalEntry / PickedFragment：手记条目与碎片
+ * 3. LandmarkStoryData：预设故事（整体介绍 → 时间轴 → 分节材料）
  * 依赖:
- *     依赖库: 无
- *
+ * 依赖库: 无
  * 用法:
- *     import type { LandmarkStoryData } from "./types";
- *
+ * import type { LandmarkStoryData } from "./types";
  * 注意:
- *     字段名必须与 /api/narrative/* 响应完全一致，避免出现第二套口径。
+ * 字段名必须与 /api/narrative/* 响应完全一致，避免出现第二套口径。
  */
 
 export interface NarrativeGeo {

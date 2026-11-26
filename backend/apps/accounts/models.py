@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / apps/accounts/models
+创建日期: 2025-09-01
 
 用户模型。
 

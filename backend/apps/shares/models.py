@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / apps/shares/models
+创建日期: 2025-09-01
 
 公开分享：token -> 目标对象。
 
@@ -7,7 +8,6 @@
 """
 
 import secrets
-
 from django.conf import settings
 from django.db import models
 

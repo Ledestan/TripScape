@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / services/search_service
+创建日期: 2025-09-01
 
 Meilisearch 全局搜索服务。
 
@@ -9,7 +10,6 @@ Meilisearch 全局搜索服务。
 """
 
 import logging
-
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -431,9 +431,7 @@ def _search_orm(
     if kind in ("all", "journal"):
         qs = Journal.objects.filter(
             is_public=True, status="approved", deleted_at__isnull=True
-        ).select_related(
-            "user", "landmark"
-        )
+        ).select_related("user", "landmark")
         if query:
             qs = qs.filter(title__icontains=query) | Journal.objects.filter(
                 content__icontains=query, is_public=True, status="approved"

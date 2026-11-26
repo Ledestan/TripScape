@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / api/recognition
+创建日期: 2025-09-01
 
 识别 API（异步 Celery 任务 + 同步两种模式）。
 
@@ -9,10 +10,8 @@ GET  /api/recognition/task/{id}   查询异步任务结果（前端轮询，
                                   等待期间发送按钮禁用，消息栏显示"识别中"）
 """
 
-
 import logging
-
-from apps.core.auth import login_required, OptionalAuth
+from apps.core.auth import OptionalAuth, login_required
 from django.conf import settings
 from ninja import Router
 from ninja.errors import HttpError
@@ -54,11 +53,7 @@ def recognize_sync(request, image: UploadedFile = None, photo_url: str = ""):
     开关关闭时响应与既有行为完全一致（新增键不出现）。
     """
     data = _validate(image)
-    user = (
-        request.auth
-        if getattr(request.auth, "is_authenticated", False)
-        else None
-    )
+    user = request.auth if getattr(request.auth, "is_authenticated", False) else None
     result = recognizer.recognize_image(data, user=user)
     if not result.get("success"):
         return result
@@ -97,7 +92,6 @@ def _celery_available() -> bool:
     """
     try:
         import celery.loaders.default  # noqa: F401
-
         from config.celery import app as celery_app
 
         return bool(celery_app.conf.broker_url)
@@ -112,8 +106,7 @@ def submit(request, image: UploadedFile = None):
     if not _celery_available():
         raise HttpError(503, "异步识别在当前环境不可用，请使用同步识别接口")
     data = _validate(image)
-    # 暂存文件供 worker 读取
-    import os
+    # 暂存文件供 worker 读取（目录来自 settings，文件名用 uuid 防冲突）
     import uuid
 
     from tasks.recognition_tasks import recognize_image_task

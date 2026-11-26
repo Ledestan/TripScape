@@ -1,9 +1,13 @@
-"""敏感词服务与问答引擎单元测试。"""
+"""
+行旅识景 TripScape / tests/backend/test_sensitive
+创建日期: 2026-10-09
+
+敏感词服务与问答引擎单元测试。
+"""
 
 import os
 import sys
 from pathlib import Path
-
 import django
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "backend"))

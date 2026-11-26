@@ -1,5 +1,6 @@
-"""行旅识景 TripScape / 问答索引构建脚本
-创建日期：2025-10-08
+"""
+行旅识景 TripScape / 问答索引构建脚本
+创建日期: 2025-10-08
 
 解析地标文章目录并构建双路检索索引，完成:
     1. 解析 backend/content/articles/*.md（YAML 元数据 + 章节结构，全文建库）
@@ -83,7 +84,7 @@ class ArticleChunker:
                 if ":" in line:
                     k, v = line.split(":", 1)
                     meta[k.strip()] = v.strip()
-            text = text[m.end():]
+            text = text[m.end() :]
 
         # 章节切分（## 标题）
         sections = []
@@ -187,7 +188,9 @@ class QaIndexBuilder:
         return h.hexdigest()[:16]
 
     # ------------------------------------------------------------------
-    def load_or_build(self, article_dir: Path, chunker: ArticleChunker, force_rebuild: bool):
+    def load_or_build(
+        self, article_dir: Path, chunker: ArticleChunker, force_rebuild: bool
+    ):
         import numpy as np
 
         fp = self.fingerprint(article_dir)
@@ -204,7 +207,9 @@ class QaIndexBuilder:
             all_chunks += chunker.chunk(f)
         if not all_chunks:
             raise RuntimeError(f"{article_dir} 下没有可解析的文章")
-        print(f"共 {len(all_chunks)} 个分块（来自 {len(list(article_dir.glob('*.md')))} 篇文章）")
+        print(
+            f"共 {len(all_chunks)} 个分块（来自 {len(list(article_dir.glob('*.md')))} 篇文章）"
+        )
 
         print("\n========== 向量编码（bge-small-zh） ==========")
         t_start = time.time()
@@ -213,7 +218,9 @@ class QaIndexBuilder:
 
         model = SentenceTransformer(str(dj_settings.EMBEDDING_MODEL_DIR))
         vectors = model.encode(
-            [c["text"] for c in all_chunks], normalize_embeddings=True, show_progress_bar=False
+            [c["text"] for c in all_chunks],
+            normalize_embeddings=True,
+            show_progress_bar=False,
         )
         vectors = np.asarray(vectors, dtype="float32")
 
@@ -222,7 +229,9 @@ class QaIndexBuilder:
         )
         np.save(self.paths["vectors"], vectors)
         Path(self.paths["manifest"]).write_text(
-            json.dumps({"fingerprint": fp, "count": len(all_chunks)}, ensure_ascii=False),
+            json.dumps(
+                {"fingerprint": fp, "count": len(all_chunks)}, ensure_ascii=False
+            ),
             encoding="utf-8",
         )
         print(f"向量维度 {vectors.shape}，已保存至 runtime/index/")
@@ -243,7 +252,9 @@ def _parse_args(argv=None):
         default=str(ROOT / "backend" / "content" / "articles"),
         help="文章目录，默认 backend/content/articles",
     )
-    parser.add_argument("--chunk-size", type=int, default=500, help="单块最大字符数，默认 500")
+    parser.add_argument(
+        "--chunk-size", type=int, default=500, help="单块最大字符数，默认 500"
+    )
     parser.add_argument("--force-rebuild", action="store_true", help="强制重建")
     return parser.parse_args(argv)
 

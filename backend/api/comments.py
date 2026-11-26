@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / api/comments
+创建日期: 2025-09-01
 
 评论 API。
 
@@ -10,10 +11,9 @@ DELETE /api/comments/{id}             删除（作者或管理员）
 POST   /api/comments/report           举报（评论/手账，分类+说明）
 """
 
-
 from apps.comments.models import Comment, CommentReport
 from apps.core import sensitive
-from apps.core.auth import is_any_admin, login_required, OptionalAuth
+from apps.core.auth import OptionalAuth, is_any_admin, login_required
 from ninja import Router, Schema
 from ninja.errors import HttpError
 from services import comment_service

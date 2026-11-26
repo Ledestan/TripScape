@@ -1,4 +1,8 @@
-"""S3 功能证据 · 拾取侧（SPEC §3.5）。
+"""
+行旅识景 TripScape / tests/backend/test_s3_fragment_pickup
+创建日期: 2026-11-25
+
+S3 功能证据 · 拾取侧（SPEC §3.5）。
 
 断言：
 1. 拾取返回体包含**来源卡片摘要字段**（id/title/photo/landmarkId/confidence/snippet）；
@@ -11,7 +15,14 @@
 import pytest
 from django.test import override_settings
 
-SOURCE_CARD_SUMMARY_FIELDS = ("id", "title", "photo", "landmarkId", "confidence", "snippet")
+SOURCE_CARD_SUMMARY_FIELDS = (
+    "id",
+    "title",
+    "photo",
+    "landmarkId",
+    "confidence",
+    "snippet",
+)
 
 
 def _card_and_journal(client, token, landmark_id: int) -> int:
@@ -19,7 +30,9 @@ def _card_and_journal(client, token, landmark_id: int) -> int:
     resp = client.json_get(f"/api/narrative/card/{landmark_id}", token=token)
     assert resp.status_code == 200, resp.content
     card_id = resp.json()["data"]["id"]
-    resp = client.json_post("/api/narrative/journal/cards", {"card_id": card_id}, token=token)
+    resp = client.json_post(
+        "/api/narrative/journal/cards", {"card_id": card_id}, token=token
+    )
     assert resp.status_code == 200, resp.content
     return card_id
 

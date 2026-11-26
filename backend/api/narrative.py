@@ -24,11 +24,10 @@
     2. 匿名性由 service 层的序列化保证，API 层不额外拼接投递者信息。
 """
 
+from apps.core.auth import OptionalAuth, login_required
+from apps.landmarks.models import Landmark
 from ninja import Router, Schema
 from ninja.errors import HttpError
-
-from apps.core.auth import login_required, OptionalAuth
-from apps.landmarks.models import Landmark
 from services import landmark_pages
 from services import narrative_service as narrative
 
@@ -59,7 +58,11 @@ def get_card(request, landmark_id: int):
     return {"success": True, "data": card.as_card()}
 
 
-@router.get("/story/{landmark_id}", summary="地标故事（整体介绍 + 时间轴 + 分节材料）", auth=OptionalAuth())
+@router.get(
+    "/story/{landmark_id}",
+    summary="地标故事（整体介绍 + 时间轴 + 分节材料）",
+    auth=OptionalAuth(),
+)
 def get_story(request, landmark_id: int):
     """读预置的地标页面文件；没有预置时返回 404，不现场分词拼内容。"""
     lm = _landmark_or_404(landmark_id)
@@ -67,6 +70,7 @@ def get_story(request, landmark_id: int):
     if payload is None:
         raise HttpError(404, "该地标还没有预置内容，请运行 seed_landmark_pages")
     return {"success": True, "data": payload}
+
 
 @router.post("/journal/cards", summary="叙事卡片加入手账")
 @login_required
@@ -95,7 +99,9 @@ def my_journal(request):
 def deliver(request, payload: DeliverIn):
     """把手账卡片匿名投递到地标（同一地标最多 3 条；第 4 条 409）。"""
     try:
-        data = narrative.deliver_fragment(request.auth, payload.card_id, payload.landmark_id)
+        data = narrative.deliver_fragment(
+            request.auth, payload.card_id, payload.landmark_id
+        )
     except narrative.NarrativeError as exc:
         raise HttpError(exc.status, exc.message)
     return {

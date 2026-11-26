@@ -1,4 +1,8 @@
-"""S3 功能证据 · 投递侧（SPEC §3.5）。
+"""
+行旅识景 TripScape / tests/backend/test_s3_fragment_delivery
+创建日期: 2026-11-25
+
+S3 功能证据 · 投递侧（SPEC §3.5）。
 
 断言：
 1. 同一用户对同一地标的前 3 次投递成功，且响应体回报已用数量与剩余额度；
@@ -24,7 +28,9 @@ def _make_card_id(client, token, landmark_id: int) -> int:
 
 
 def _add_to_journal(client, token, card_id: int):
-    resp = client.json_post("/api/narrative/journal/cards", {"card_id": card_id}, token=token)
+    resp = client.json_post(
+        "/api/narrative/journal/cards", {"card_id": card_id}, token=token
+    )
     assert resp.status_code == 200, resp.content
     return resp
 
@@ -38,7 +44,9 @@ def _deliver(client, token, card_id: int, landmark_id: int):
 
 
 @pytest.mark.django_db
-def test_first_three_deliveries_ok_and_fourth_rejected(api_client, user_token, landmark):
+def test_first_three_deliveries_ok_and_fourth_rejected(
+    api_client, user_token, landmark
+):
     """前 3 次成功、第 4 次 409，且响应/库内计数一致。"""
     card_id = _make_card_id(api_client, user_token, landmark.id)
     _add_to_journal(api_client, user_token, card_id)

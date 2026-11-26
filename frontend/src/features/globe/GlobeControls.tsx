@@ -1,3 +1,10 @@
+/**
+ * 行旅识景 TripScape / src/features/globe/GlobeControls
+ * 创建日期: 2026-10-09
+ *
+ * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ */
+
 import { useEffect, useRef, useState } from "react";
 import { Compass, Maximize2, Minimize2, Navigation, RotateCcw, ChevronUp, X, Minus, Plus } from "lucide-react";
 import { globeBus } from "@/features/globe/Globe";

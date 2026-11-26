@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / api/qa
+创建日期: 2025-09-01
 
 问答 API（文章式管线 + 会话上下文 + 低置信度返回"不知道"）。
 
@@ -9,7 +10,7 @@ POST /api/qa/chat
            "landmark": {...} | null, "landmarks": [...], "source": "article"}
 """
 
-from apps.core.auth import login_required, OptionalAuth
+from apps.core.auth import OptionalAuth, login_required
 from apps.landmarks.models import QAContext
 from ninja import Router, Schema
 from ninja.errors import HttpError
@@ -98,6 +99,7 @@ def chat(request, payload: ChatIn):
         "confidence": result["confidence"],
         "known": result["known"],
         "landmark": result.get("landmark"),
-        "landmarks": result.get("landmarks") or ([result["landmark"]] if result.get("landmark") else []),
+        "landmarks": result.get("landmarks")
+        or ([result["landmark"]] if result.get("landmark") else []),
         "source": result["source"],
     }

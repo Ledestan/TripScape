@@ -1,6 +1,12 @@
+/**
+ * 行旅识景 TripScape / src/App
+ * 创建日期: 2026-10-09
+ *
+ * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ */
+
 import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
-
 import { useThemeStore } from "@/stores/theme";
 import LoadingScreen from "@/components/LoadingScreen";
 

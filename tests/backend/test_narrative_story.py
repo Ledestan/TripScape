@@ -26,7 +26,6 @@
 
 import json
 from pathlib import Path
-
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -84,7 +83,9 @@ def test_story_endpoint_returns_structured_payload(api_client, page_landmark):
     data = resp.json()["data"]
     assert data["title"] == "埃菲尔铁塔"
     assert data["intro"]
-    assert data["timeline"] and data["timeline"][0]["year"] <= data["timeline"][-1]["year"]
+    assert (
+        data["timeline"] and data["timeline"][0]["year"] <= data["timeline"][-1]["year"]
+    )
     assert isinstance(data["sections"], list) and len(data["sections"]) >= 2
 
 

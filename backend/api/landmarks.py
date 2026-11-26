@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / api/landmarks
+创建日期: 2025-09-01
 
 地标 API。
 
@@ -13,8 +14,7 @@ POST   /api/landmarks/{id}/favorite    收藏 / 取消收藏
 GET    /api/landmarks/{id}/comments    地标下的公开评论
 """
 
-
-from apps.core.auth import any_admin_required, login_required, OptionalAuth
+from apps.core.auth import OptionalAuth, any_admin_required, login_required
 from apps.core.views import paginate
 from apps.landmarks.models import Landmark, UserFavorite
 from django.conf import settings
@@ -39,7 +39,9 @@ class LandmarkIn(Schema):
     image_url: str = ""
 
 
-@router.get("/spots", summary="地球光点数据（含热度/评论数/足迹状态）", auth=OptionalAuth())
+@router.get(
+    "/spots", summary="地球光点数据（含热度/评论数/足迹状态）", auth=OptionalAuth()
+)
 def spots(request):
     """光点数据：个人模式附 visited，公共模式附热度（手账数/评论数/访客数）。"""
     from apps.comments.models import Comment

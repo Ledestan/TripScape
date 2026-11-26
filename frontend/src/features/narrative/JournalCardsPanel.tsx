@@ -20,9 +20,7 @@
 
 import { BookOpen, Compass, MapPin, Send, X } from "lucide-react";
 import { useMemo } from "react";
-
 import { Button } from "@/components/ui/button";
-
 import type { JournalEntry } from "./types";
 
 export default function JournalCardsPanel({

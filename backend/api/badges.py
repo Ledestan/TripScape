@@ -1,11 +1,11 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / api/badges
+创建日期: 2025-09-01
 
 徽章 API。
 
 GET /api/badges/mine   我的徽章墙（含进度）
 """
-
 
 from apps.core.auth import login_required
 from ninja import Router

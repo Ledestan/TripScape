@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / apps/accounts/admin
+创建日期: 2025-09-01
 
 Django 后台的用户管理配置
 

@@ -1,7 +1,13 @@
-import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { MapPin, NotebookPen, MessageSquare, Star, Award, Compass, EyeOff } from "lucide-react";
+/**
+ * 行旅识景 TripScape / src/features/profile/UserProfileWindow
+ * 创建日期: 2026-10-09
+ *
+ * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ */
 
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { MapPin, NotebookPen, MessageSquare, Star, Award, Compass, EyeOff } from "lucide-react";
 import { api } from "@/api/client";
 import { FloatingWindow } from "@/components/FloatingWindow";
 import { globeBus } from "@/features/globe/Globe";

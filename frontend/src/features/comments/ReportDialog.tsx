@@ -1,8 +1,14 @@
+/**
+ * 行旅识景 TripScape / src/features/comments/ReportDialog
+ * 创建日期: 2026-10-09
+ *
+ * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ */
+
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Flag, X } from "lucide-react";
-
 import { api, errMessage } from "@/api/client";
 
 const REASONS = [

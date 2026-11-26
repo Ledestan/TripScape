@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / config/urls
+创建日期: 2025-09-01
 
 URL 路由总入口。
 
@@ -17,7 +18,6 @@ URL 路由总入口。
 
 import mimetypes
 from pathlib import Path
-
 from api import api
 from django.conf import settings
 from django.contrib import admin

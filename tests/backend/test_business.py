@@ -1,4 +1,9 @@
-"""业务流程测试：评论（敏感词）/ 手账（足迹）/ 徽章 / 分享。"""
+"""
+行旅识景 TripScape / tests/backend/test_business
+创建日期: 2026-10-09
+
+业务流程测试：评论（敏感词）/ 手账（足迹）/ 徽章 / 分享。
+"""
 
 
 class TestComments:

@@ -1,11 +1,11 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / api/shares
+创建日期: 2025-09-01
 
 公开分享 API（免登录）。
 
 GET /api/shares/{token}   通过 token 查看公开手账
 """
-
 
 from apps.core.auth import OptionalAuth
 from apps.journals.models import Journal

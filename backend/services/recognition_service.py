@@ -1,5 +1,6 @@
-"""行旅识景 TripScape / 识别服务
-创建日期：2025-10-08
+"""
+行旅识景 TripScape / 识别服务
+创建日期: 2025-10-08
 
 识别入口：调度检索式引擎（DINOv2 + FAISS），完成:
     1. 检索引擎识别（top-3 候选 + 置信度）
@@ -24,10 +25,9 @@
 
 import logging
 import time
-
 from apps.landmarks.models import Landmark
-from django.db.models import F
 from django.conf import settings
+from django.db.models import F
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +106,9 @@ def _build_result(results, user, started, engine):
         from apps.landmarks.models import RecognitionRecord
 
         RecognitionRecord.objects.create(
-            user=(user if (user and getattr(user, "is_authenticated", False)) else None),
+            user=(
+                user if (user and getattr(user, "is_authenticated", False)) else None
+            ),
             landmark=landmark,
             confidence=float(confidence),
             elapsed_ms=elapsed_ms,

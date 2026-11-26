@@ -1,3 +1,10 @@
+/**
+ * 行旅识景 TripScape / src/components/ui/switch
+ * 创建日期: 2026-10-09
+ *
+ * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ */
+
 import * as React from "react";
 import * as SwitchPrimitives from "@radix-ui/react-switch";
 import { cn } from "@/utils/cn";

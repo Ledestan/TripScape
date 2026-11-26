@@ -31,7 +31,6 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-
 import LandmarkStoryView from "./LandmarkStoryView";
 import type { LandmarkStoryData, NarrativeCardData } from "./types";
 

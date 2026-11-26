@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / apps/core/ratelimit
+创建日期: 2025-09-01
 
 内存滑窗限流（登录等敏感接口）。
 

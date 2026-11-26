@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / apps/notifications/admin
+创建日期: 2025-09-01
 """
 
 from apps.notifications.models import Notification

@@ -1,11 +1,11 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / services/audit_service
+创建日期: 2025-09-01
 
 core 服务：审计日志写入。
 """
 
 import logging
-
 from apps.admin_panel.models import AuditLog
 
 logger = logging.getLogger("tripscape.audit")

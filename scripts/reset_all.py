@@ -39,7 +39,9 @@ def main() -> None:
     target = ROOT / "reset_project.py"
     if not target.exists():
         sys.exit(f"错误: {target} 不存在，无法重置")
-    code = subprocess.run([sys.executable, str(target), *sys.argv[1:]], cwd=str(ROOT)).returncode
+    code = subprocess.run(
+        [sys.executable, str(target), *sys.argv[1:]], cwd=str(ROOT)
+    ).returncode
     sys.exit(code)
 
 

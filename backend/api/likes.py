@@ -1,12 +1,12 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / api/likes
+创建日期: 2025-09-01
 
 点赞 API：手账 / 评论。
 
 POST /api/likes/            点赞 / 取消（toggle）
 GET  /api/likes/status      批量查我是否点过赞（ids）
 """
-
 
 from apps.comments.models import Comment, Like
 from apps.core.auth import login_required

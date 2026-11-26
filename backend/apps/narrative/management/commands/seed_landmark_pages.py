@@ -23,7 +23,6 @@
 """
 
 from django.core.management.base import BaseCommand
-
 from services import landmark_pages
 
 
@@ -34,7 +33,9 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         """提供 --verbose 查看逐条生成日志。"""
-        parser.add_argument("--verbose", action="store_true", help="打印每个地标的生成情况")
+        parser.add_argument(
+            "--verbose", action="store_true", help="打印每个地标的生成情况"
+        )
 
     def handle(self, *args, **options):
         """执行生成并输出统计。"""

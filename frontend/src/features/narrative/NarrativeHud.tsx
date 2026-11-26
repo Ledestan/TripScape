@@ -21,11 +21,9 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-
 import { api, errMessage } from "@/api/client";
 import { useAuthStore } from "@/stores/auth";
 import { useNarrativeStore } from "@/stores/narrative";
-
 import JournalCardsPanel from "./JournalCardsPanel";
 import LandmarkNarrativePanel from "./LandmarkNarrativePanel";
 import type {
@@ -128,6 +126,7 @@ export default function NarrativeHud() {
 
   return (
     <div data-testid="narrative-hud" className="pointer-events-none absolute inset-0 z-20">
+      {/* 层状态只做无障碍与测试锚点：地球层不渲染任何叙事 UI，入口就是点地标 */}
       <span data-testid="narrative-layer-indicator" className="sr-only">
         {layer}
       </span>

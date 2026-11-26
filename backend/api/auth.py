@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / api/auth
+创建日期: 2025-09-01
 
 认证 API：注册 / 登录 / 当前用户 / 个人主页。
 
@@ -9,7 +10,6 @@ GET  /api/auth/me         当前用户信息
 GET  /api/auth/profile    个人主页聚合
 PUT  /api/auth/profile    更新昵称 / 头像 / 签名
 """
-
 
 from apps.core.auth import login_required, make_token
 from apps.core.ratelimit import login_limiter

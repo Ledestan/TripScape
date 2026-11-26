@@ -1,9 +1,16 @@
+/**
+ * 行旅识景 TripScape / src/features/qa/MessageBar
+ * 创建日期: 2026-10-09
+ *
+ * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ */
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  ImagePlus, Send, X, Search as SearchIcon, MapPin, NotebookPen, Compass, History, MessageSquare, Bell, Check,
+  ImagePlus, Send, X, Search as SearchIcon, MapPin, History, MessageSquare, Bell, Check,
 } from "lucide-react";
 
 import { api, errMessage } from "@/api/client";
@@ -17,7 +24,6 @@ import { globeBus } from "@/features/globe/Globe";
 /* ------------------------------------------------------------------ */
 export function RecognitionResultCard({
   msg,
-  onFly,
 }: {
   msg: ChatMessage;
   onFly?: (lmId: number) => void;
@@ -138,7 +144,6 @@ export function RecognizingSkeleton() {
 export default function MessageBar({
   spots,
   onFly,
-  compact,
   narrow,
 }: {
   spots?: { id: number; name: string; lat: number; lon: number }[];
@@ -347,7 +352,6 @@ export default function MessageBar({
   const isResultCard = (m: ChatMessage) =>
     m.landmark_id !== undefined || m.low_confidence !== undefined || !!m.pending_image_url;
 
-  const lastText = [...messages].reverse().find((m) => !m.pending)?.content ?? "问我地标知识，或拖一张照片来识别";
 
   /* ---------- 消息查看浮窗 ---------- */
   const viewMsgWindow = viewMsg ? (

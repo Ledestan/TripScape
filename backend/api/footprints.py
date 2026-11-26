@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / api/footprints
+创建日期: 2025-09-01
 
 足迹 API —— 从手账自动生成，取消手动打卡。
 
@@ -8,8 +9,7 @@ GET /api/footprints/public    公开足迹聚合（地球光点高亮展示全�
 POST /api/footprints/refresh  手动触发重算（通常不需要，手账保存时自动算）
 """
 
-
-from apps.core.auth import login_required, OptionalAuth
+from apps.core.auth import OptionalAuth, login_required
 from ninja import Router
 from ninja.errors import HttpError
 from services import footprint_service

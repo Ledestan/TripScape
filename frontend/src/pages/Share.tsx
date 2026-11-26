@@ -1,7 +1,13 @@
+/**
+ * 行旅识景 TripScape / src/pages/Share
+ * 创建日期: 2026-10-09
+ *
+ * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ */
+
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, CalendarDays, Globe2 } from "lucide-react";
-
 import { api } from "@/api/client";
 import LoadingScreen from "@/components/LoadingScreen";
 import { Button } from "@/components/ui/button";

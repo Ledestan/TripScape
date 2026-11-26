@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / config/settings/base
+创建日期: 2025-09-01
 
 Django settings —— TripScape
 
@@ -9,9 +10,6 @@ Django settings —— TripScape
 """
 
 import os
-from pathlib import Path
-
-import environ
 
 # ----------------------------------------------------------------------
 # 基础路径：
@@ -23,6 +21,8 @@ import environ
 # 读写全落在打包机目录（库建到源项目、模型读源路径）。
 # ----------------------------------------------------------------------
 import sys as _sys
+from pathlib import Path
+import environ
 
 if getattr(_sys, "frozen", False):
     BACKEND_DIR = Path(_sys.executable).resolve().parent / "_internal" / "backend"

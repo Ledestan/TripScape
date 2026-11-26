@@ -1,12 +1,12 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / services/journal_service
+创建日期: 2025-09-01
 
 手账服务：创建 / 更新 / 审核联动（敏感词、通知、足迹、搜索索引）。
 """
 
 import logging
 from datetime import date
-
 from apps.core import sensitive
 from apps.journals.models import Journal
 from django.utils import timezone
@@ -137,8 +137,10 @@ def update_journal(journal: Journal, data: dict) -> tuple:
 
 def moderate(journal: Journal, action: str, moderator, reason: str = ""):
     """审核动作：approve / reject / hide / restore / delete。"""
-    from services.footprint_service import (rebuild_user_footprints,
-                                            refresh_footprint_for_journal)
+    from services.footprint_service import (
+        rebuild_user_footprints,
+        refresh_footprint_for_journal,
+    )
 
     if action == "approve":
         # 应用待审快照（二次编辑通过 -> 新版替换旧版）

@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / config/asgi
+创建日期: 2025-09-01
 
 ASGI 入口（UvicornWorker 使用）。
 """

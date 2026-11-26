@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / config/wsgi
+创建日期: 2025-09-01
 
 WSGI 入口（Gunicorn 使用）。
 """

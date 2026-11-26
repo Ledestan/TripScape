@@ -1,4 +1,9 @@
-"""pytest 共享 fixtures。"""
+"""
+行旅识景 TripScape / tests/backend/conftest
+创建日期: 2026-10-09
+
+pytest 共享 fixtures。
+"""
 
 import os
 import sys

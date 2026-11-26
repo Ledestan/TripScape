@@ -26,29 +26,20 @@
 """
 
 import logging
-import re
-
-from django.conf import settings
-
 from apps.narrative.models import (
     FragmentPickup,
     JournalCard,
     NarrativeCard,
     NarrativeFragment,
 )
+from django.conf import settings
+
+from services.text_utils import extract_year, split_sentences
 
 logger = logging.getLogger(__name__)
 
-# 时间碎片只在这些章节里找（文章库的固定章节名）
-TIME_SECTIONS = ("历史沿革", "概述", "前言")
-
-# 句子切分：中文句末标点 + 换行（与文章库的排版一致）
-_SENT_SPLIT = re.compile(r"(?<=[。！？；])\s*|\n+")
-# 纪年抽取：只认真实年份表达式，抽不到就 year=None（绝不补写）
-_YEAR_RE = re.compile(r"(公元前)?\s*(\d{3,4})\s*年")
+# 卡片最多展示的纪年条数（与页面时间轴解耦，避免一屏塞满）
 _MAX_FRAGMENTS_PER_LANDMARK = 3
-
-# 检索片段按地标缓存（卡片高频创建，避免重复 encode）
 
 
 class NarrativeError(Exception):
@@ -66,26 +57,10 @@ class NarrativeError(Exception):
 
 
 # ======================================================================
-# 文本工具
+# 文本工具（与地标页面共用 services.text_utils，避免两套切句口径）
 # ======================================================================
-def _sentences(text: str):
-    """切句并清理 markdown 残留（空句丢弃，保留句末标点）。"""
-    out = []
-    for part in _SENT_SPLIT.split(text or ""):
-        s = re.sub(r"^[\s\-*·#|>]+", "", part or "").strip()
-        s = re.sub(r"thumb\|\d+px\|?", "", s).strip()
-        if len(s) >= 6 and not s.startswith(("|", "}}")):
-            out.append(s)
-    return out
-
-
-def _extract_year(text: str):
-    """抽取纪年（公元前转负数），抽不到返回 None。"""
-    m = _YEAR_RE.search(text or "")
-    if not m:
-        return None
-    year = int(m.group(2))
-    return -year if m.group(1) else year
+_sentences = split_sentences
+_extract_year = extract_year
 
 
 def _title(landmark) -> str:
@@ -125,7 +100,9 @@ def _time_fragments(landmark) -> list:
     page = _page(landmark)
     picked = list(page.get("time_fragments", [])) if page else []
 
-    dated = sorted([f for f in picked if f.get("year") is not None], key=lambda f: f["year"])
+    dated = sorted(
+        [f for f in picked if f.get("year") is not None], key=lambda f: f["year"]
+    )
     undated = [f for f in picked if f.get("year") is None]
     fragments = (dated + undated)[:_MAX_FRAGMENTS_PER_LANDMARK]
 
@@ -194,7 +171,14 @@ def _rag_snippets(landmark, top_k: int = 3) -> list:
 # ======================================================================
 # S2：卡片组装
 # ======================================================================
-def build_narrative_card(landmark, *, user=None, photo: str = "", confidence: float = 0.0, source: str = "retrieval"):
+def build_narrative_card(
+    landmark,
+    *,
+    user=None,
+    photo: str = "",
+    confidence: float = 0.0,
+    source: str = "retrieval",
+):
     """组装并持久化一张叙事卡片（SPEC §2 S2 固定字段集）。
 
     参数：
@@ -206,8 +190,16 @@ def build_narrative_card(landmark, *, user=None, photo: str = "", confidence: fl
 
     返回：
         NarrativeCard
+
+    注意：
+        纪年与文献都取自预置页面文件，本函数不做分词与向量检索——
+        那些只服务问答，识别与打开地标都必须保持毫秒级。
     """
-    author = user if (user is not None and getattr(user, "is_authenticated", False)) else None
+    author = (
+        user
+        if (user is not None and getattr(user, "is_authenticated", False))
+        else None
+    )
     return NarrativeCard.objects.create(
         landmark=landmark,
         user=author,
@@ -223,7 +215,11 @@ def build_narrative_card(landmark, *, user=None, photo: str = "", confidence: fl
 
 def latest_card(landmark) -> NarrativeCard:
     """取该地标最新卡片；没有则现建一张（来源 landmark，置信度 0.0）。"""
-    card = NarrativeCard.objects.filter(landmark=landmark).order_by("-created_at", "-id").first()
+    card = (
+        NarrativeCard.objects.filter(landmark=landmark)
+        .order_by("-created_at", "-id")
+        .first()
+    )
     if card is None:
         card = build_narrative_card(landmark, confidence=0.0, source="landmark")
     return card
@@ -281,13 +277,17 @@ def deliver_fragment(user, card_id: int, landmark_id: int) -> dict:
         raise NarrativeError("只能投递手账中的叙事卡片", 403)
 
     limit = fragment_limit()
-    used = NarrativeFragment.objects.filter(delivered_by=user, landmark=landmark).count()
+    used = NarrativeFragment.objects.filter(
+        delivered_by=user, landmark=landmark
+    ).count()
     if used >= limit:
         raise NarrativeError(
             f"同一地标最多投递 {limit} 条叙事碎片，你已投递 {used} 条", 409
         )
 
-    frag = NarrativeFragment.objects.create(card=card, landmark=landmark, delivered_by=user)
+    frag = NarrativeFragment.objects.create(
+        card=card, landmark=landmark, delivered_by=user
+    )
     logger.info("叙事碎片投递：fragment=%s landmark=%s", frag.id, landmark.id)
     return {
         "fragmentId": frag.id,
@@ -299,7 +299,9 @@ def deliver_fragment(user, card_id: int, landmark_id: int) -> dict:
 
 def _unpicked_queryset(user, landmark_id: int):
     """该地标下"非本人投递、且本人未拾取"的碎片。"""
-    picked = FragmentPickup.objects.filter(user=user).values_list("fragment_id", flat=True)
+    picked = FragmentPickup.objects.filter(user=user).values_list(
+        "fragment_id", flat=True
+    )
     return (
         NarrativeFragment.objects.filter(landmark_id=landmark_id)
         .exclude(delivered_by=user)
@@ -320,7 +322,9 @@ def pick_fragment(user, landmark_id: int) -> dict:
 
 def pick_fragment_by_id(user, fragment_id: int) -> dict:
     """按 ID 拾取碎片；同一碎片对同一用户第二次拾取被拒绝（409）。"""
-    frag = NarrativeFragment.objects.filter(id=fragment_id).select_related("card").first()
+    frag = (
+        NarrativeFragment.objects.filter(id=fragment_id).select_related("card").first()
+    )
     if frag is None:
         raise NarrativeError("叙事碎片不存在", 404)
     if FragmentPickup.objects.filter(fragment=frag, user=user).exists():

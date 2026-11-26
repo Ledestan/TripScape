@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / api/search
+创建日期: 2025-09-01
 
 搜索 API。
 
@@ -11,8 +12,7 @@ GET /api/search/
     &sort=relevance|time|hot
 """
 
-
-from apps.core.auth import login_required, OptionalAuth
+from apps.core.auth import OptionalAuth, login_required
 from ninja import Router
 from services import search_service
 

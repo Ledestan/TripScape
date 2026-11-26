@@ -1,3 +1,10 @@
+/**
+ * 行旅识景 TripScape / e2e/narrative-journal.spec
+ * 创建日期: 2026-11-25
+ *
+ * 该模块的工具函数与类型定义；对外导出见文件内 export。
+ */
+
 import fs from "node:fs";
 import path from "node:path";
 import { test, expect } from "@playwright/test";

@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / apps/comments/models_like
+创建日期: 2025-09-01
 
 点赞模型（手账 / 评论通用）。
 """

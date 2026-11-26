@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / apps/admin_panel/admin
+创建日期: 2025-09-01
 
 Django 后台的审计/敏感词配置
 

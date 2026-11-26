@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / services/footprint_service
+创建日期: 2025-09-01
 
 手账与足迹服务。
 
@@ -10,7 +11,6 @@
 """
 
 import logging
-
 from apps.journals.models import Footprint, Journal
 from apps.landmarks.models import Landmark
 from django.db.models import Count, F, Sum
@@ -32,11 +32,7 @@ def rebuild_user_footprints(user) -> int:
     返回：
         足迹条数
     """
-    agg = (
-        _valid_journals_qs(user)
-        .values("landmark_id")
-        .annotate(total=Count("id"))
-    )
+    agg = _valid_journals_qs(user).values("landmark_id").annotate(total=Count("id"))
     # 保留用户手动 hidden 状态重建
     old_hidden = set(
         Footprint.objects.filter(user=user, hidden=True).values_list(

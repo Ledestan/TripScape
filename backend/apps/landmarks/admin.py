@@ -1,13 +1,13 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / apps/landmarks/admin
+创建日期: 2025-09-01
 
 Django 后台的地标配配置
 
 注册 Landmark 模型。地标数据由 seed_landmarks.sql + 管理后台维护。
 """
 
-from apps.landmarks.models import (Landmark, QAContext,
-                                   RecognitionRecord, UserFavorite)
+from apps.landmarks.models import Landmark, QAContext, RecognitionRecord, UserFavorite
 from django.contrib import admin
 
 

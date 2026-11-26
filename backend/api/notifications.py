@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / api/notifications
+创建日期: 2025-09-01
 
 通知 API。
 
@@ -8,7 +9,6 @@ GET   /api/notifications/unread   未读数
 POST  /api/notifications/{id}/read    标记已读
 POST  /api/notifications/read-all     全部已读
 """
-
 
 from apps.core.auth import login_required
 from apps.core.views import paginate

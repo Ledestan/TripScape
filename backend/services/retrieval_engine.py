@@ -1,5 +1,6 @@
-"""行旅识景 TripScape / 检索式识别引擎
-创建日期：2025-10-08
+"""
+行旅识景 TripScape / 检索式识别引擎
+创建日期: 2025-10-08
 
 以图检索替代分类：DINOv2 全局检索，完成:
     1. DINOv2 ViT-S/14 提取查询图全局特征（384 维）
@@ -29,12 +30,12 @@ import json
 import logging
 import time
 from pathlib import Path
-
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
 from django.conf import settings
+
 
 # ======================================================================
 # 特征提取
@@ -66,12 +67,16 @@ class DinoEmbedder:
         import os
         from pathlib import Path
 
-        local_dir = Path(__import__("django").conf.settings.BASE_DIR) / "models" / "dinov2"
+        local_dir = (
+            Path(__import__("django").conf.settings.BASE_DIR) / "models" / "dinov2"
+        )
         if local_dir.exists() and (local_dir / "dinov2").is_dir():
             # 本地完整 repo（打包形态）
             return self.torch.hub.load(
-                str(local_dir), "dinov2_vits14_reg",
-                source="local", trust_repo=True,
+                str(local_dir),
+                "dinov2_vits14_reg",
+                source="local",
+                trust_repo=True,
             )
         # 源码运行：标准 hub（首次联网下载，缓存复用）
         return self.torch.hub.load("facebookresearch/dinov2", "dinov2_vits14_reg")
@@ -95,12 +100,18 @@ class DinoEmbedder:
 
         if self._transform is None:
             # 官方预处理管线（惰性构建，进程内复用）
-            self._transform = transforms.Compose([
-                transforms.Resize(256, interpolation=transforms.InterpolationMode.BICUBIC),
-                transforms.CenterCrop(224),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ])
+            self._transform = transforms.Compose(
+                [
+                    transforms.Resize(
+                        256, interpolation=transforms.InterpolationMode.BICUBIC
+                    ),
+                    transforms.CenterCrop(224),
+                    transforms.ToTensor(),
+                    transforms.Normalize(
+                        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                    ),
+                ]
+            )
 
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         x = self._transform(img).unsqueeze(0).to(self.device)

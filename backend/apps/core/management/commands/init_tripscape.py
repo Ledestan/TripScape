@@ -1,5 +1,6 @@
-"""行旅识景 TripScape
-创建日期：2025-09-01
+"""
+行旅识景 TripScape / apps/core/management/commands/init_tripscape
+创建日期: 2025-09-01
 
 数据库初始化命令：迁移 + 地标/知识库/徽章/敏感词/账号种子（幂等）。
 
@@ -17,17 +18,14 @@
 
 import re
 from pathlib import Path
-
 from apps.admin_panel.models import SensitiveWord
 from apps.badges.models import Badge
 from apps.landmarks.models import Landmark
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
-from django.db import connection
 
 BASE_DIR = Path(settings.BASE_DIR)
-
 
 
 def _parse_sqlite_values(sql_path: Path):
@@ -127,8 +125,7 @@ class Command(BaseCommand):
             from apps.comments.models import Comment, CommentReport
             from apps.comments.models_like import Like
             from apps.journals.models import Footprint, Journal, JournalImage
-            from apps.landmarks.models import (QAContext, RecognitionRecord,
-                                               UserFavorite)
+            from apps.landmarks.models import QAContext, RecognitionRecord, UserFavorite
             from apps.notifications.models import Notification
             from apps.shares.models import ShareLink
 
@@ -185,7 +182,6 @@ class Command(BaseCommand):
         self.stdout.write(
             f"   地标：新增 {created_lms}，共 {Landmark.objects.count()} 条"
         )
-
 
         # ---------------- 徽章种子 ----------------
         # 数据来自 scripts/db/seed_badges.sql（新增徽章在文件里加一行即可）。

@@ -68,11 +68,7 @@ export default function LandmarkStoryView({ story }: { story: LandmarkStoryData 
               <li key={`${item.year}-${index}`} className="relative">
                 <span className="absolute -left-[15px] top-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
                 <div className="mb-0.5 text-[10.5px] font-semibold tabular-nums text-primary">
-                  {item.year === null
-                    ? "未记年"
-                    : item.year < 0
-                      ? `公元前 ${-item.year} 年`
-                      : `${item.year} 年`}
+                  {formatYear(item.year)}
                 </div>
                 <p className="text-[11.5px] leading-relaxed text-foreground/80">{item.text}</p>
               </li>
@@ -99,4 +95,16 @@ export default function LandmarkStoryView({ story }: { story: LandmarkStoryData 
       ))}
     </div>
   );
+}
+
+/**
+ * 年份显示：公元前用负数，1-999 年补"公元"，否则直接写年份。
+ *
+ * 为什么要补"公元"：罗马竞技场建于 72 年，只写"72 年"读起来像"72 年"这个时长。
+ */
+function formatYear(year: number | null): string {
+  if (year === null) return "未记年";
+  if (year < 0) return `公元前 ${-year} 年`;
+  if (year < 1000) return `公元 ${year} 年`;
+  return `${year} 年`;
 }

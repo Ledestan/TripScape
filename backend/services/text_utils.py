@@ -24,8 +24,11 @@ import re
 
 # 中文句末标点 + 换行（与文章库的排版一致）
 _SENT_SPLIT = re.compile(r"(?<=[。！？；])\s*|\n+")
-# 纪年：公元前后接 1-4 位数字，或 3-4 位年份
-_YEAR_RE = re.compile(r"(公元前)?\s*(\d{1,4})\s*年")
+# 纪年：只认"年份"，不把时长当成年份（41年、4500年、19世纪70年代都不算）
+_BC_RE = re.compile(r"公元前\s*(\d{1,4})\s*年")
+_BC_SHORT_RE = re.compile(r"(?<!公元)前\s*(\d{1,4})\s*年")
+_AD_RE = re.compile(r"公元\s*(\d{1,4})\s*年")
+_FOUR_DIGIT_RE = re.compile(r"(\d{4})\s*年(?!代)")
 # 摘编残留：模板括号、表格竖线、图片尺寸、空括号、括号内以标点开头——命中就整句丢弃
 # 注意：不能把「；」「：」当残留——它们是正常中文标点，切句后句尾就带「；」
 _CJK_RE = re.compile(r"[\u4e00-\u9fff]")
@@ -58,14 +61,50 @@ def split_sentences(text: str) -> list[str]:
         # 几乎没有中文的句子（英文图注、纯参数行）不进页面
         if len(_CJK_RE.findall(sentence)) < len(sentence) * 0.3:
             continue
+        # 以逗号/顿号/冒号结尾的是半截话（原文换行被切断），不进页面；
+        # 以分号结尾的是分句，补成句号后保留（分号在正文里读起来像没说完）
+        if sentence.endswith(("，", "、", "：", ",")):
+            continue
+        if sentence.endswith("；"):
+            sentence = sentence[:-1] + "。"
         out.append(sentence)
     return out
 
 
 def extract_year(text: str) -> int | None:
-    """抽取纪年（公元前转负数），抽不到返回 None。"""
-    match = _YEAR_RE.search(text or "")
-    if not match:
+    """抽取纪年（公元前记为负数），抽不到返回 None。
+
+    参数：
+        text : str，一句话
+
+    返回：
+        int | None：年份；公元前为负；不是年份（时长、年代、数量）一律 None
+
+    注意：
+        1. 只有"公元前/前…年""公元…年""4 位年份"才算纪年：
+           「曾是世界最高建筑 41 年」「已逾 4500 年」「19 世纪 70 年代」
+           都不是年份，直接返回 None，宁可时间轴少一条也不写错。
+        2. 句中已出现"公元"且不是"公元前"时，允许 3 位年份（公元 72 年 - 82 年）。
+    """
+    if not text:
         return None
-    year = int(match.group(2))
-    return -year if match.group(1) else year
+
+    match = _BC_RE.search(text) or _BC_SHORT_RE.search(text)
+    if match:
+        return -int(match.group(1))
+
+    match = _AD_RE.search(text)
+    if match:
+        return int(match.group(1))
+
+    if "公元" in text and "公元前" not in text:
+        for match in re.finditer(r"(\d{1,3})\s*年(?!代)", text):
+            return int(match.group(1))
+
+    match = _FOUR_DIGIT_RE.search(text)
+    if match:
+        year = int(match.group(1))
+        if 1000 <= year <= 2029:
+            return year
+
+    return None

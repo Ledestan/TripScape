@@ -24,8 +24,10 @@
 """
 
 import json
+import re
 from datetime import datetime
 from pathlib import Path
+
 from django.conf import settings
 
 from services.text_utils import extract_year, split_sentences
@@ -85,41 +87,120 @@ def _section_sentences(chunks: list[dict], section: str, limit: int = 20) -> lis
     return sentences[:limit]
 
 
+_PUNCT_RE = re.compile(r"[\s，。；：、（）()「」“”\"'·—…！？]|\\s")
+
+
+def _bigrams(text: str) -> set[str]:
+    """按标点切开后取二元字组，用于判断两句话是不是"同一个意思"。"""
+    clean = _PUNCT_RE.sub("", text)
+    return {clean[index : index + 2] for index in range(len(clean) - 1)}
+
+
+def _jaccard(left: set[str], right: set[str]) -> float:
+    """两个二元字组集合的 Jaccard 相似度（0–1）。"""
+    if not left or not right:
+        return 0.0
+    return len(left & right) / len(left | right)
+
+
+_NUMBER_RE = re.compile(r"\d{3,}")
+
+# 以这些词开头的句子是上一句的续写（"以感谢建造时…"），放进时间轴会读成半句
+_CONTINUATION_STARTS = (
+    "以",
+    "并",
+    "而",
+    "但",
+    "同时",
+    "因此",
+    "所以",
+    "于是",
+    "其中",
+    "此外",
+    "另外",
+    "同年",
+    "随后",
+    "此后",
+)
+
+
+def _key_numbers(text: str) -> set[str]:
+    """关键数字：三位以上的数字（年份、高度、构件数），用于识别"同一段事实"。"""
+    return set(_NUMBER_RE.findall(text))
+
+
 def build_page(landmark, chunks: list[dict]) -> dict:
     """组装一个地标的页面数据（故事 + 卡片材料 + 展示元信息）。"""
     seen: set[str] = set()
+    kept_bigrams: list[set[str]] = []
+    kept_numbers: list[set[str]] = []
 
     def unique(items: list[str]) -> list[str]:
+        """按"字面重复""字面高度相似""关键数字重合"三重去重。
+
+        概述与更多介绍常常是同一段话的两种写法（都讲修建年份、高度、意义），
+        只比字符串会把同一句话留两遍，读起来像是复制粘贴。
+        这里用二元字组 Jaccard 相似度 + 关键数字集合判断：两句话共享两个以上
+        三位以上数字（1889 年、330 米…）时视为同一段事实，只留先出现的那句。
+        """
         kept: list[str] = []
         for item in items:
-            if item and item not in seen:
-                seen.add(item)
-                kept.append(item)
+            if not item or item in seen:
+                continue
+            grams = _bigrams(item)
+            if any(_jaccard(grams, other) > 0.5 for other in kept_bigrams):
+                continue
+            numbers = _key_numbers(item)
+            if len(numbers) >= 2 and any(len(numbers & other) >= 2 for other in kept_numbers):
+                continue
+            seen.add(item)
+            kept_bigrams.append(grams)
+            kept_numbers.append(numbers)
+            kept.append(item)
         return kept
 
-    # 整体介绍：概述（或前言）三段 + 更多介绍两段，让开篇先讲清楚"这是什么地方"
-    intro = "".join(
-        unique(
-            _section_sentences(chunks, "概述", 3)
-            or _section_sentences(chunks, "前言", 3)
-        )
-        + unique(_section_sentences(chunks, "更多介绍", 2))
-    ).strip()
+    # 整体介绍：概述（或前言）最多三句——三句足够说清"这是什么地方"，
+    # 再多就会和下面的分节重复（同一段事实换个说法再说一遍）。
+    # 只有句子太少（不足两句）时才借更多介绍 / 百科补充，避免开篇太空。
+    intro_items = unique(
+        _section_sentences(chunks, "概述", 3) or _section_sentences(chunks, "前言", 3)
+    )
+    # 概述常常只有一两句短句（"位于开罗近郊，包括三座金字塔。"就没了），
+    # 少于 90 字时补更多介绍 / 百科补充，补到能独立成段为止（最多 5 句）
+    if len("".join(intro_items)) < 90:
+        intro_items += unique(_section_sentences(chunks, "更多介绍", 2))
+    if len("".join(intro_items)) < 90:
+        # 百科补充是"补记"小节的唯一来源：至少给它留两句（否则拆不出两节），
+        # 最多借一句补开篇
+        extra_pool = _section_sentences(chunks, "百科补充", 6)
+        spare = max(0, len(extra_pool) - 2)
+        if spare:
+            intro_items += unique(extra_pool[:1])
+    intro = "".join(intro_items[:5]).strip()
 
     # 时间轴：每个年份只取一句，升序；句子允许与整体介绍重复（时间锚点优先）
+    # 优先选"句首能立住"的句子：以连词开头的是上一句的续写，放进时间轴会读成半句
     timeline: list[dict] = []
     seen_years: set[int] = set()
+    continuations: list[dict] = []
     for section in SECTION_ORDER:
         for sentence in _section_sentences(chunks, section, 30):
             year = extract_year(sentence)
             if year is None or year in seen_years:
                 continue
             seen_years.add(year)
-            timeline.append({"year": year, "text": sentence})
+            entry = {"year": year, "text": sentence}
+            if sentence.startswith(_CONTINUATION_STARTS):
+                continuations.append(entry)
+            else:
+                timeline.append(entry)
             if len(timeline) >= 6:
                 break
         if len(timeline) >= 6:
             break
+    # 时间轴不足两条时才用续写句补位（否则宁可从简）
+    if len(timeline) < 2:
+        timeline.extend(continuations[: 2 - len(timeline)])
     # 有年份的在前（升序），未记年的在后，保证 None 不参与比较
     timeline.sort(
         key=lambda item: (

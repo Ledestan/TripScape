@@ -72,7 +72,9 @@ export function JournalViewWindow({ journalId, onClose }: { journalId: number; o
               ))}
             </div>
           )}
-          <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{j.content || "（作者没有留下文字）"}</div>
+          {j.content?.trim() ? (
+            <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{j.content}</div>
+          ) : null}
 
           <div className="mt-3 flex items-center gap-2">
             <LikeButton targetType="journal" targetId={journalId} />

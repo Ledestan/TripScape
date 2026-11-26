@@ -50,6 +50,7 @@ import {
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { AssetMini, AssetThumb } from "./AssetPreview";
 import { cn } from "@/utils/cn";
 import { saveBlob } from "@/utils/save-file";
 import ComposeStage, { type ComposeStageHandle } from "./ComposeStage";
@@ -507,7 +508,7 @@ export default function CreationComposeWindow({
         />
       </label>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <label className="block">
           <span className="mb-1 block text-[11px] text-muted-foreground">圆角</span>
           <input
@@ -530,6 +531,15 @@ export default function CreationComposeWindow({
             className="h-7 w-full rounded-control border border-border/70 bg-background px-2 text-[12px] tabular-nums outline-none focus:border-primary/60"
           />
         </label>
+        <label className="block">
+          <span className="mb-1 block text-[11px] text-muted-foreground">边框色</span>
+          <input
+            type="color"
+            value={selected.borderColor}
+            onChange={(event) => patchSelected({ borderColor: event.target.value })}
+            className="h-7 w-full cursor-pointer rounded-control border border-border/70 bg-background"
+          />
+        </label>
       </div>
 
       <label className="flex items-center justify-between rounded-control border border-border/70 px-2 py-1.5 text-[11px]">
@@ -543,15 +553,103 @@ export default function CreationComposeWindow({
       </label>
 
       {selected.kind === "text" && (
-        <label className="block">
-          <span className="mb-1 block text-[11px] text-muted-foreground">文字</span>
-          <textarea
-            value={selected.text}
-            rows={3}
-            onChange={(event) => patchSelected({ text: event.target.value })}
-            className="w-full resize-y rounded-control border border-border/70 bg-background px-2 py-1.5 text-[12px] outline-none focus:border-primary/60"
-          />
-        </label>
+        <>
+          <label className="block">
+            <span className="mb-1 block text-[11px] text-muted-foreground">文字</span>
+            <textarea
+              value={selected.text}
+              rows={3}
+              onChange={(event) => patchSelected({ text: event.target.value })}
+              className="w-full resize-y rounded-control border border-border/70 bg-background px-2 py-1.5 text-[12px] outline-none focus:border-primary/60"
+            />
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block">
+              <span className="mb-1 block text-[11px] text-muted-foreground">字体</span>
+              <select
+                value={selected.fontFamily}
+                onChange={(event) => patchSelected({ fontFamily: event.target.value })}
+                className="h-7 w-full rounded-control border border-border/70 bg-background px-1.5 text-[12px] outline-none focus:border-primary/60"
+              >
+                <option value="serif">衬线</option>
+                <option value="system-ui">无衬线</option>
+                <option value="cursive">手写</option>
+                <option value="monospace">等宽</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-[11px] text-muted-foreground">对齐</span>
+              <select
+                value={selected.align}
+                onChange={(event) =>
+                  patchSelected({ align: event.target.value as "left" | "center" })
+                }
+                className="h-7 w-full rounded-control border border-border/70 bg-background px-1.5 text-[12px] outline-none focus:border-primary/60"
+              >
+                <option value="left">左对齐</option>
+                <option value="center">居中</option>
+              </select>
+            </label>
+          </div>
+        </>
+      )}
+
+      {selected.kind === "sticker" && (
+        <div className="grid grid-cols-2 gap-2">
+          <label className="block">
+            <span className="mb-1 block text-[11px] text-muted-foreground">贴纸样式</span>
+            <select
+              value={selected.variant}
+              onChange={(event) =>
+                patchSelected({ variant: event.target.value as typeof selected.variant })
+              }
+              className="h-7 w-full rounded-control border border-border/70 bg-background px-1.5 text-[12px] outline-none focus:border-primary/60"
+            >
+              <option value="star">星标</option>
+              <option value="heart">心形</option>
+              <option value="circle">圆点</option>
+              <option value="pin">定位</option>
+              <option value="burst">爆炸</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-[11px] text-muted-foreground">颜色</span>
+            <input
+              type="color"
+              value={selected.color}
+              onChange={(event) => patchSelected({ color: event.target.value })}
+              className="h-7 w-full cursor-pointer rounded-control border border-border/70 bg-background"
+            />
+          </label>
+        </div>
+      )}
+
+      {selected.kind === "tape" && (
+        <div className="grid grid-cols-2 gap-2">
+          <label className="block">
+            <span className="mb-1 block text-[11px] text-muted-foreground">胶带纹理</span>
+            <select
+              value={selected.pattern}
+              onChange={(event) =>
+                patchSelected({ pattern: event.target.value as typeof selected.pattern })
+              }
+              className="h-7 w-full rounded-control border border-border/70 bg-background px-1.5 text-[12px] outline-none focus:border-primary/60"
+            >
+              <option value="plain">纯色</option>
+              <option value="stripe">条纹</option>
+              <option value="dot">点纹</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-[11px] text-muted-foreground">颜色</span>
+            <input
+              type="color"
+              value={selected.color}
+              onChange={(event) => patchSelected({ color: event.target.value })}
+              className="h-7 w-full cursor-pointer rounded-control border border-border/70 bg-background"
+            />
+          </label>
+        </div>
       )}
 
       <div className="space-y-1">
@@ -596,14 +694,17 @@ export default function CreationComposeWindow({
               element.id === selectedId ? "bg-primary/15 text-primary" : "hover:bg-muted"
             )}
           >
-            <span className="truncate">
-              {element.kind === "text"
-                ? element.text.slice(0, 12) || "文字"
-                : element.kind === "photo"
-                  ? "照片"
-                  : element.kind === "sticker"
-                    ? "贴纸"
-                    : "胶带"}
+            <span className="flex min-w-0 items-center gap-1.5">
+              <AssetMini element={element} />
+              <span className="truncate">
+                {element.kind === "text"
+                  ? element.text.slice(0, 12) || "文字"
+                  : element.kind === "photo"
+                    ? "照片"
+                    : element.kind === "sticker"
+                      ? "贴纸"
+                      : "胶带"}
+              </span>
             </span>
             <span className="ml-2 shrink-0 tabular-nums text-muted-foreground">{element.z + 1}</span>
           </button>
@@ -714,18 +815,8 @@ export default function CreationComposeWindow({
                 }}
                 className="group overflow-hidden rounded-card border border-border/70 bg-background text-left transition hover:border-primary/50"
               >
-                <div className="flex h-16 items-center justify-center bg-muted">
-                  {asset.src ? (
-                    <img src={asset.src} alt="" className="h-full w-full object-cover" />
-                  ) : asset.kind === "sticker" ? (
-                    <span className="text-lg" style={{ color: asset.color }}>
-                      ★
-                    </span>
-                  ) : asset.kind === "tape" ? (
-                    <span className="h-3 w-12" style={{ background: asset.color || "#d6ba84" }} />
-                  ) : (
-                    <ImagePlus className="h-4 w-4 text-muted-foreground" />
-                  )}
+                <div className="flex h-16 items-center justify-center overflow-hidden bg-muted">
+                  <AssetThumb asset={asset} />
                 </div>
                 <div className="truncate px-1.5 py-1 text-[11px] text-muted-foreground group-hover:text-foreground">
                   {asset.label}

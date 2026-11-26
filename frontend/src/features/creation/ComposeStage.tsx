@@ -29,6 +29,7 @@ import {
   Image as KonvaImage,
   Layer,
   Line,
+  Path,
   Rect,
   RegularPolygon,
   Stage,
@@ -168,12 +169,25 @@ function StickerNode({ element }: { element: StickerElement }) {
   }
   if (element.variant === "heart") {
     return (
-      <Text x={0} y={0} width={element.width} height={element.height} text="❤" fontSize={size} fill={element.color} align="center" />
+      <Path
+        data="M20 34 C6 24 4 12 12 9 C16 7 19 10 20 13 C21 10 24 7 28 9 C36 12 34 24 20 34 Z"
+        scaleX={size / 40}
+        scaleY={size / 40}
+        fill={element.color}
+      />
     );
   }
   if (element.variant === "pin") {
     return (
-      <Text x={0} y={0} width={element.width} height={element.height} text="📍" fontSize={size * 0.82} align="center" />
+      <>
+        <Path
+          data="M20 3 C13 3 8 8 8 15 C8 24 20 37 20 37 C20 37 32 24 32 15 C32 8 27 3 20 3 Z"
+          scaleX={size / 40}
+          scaleY={size / 40}
+          fill={element.color}
+        />
+        <Circle x={half} y={(14 * size) / 40} radius={(4 * size) / 40} fill="rgba(255,255,255,0.85)" />
+      </>
     );
   }
   const points = element.variant === "burst" ? 12 : 5;
@@ -189,7 +203,6 @@ function StickerNode({ element }: { element: StickerElement }) {
     />
   );
 }
-
 function TapeNode({ element }: { element: TapeElement }) {
   const stripes = element.pattern === "plain" ? 0 : Math.max(2, Math.floor(element.width / 26));
   return (

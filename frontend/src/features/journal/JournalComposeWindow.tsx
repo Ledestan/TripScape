@@ -3,7 +3,7 @@
  * 创建日期: 2026-11-26
  *
  * 用 CreationComposeWindow 作为唯一的手账创作界面，完成:
- *     1. 标题 / 日期 / 公开开关 / 正文（通过 metaBar 注入到创作浮窗顶部）
+ *     1. 标题 / 日期 / 公开开关（通过 metaBar 注入到创作浮窗顶部；手账不写正文）
  *     2. 画布落库：composeToJournalCanvas 转成 /api/journals 的 canvas 结构
  *     3. 照片：素材栏直接上传（POST /uploads/image），并同步进 images
  *     4. 编辑已有手账：canvas 转回编辑器文档回填，标题等一并带回
@@ -25,6 +25,7 @@ import { toast } from "sonner";
 
 import { api, errMessage } from "@/api/client";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import CreationComposeWindow from "@/features/creation/CreationComposeWindow";
@@ -85,7 +86,7 @@ export default function JournalComposeWindow({
     landmarks?.find((item) => item.id === landmarkId)?.name ||
     "";
 
-  // 已有手账回填（标题、日期、公开、正文、地标）
+  // 已有手账回填（标题、日期、公开、地标）
   useEffect(() => {
     if (!existing) return;
     setLandmarkId(existing.landmark.id);
@@ -212,24 +213,12 @@ export default function JournalComposeWindow({
               className="h-8 text-[12px]"
             />
           </div>
-          <div className="w-[120px]">
+          <div className="w-[132px]">
             <label className="mb-1 block text-[10.5px] text-muted-foreground">旅行日期</label>
-            <Input
-              type="date"
+            <DatePicker
               value={visitedAt}
-              onChange={(event) => setVisitedAt(event.target.value)}
-              className="h-8 text-[12px]"
-            />
-          </div>
-          <div className="min-w-[160px] flex-1">
-            <label className="mb-1 block text-[10.5px] text-muted-foreground">
-              正文（可选，读者先看画布）
-            </label>
-            <Input
-              value={content}
-              onChange={(event) => setContent(event.target.value)}
-              placeholder="补一句当时的感受"
-              className="h-8 text-[12px]"
+              onChange={setVisitedAt}
+              testId="journal-compose-date"
             />
           </div>
           <label className="flex h-8 items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -245,10 +234,3 @@ export default function JournalComposeWindow({
   );
 }
 
-
-function formatYear(year: number | null): string {
-  if (year === null) return "未记年";
-  if (year < 0) return `公元前 ${-year} 年`;
-  if (year < 1000) return `公元 ${year} 年`;
-  return `${year} 年`;
-}

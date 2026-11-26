@@ -350,27 +350,45 @@ export const COMPOSE_TEMPLATES: ComposeTemplate[] = [
     },
   },
   {
-    id: "scrapbook",
-    name: "手账拼贴",
-    description: "两张照片斜贴 + 胶带 + 一句说明",
-    background: "#efe6d6",
+    id: "filmstrip",
+    name: "胶片条",
+    description: "三格竖排照片 + 上下胶带 + 一行片名",
+    background: "#14181f",
     build: () => {
-      const left = { ...createPhoto("", 60, 90), width: 300, height: 360, rotation: -4 };
-      const right = { ...createPhoto("", 360, 150), width: 300, height: 340, rotation: 5 };
-      const tape = { ...createTape("rgba(198,166,110,0.7)", 120, 84), width: 190 };
-      return [left, right, tape];
+      const top = { ...createPhoto("", 96, 96), width: 240, height: 168 };
+      const middle = { ...createPhoto("", 96, 292), width: 240, height: 168 };
+      const bottom = { ...createPhoto("", 96, 488), width: 240, height: 168 };
+      const capTop = { ...createTape("rgba(214,186,132,0.78)", 72, 66), width: 288, height: 26, rotation: -1 };
+      const capBottom = { ...createTape("rgba(214,186,132,0.78)", 72, 686), width: 288, height: 26, rotation: 1 };
+      const caption = {
+        ...createText("胶片上的三格：光、影、和那天下午", 96, 730),
+        fontSize: 20,
+        color: "#f5f2ea",
+        width: 460,
+      };
+      return [top, middle, bottom, capTop, capBottom, caption];
     },
   },
   {
-    id: "museum",
-    name: "展签式",
-    description: "留白 + 居中小图 + 说明文字",
-    background: "#f7f3ec",
+    id: "ticket",
+    name: "票根",
+    description: "大字票头 + 小图 + 撕线胶带，横构图",
+    background: "#f4ecdf",
     build: () => {
-      const photo = { ...createPhoto("", 250, 120), width: 220, height: 260 };
-      const title = { ...createText("展签标题", 90, 430), fontSize: 34, align: "center" as const, width: 540 };
-      const note = { ...createText("日期 / 地点 / 一句说明", 90, 500), fontSize: 16, align: "center" as const, width: 540 };
-      return [photo, title, note];
+      const tape = { ...createTape("rgba(198,166,110,0.72)", 60, 54), width: 220, height: 32, rotation: -2 };
+      const heading = { ...createText("入场券", 60, 110), fontSize: 46, width: 340 };
+      const sub = { ...createText("NO. 0001 · 一次旅行", 60, 178), fontSize: 15, color: "#6b5d4a" };
+      const photo = { ...createPhoto("", 420, 104), width: 230, height: 160, rotation: 3 };
+      const stamp = { ...createSticker("circle", "#b8863b", 600, 70), width: 56, height: 56 };
+      const divider = { ...createTape("rgba(120,90,60,0.28)", 60, 330), width: 520, height: 18 };
+      const note = {
+        ...createText("撕下这一半，留给下次", 60, 372),
+        fontSize: 18,
+        fontStyle: "italic" as const,
+        color: "#6b5d4a",
+        width: 420,
+      };
+      return [tape, heading, sub, photo, stamp, divider, note];
     },
   },
 ];

@@ -18,7 +18,8 @@ import GlobeControls from "@/features/globe/GlobeControls";
 import { JournalViewWindow } from "@/layouts/JournalViewWindow";
 // 地标评论/收藏浮窗与写手账浮窗（各自带关闭按钮）
 import LandmarkDetailWindow from "@/pages/LandmarkDetail";
-import JournalEditWindow from "@/pages/JournalEditWindow";
+// 写手账复用创作浮窗（konva 按需加载，不进首屏）
+const JournalComposeWindow = lazy(() => import("@/features/journal/JournalComposeWindow"));
 
 // TripScape 2.0 叙事层（2.0 本体，无开关）
 import NarrativeHud from "@/features/narrative/NarrativeHud";
@@ -40,6 +41,8 @@ export default function GlobeApp() {
   const [detailTab, setDetailTab] = useState<"comments" | "journals">("comments");
   const [journalLandmarkId, setJournalLandmarkId] = useState<number | null>(null);
   const [journalOpen, setJournalOpen] = useState(false);
+  // 从详情窗点"写手账"时先把详情窗收起，写完再放回来
+  const [returnDetailId, setReturnDetailId] = useState<number | null>(null);
 
   const enterLandmark = useNarrativeStore((s) => s.enterLandmark);
   const resetNarrative = useNarrativeStore((s) => s.reset);
@@ -188,6 +191,8 @@ export default function GlobeApp() {
           initialTab={detailTab}
           onClose={() => setDetailId(null)}
           onWriteJournal={(lmId) => {
+            setReturnDetailId(detailId);
+            setDetailId(null);
             setJournalLandmarkId(lmId);
             setJournalOpen(true);
           }}
@@ -196,13 +201,20 @@ export default function GlobeApp() {
 
       {/* 写手账浮窗（自带关闭；关闭后回到叙事档案） */}
       {journalOpen && (
-        <JournalEditWindow
-          presetLandmarkId={journalLandmarkId ?? undefined}
-          onClose={() => {
-            setJournalLandmarkId(null);
-            setJournalOpen(false);
-          }}
-        />
+        <Suspense fallback={null}>
+          <JournalComposeWindow
+            open
+            presetLandmarkId={journalLandmarkId ?? undefined}
+            onClose={() => {
+              setJournalLandmarkId(null);
+              setJournalOpen(false);
+              if (returnDetailId !== null) {
+                setDetailId(returnDetailId);
+                setReturnDetailId(null);
+              }
+            }}
+          />
+        </Suspense>
       )}
 
       {/* 全局搜索浮窗（"显示更多"打开，带上搜索词） */}

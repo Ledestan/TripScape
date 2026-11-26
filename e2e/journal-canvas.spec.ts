@@ -2,16 +2,17 @@
  * 行旅识景 TripScape / e2e/journal-canvas.spec
  * 创建日期: 2026-11-26
  *
- * 手账画布编辑器的端到端证据，覆盖:
- *     1. 从地标页打开写手账，画布 3:4 可用（加文字 / 加碎片）
- *     2. 发布后画布 JSON 落到 /api/journals，元素按类型存下来
- *     3. 图层计数与后端结构一致（2 个元素、ratio=3:4）
+ * 写手账（创作浮窗）的端到端证据，覆盖:
+ *     1. 从地标详情点「写手账」打开创作浮窗（不再走旧版表单）
+ *     2. 加文字 + 直接在浮窗里上传照片 → 画布计数增加
+ *     3. 保存后画布 JSON 落到 /api/journals，元素类型齐全
+ *     4. 查看端能把画布渲染出来
  */
 
 import { test, expect } from "@playwright/test";
 
-test.describe("S2 手账画布", () => {
-  test("加文字与碎片后发布，画布 JSON 存进手账", async ({ page, request }) => {
+test.describe("S2 写手账（创作浮窗）", () => {
+  test("从地标写手账：加文字、上传照片、保存并可查看", async ({ page, request }) => {
     const spots = await (await request.get("/api/landmarks/spots")).json();
     const landmark = spots.data[0];
 
@@ -24,23 +25,22 @@ test.describe("S2 手账画布", () => {
 
     await page.goto(`/landmarks/${landmark.id}`);
     await page.waitForSelector("#boot-screen", { state: "detached", timeout: 30_000 });
-    await page.waitForTimeout(1200);
+    await expect(page.getByTestId("narrative-layer-landmark")).toBeVisible({ timeout: 30_000 });
 
-    // 档案里的"写手账"入口由事件驱动；这里直接派发，等价于点按钮
-    await page.evaluate((id) => {
-      window.dispatchEvent(new CustomEvent("ts:open-journal-edit", { detail: id }));
-    }, landmark.id);
+    // 档案 → 手账页签 → 写手账
+    await page.getByTestId("narrative-open-journal-edit").click();
+    await expect(page.getByTestId("landmark-detail-window")).toBeVisible({ timeout: 10_000 });
+    await page.getByRole("button", { name: "写手账" }).click();
 
-    await expect(page.getByText("手账画布（3:4）")).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText("3:4 · 0/40")).toBeVisible();
+    const compose = page.getByRole("dialog", { name: /写手账创作浮窗/ });
+    await expect(compose).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText("0/60 · 3:4")).toBeVisible();
 
-    await page.getByRole("button", { name: "文字" }).click();
-    await expect(page.getByText("3:4 · 1/40")).toBeVisible();
+    // 加一段文字
+    await page.getByRole("button", { name: "加文字" }).click();
+    await expect(page.getByText("1/60 · 3:4")).toBeVisible();
 
-    await page.getByRole("button", { name: "碎片" }).click();
-    await expect(page.getByText("3:4 · 2/40")).toBeVisible();
-
-    // 直接在画布里上传照片（新版写手账不再走旧版九宫格）
+    // 在浮窗里直接上传一张照片，再从素材栏点进画布
     const png = Buffer.from(
       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=",
       "base64"
@@ -50,12 +50,15 @@ test.describe("S2 手账画布", () => {
       mimeType: "image/png",
       buffer: png,
     });
-    await expect(page.getByText("3:4 · 3/40")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole("button", { name: "trip.png" })).toBeVisible({ timeout: 20_000 });
+    await page.getByRole("button", { name: "trip.png" }).click();
+    await expect(page.getByText("2/60 · 3:4")).toBeVisible();
 
-    const title = `画布 e2e ${Date.now()}`;
-    await page.locator('input[maxlength="128"]').first().fill(title);
-    await page.getByRole("button", { name: /发布手账/ }).click();
-    await expect(page.getByText("手账已发布，足迹 +1")).toBeVisible({ timeout: 20_000 });
+    // 标题 + 保存
+    const title = `拼贴手账 ${Date.now()}`;
+    await page.getByTestId("journal-compose-title").fill(title);
+    await page.getByRole("button", { name: "保存草稿" }).click();
+    await expect(page.getByText("已保存")).toBeVisible({ timeout: 20_000 });
 
     const token = await page.evaluate(() => {
       const raw = localStorage.getItem("tripscape-auth");
@@ -74,13 +77,13 @@ test.describe("S2 手账画布", () => {
     ).json();
     const canvas = detail.data.canvas as { ratio: string; elements: { type: string }[] };
     expect(canvas.ratio).toBe("3:4");
-    expect(canvas.elements.map((element) => element.type)).toEqual(["text", "fragment", "photo"]);
+    expect(canvas.elements.map((element) => element.type)).toEqual(["text", "photo"]);
 
-    // 查看端要能把画布渲染出来（否则存了也看不见）
+    // 查看端渲染画布
     await page.evaluate((id) => {
       window.dispatchEvent(new CustomEvent("ts:open-journal-view", { detail: id }));
     }, created!.id);
-    await expect(page.getByRole("dialog")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("dialog").last()).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('[role="dialog"] canvas').first()).toBeVisible({ timeout: 10_000 });
   });
 });

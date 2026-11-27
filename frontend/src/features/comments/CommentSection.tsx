@@ -36,6 +36,8 @@ export interface CommentNode {
   parent_id: number | null;
   reply_to_id?: number | null;
   reply_to_nickname?: string;
+  like_count?: number;
+  liked?: boolean;
   content: string;
   created_at: string;
   replies?: CommentNode[];
@@ -163,7 +165,11 @@ export default function CommentSection({
             <div className="mt-1 flex items-center gap-2 text-[10.5px] text-muted-foreground">
               <button
                 type="button"
-                className="flex items-center gap-0.5 hover:text-rose-500"
+                data-testid="comment-like"
+                aria-pressed={!!node.liked}
+                className={`flex items-center gap-0.5 transition hover:text-rose-500 ${
+                  node.liked ? "text-rose-500" : ""
+                }`}
                 onClick={async () => {
                   if (!requireLogin()) return;
                   try {
@@ -174,8 +180,8 @@ export default function CommentSection({
                   }
                 }}
               >
-                <Heart className="h-3 w-3" />
-                赞
+                <Heart className={`h-3 w-3 ${node.liked ? "fill-rose-500" : ""}`} />
+                {node.like_count ? node.like_count : "赞"}
               </button>
               <button
                 type="button"

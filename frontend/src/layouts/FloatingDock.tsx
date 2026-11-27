@@ -38,6 +38,13 @@ export default function FloatingDock() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const [profileOpen, setProfileOpen] = useState(false);
+  // 消息中心等位置通过事件打开个人主页，避免各自维护一份开关
+  useEffect(() => {
+    const onOpenProfile = () => setProfileOpen(true);
+    window.addEventListener("ts:open-profile", onOpenProfile);
+    return () => window.removeEventListener("ts:open-profile", onOpenProfile);
+  }, []);
+
 
   const [settingsOpen, setSettingsOpen] = useState(false);
 

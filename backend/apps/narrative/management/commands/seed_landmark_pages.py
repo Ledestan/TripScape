@@ -32,7 +32,9 @@ from services import landmark_pages
 class Command(BaseCommand):
     """生成地标页面文件（幂等）。"""
 
-    help = "把文章语料生成为地标页面文件（backend/content/landmarks/*.json），可重复执行"
+    help = (
+        "把文章语料生成为地标页面文件（backend/content/landmarks/*.json），可重复执行"
+    )
 
     def add_arguments(self, parser):
         """提供 --verbose 查看逐条生成日志。"""

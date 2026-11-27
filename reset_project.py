@@ -265,7 +265,9 @@ def main() -> None:
         epilog="示例: python reset_project.py --yes --no-frontend",
     )
     parser.add_argument("--yes", action="store_true", help="跳过确认，直接执行")
-    parser.add_argument("--skip-db", action="store_true", help="只清运行产物，不动数据库")
+    parser.add_argument(
+        "--skip-db", action="store_true", help="只清运行产物，不动数据库"
+    )
     parser.add_argument("--no-frontend", action="store_true", help="不重建前端产物")
     parser.add_argument("--rebuild-index", action="store_true", help="强制重建问答索引")
     args = parser.parse_args()

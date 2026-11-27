@@ -128,8 +128,8 @@ class Command(BaseCommand):
             from apps.comments.models import Comment, CommentReport
             from apps.comments.models_like import Like
             from apps.journals.models import Footprint, Journal, JournalImage
-            from apps.narrative.models import JournalCard, NarrativeCard
             from apps.landmarks.models import QAContext, RecognitionRecord, UserFavorite
+            from apps.narrative.models import JournalCard, NarrativeCard
             from apps.notifications.models import Notification
             from apps.shares.models import ShareLink
 
@@ -292,7 +292,9 @@ class Command(BaseCommand):
 
         # ------ 收尾自检：数量与落盘文件对不上时明确提示，避免"看起来成功" ------
         landmark_total = Landmark.objects.count()
-        page_files = list((BASE_DIR / "backend" / "content" / "landmarks").glob("*.json"))
+        page_files = list(
+            (BASE_DIR / "backend" / "content" / "landmarks").glob("*.json")
+        )
         image_files = list(static_dir.glob("*.jpg"))
         self.stdout.write("8) 初始状态自检 ...")
         self.stdout.write(

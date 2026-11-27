@@ -35,7 +35,11 @@ def notify_reply(replier, parent_comment, new_comment):
         type_="reply",
         title=f"{replier.nickname or replier.username} 回复了你的评论",
         content=new_comment.content[:200],
-        link=f"/landmarks/{parent_comment.landmark_id}?tab=comments",
+        link=(
+            f"/journals/{new_comment.journal_id}"
+            if new_comment.journal_id
+            else f"/landmarks/{parent_comment.landmark_id}?tab=comments"
+        ),
     )
 
 

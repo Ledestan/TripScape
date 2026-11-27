@@ -495,7 +495,7 @@ export default function MessageBar({
 
       {/* 通知 Tab：全部 / 未读 两块 */}
       {tab === "notifications" && (
-        <NotificationTab token={token} onRead={() => refetchUnread()} />
+        <NotificationTab token={token} onRead={() => refetchUnread()} onClose={() => setOpen(false)} />
       )}
 
       {/* 问答 Tab：会话流 + 输入 */}
@@ -705,7 +705,15 @@ function HistoryList() {
 /* ================================================================== */
 /* 通知 Tab：全部 / 未读 两块                                          */
 /* ================================================================== */
-function NotificationTab({ token, onRead }: { token: string | null; onRead: () => void }) {
+function NotificationTab({
+  token,
+  onRead,
+  onClose,
+}: {
+  token: string | null;
+  onRead: () => void;
+  onClose: () => void;
+}) {
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const qc = useQueryClient();
 
@@ -730,6 +738,45 @@ function NotificationTab({ token, onRead }: { token: string | null; onRead: () =
       onRead();
     },
   });
+
+  /** 通知跳转：按 link 决定打开手账、地标评论页、个人主页或编辑页 */
+  const openNotification = (n: any) => {
+    if (!n.is_read) markOne.mutate(n.id);
+    const link = String(n.link || "");
+    const journal = link.match(/^\/journals\/(\d+)/);
+    const landmark = link.match(/^\/landmarks\/(\d+)/);
+    const edit = link.match(/^\/journal_edit\/(\d+)/);
+
+    onClose();
+    if (journal) {
+      window.dispatchEvent(
+        new CustomEvent("ts:open-journal-view", { detail: Number(journal[1]) })
+      );
+      return;
+    }
+    if (landmark) {
+      window.dispatchEvent(
+        new CustomEvent("ts:open-landmark-window", {
+          detail: {
+            landmarkId: Number(landmark[1]),
+            tab: link.includes("tab=comments") ? "comments" : undefined,
+          },
+        })
+      );
+      return;
+    }
+    if (edit) {
+      window.dispatchEvent(
+        new CustomEvent("ts:edit-journal", { detail: { journalId: Number(edit[1]) } })
+      );
+      return;
+    }
+    if (link.startsWith("/profile")) {
+      window.dispatchEvent(new CustomEvent("ts:open-profile"));
+      return;
+    }
+    if (link && link !== "/") window.location.assign(link);
+  };
 
   if (!token) {
     return (
@@ -774,7 +821,16 @@ function NotificationTab({ token, onRead }: { token: string | null; onRead: () =
           list.map((n: any) => (
             <div
               key={n.id}
-              className={`flex items-start gap-2 rounded-xl border p-2.5 text-sm ${
+              role="button"
+              tabIndex={0}
+              onClick={() => openNotification(n)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  openNotification(n);
+                }
+              }}
+              className={`flex cursor-pointer items-start gap-2 rounded-xl border p-2.5 text-sm transition hover:border-primary/40 ${
                 n.is_read ? "border-transparent opacity-70" : "border-primary/25 bg-accent/40"
               }`}
             >
@@ -798,7 +854,10 @@ function NotificationTab({ token, onRead }: { token: string | null; onRead: () =
               </div>
               {!n.is_read && (
                 <button
-                  onClick={() => markOne.mutate(n.id)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    markOne.mutate(n.id);
+                  }}
                   className="shrink-0 self-center rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                   title="标为已读"
                 >

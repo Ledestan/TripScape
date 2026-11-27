@@ -40,9 +40,30 @@ class ReportIn(Schema):
 # ----------------------------------------------------------------------
 
 
-def _tree(records):
-    """把同一目标的评论整理成树：顶级按时间倒序，回复按时间正序。"""
+def _tree(records, viewer=None):
+    """把同一目标的评论整理成树：顶级按时间倒序，回复按时间正序。
+
+    点赞数与我是否点过赞一次性批量查出来：逐条查会让列表变成 N+1。
+    """
     from collections import defaultdict
+
+    from apps.comments.models_like import Like
+    from django.db.models import Count
+
+    ids = [record.id for record in records]
+    counts = dict(
+        Like.objects.filter(target_type="comment", target_id__in=ids)
+        .values("target_id")
+        .annotate(total=Count("id"))
+        .values_list("target_id", "total")
+    )
+    liked: set[int] = set()
+    if getattr(viewer, "is_authenticated", False):
+        liked = set(
+            Like.objects.filter(
+                user=viewer, target_type="comment", target_id__in=ids
+            ).values_list("target_id", flat=True)
+        )
 
     grouped = defaultdict(list)
     for record in records:
@@ -51,17 +72,19 @@ def _tree(records):
     for children in grouped.values():
         children.sort(key=lambda item: item.created_at)
 
+    def node_of(record):
+        node = record.as_dict()
+        node["like_count"] = counts.get(record.id, 0)
+        node["liked"] = record.id in liked
+        node["replies"] = build(record.id)
+        return node
+
     def build(parent_id=None):
-        nodes = []
-        for record in grouped.get(parent_id, []):
-            node = record.as_dict()
-            node["replies"] = build(record.id)
-            nodes.append(node)
-        return nodes
+        return [node_of(record) for record in grouped.get(parent_id, [])]
 
     top = grouped.get(None, [])
     top.sort(key=lambda item: item.created_at, reverse=True)
-    return [{**record.as_dict(), "replies": build(record.id)} for record in top]
+    return [node_of(record) for record in top]
 
 
 @router.get("/landmark/{landmark_id}", summary="地标评论（公开）", auth=OptionalAuth())
@@ -76,7 +99,7 @@ def landmark_comments(request, landmark_id: int):
         .select_related("user", "landmark")
         .order_by("created_at")[:300]
     )
-    return {"success": True, "data": _tree(records)}
+    return {"success": True, "data": _tree(records, getattr(request, "auth", None))}
 
 
 @router.get(
@@ -107,7 +130,7 @@ def journal_comments(request, journal_id: int):
         .select_related("user", "journal")
         .order_by("created_at")[:300]
     )
-    return {"success": True, "data": _tree(records)}
+    return {"success": True, "data": _tree(records, viewer)}
 
 
 @router.post("/", summary="发表评论")

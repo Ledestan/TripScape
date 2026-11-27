@@ -90,7 +90,11 @@ def toggle_like(request, payload: LikeIn):
                         else (
                             f"/landmarks/{payload.target_id}"
                             if payload.target_type == "article"
-                            else ""
+                            else (
+                                f"/journals/{obj.journal_id}"
+                                if getattr(obj, "journal_id", None)
+                                else f"/landmarks/{obj.landmark_id}?tab=comments"
+                            )
                         )
                     ),
                 )

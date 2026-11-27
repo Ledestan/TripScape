@@ -46,6 +46,7 @@ def demo_password(username: str) -> str:
     """演示账号密码规则：用户名 + 123456，便于评委直接登录。"""
     return f"{username}{DEMO_PASSWORD_SUFFIX}"
 
+
 # 复用地标 / 徽章 / 内容素材（与 reset_project 的初始化口径保持一致）
 sys.path.insert(0, str(ROOT))
 import reset_project as base  # noqa: E402
@@ -189,9 +190,17 @@ def seed_demo() -> dict[str, int]:
             raise SystemExit(f"缺少地标种子: {target_id}")
         return item
 
-    def journal(user: User, target_id: str, title: str, note: str, visited: date,
-                accent: str, variant: str, is_public: bool = True,
-                is_draft: bool = False) -> Journal:
+    def journal(
+        user: User,
+        target_id: str,
+        title: str,
+        note: str,
+        visited: date,
+        accent: str,
+        variant: str,
+        is_public: bool = True,
+        is_draft: bool = False,
+    ) -> Journal:
         lm = landmark(target_id)
         ok, result = journal_service.create_journal(
             user=user,
@@ -212,48 +221,118 @@ def seed_demo() -> dict[str, int]:
     # 1. 已发布的手账：公开内容全部挂在两个虚构旅行者名下，
     #    演示账号只保留自己的记录，避免出现"演示用户和林晚互相评论"的痕迹
     published = [
-        journal(linwan, "EiffelTower", "在巴黎的第七区醒来",
-                "清晨六点的战神广场几乎没有游客，铁塔的影子刚好落在草坪上。",
-                date(2026, 4, 12), "#d9a441", "star"),
-        journal(linwan, "Petra", "玫瑰色的峡谷",
-                "穿过蛇道时两侧岩壁有一人多高，尽头卡兹尼神殿只露出一条金色的缝。",
-                date(2026, 4, 25), "#c05a4a", "heart"),
-        journal(linwan, "LibertyStatue", "自由女神的背面",
-                "从斯塔滕岛渡轮回望，她在逆光里只剩轮廓，比正面更像一座灯塔。",
-                date(2026, 1, 9), "#8fa6ad", "circle"),
-        journal(linwan, "Potala", "布达拉宫的第一场雪",
-                "雪落在红宫的墙面上不化，远远看像有人给宫殿描了一道白边。",
-                date(2026, 1, 21), "#3d7a68", "pin"),
-        journal(zhouyu, "RomanColosseum", "斗兽场的黄昏",
-                "闭馆前四十分钟，拱门里的光变成橘色，游客散得只剩脚步声。",
-                date(2026, 5, 6), "#d9a441", "star"),
-        journal(zhouyu, "Qomolangma", "珠峰大本营的星空",
-                "夜里零下十几度，银河从山脊后面升起来，曝光三十秒才勉强拍到。",
-                date(2026, 6, 11), "#5b6b3d", "burst"),
-        journal(zhouyu, "TajMahal", "白色大理石上的晨光",
-                "从西门进去，先看到的是倒影池，泰姬陵在水里比在天上更安静。",
-                date(2026, 2, 18), "#c05a4a", "heart"),
-        journal(zhouyu, "GreatWall", "长城上的风",
-                "从北八楼往回走，城墙像一条灰线挂在山脊上，风把帽子吹跑了两次。",
-                date(2026, 3, 30), "#8a6d3b", "pin"),
+        journal(
+            linwan,
+            "EiffelTower",
+            "在巴黎的第七区醒来",
+            "清晨六点的战神广场几乎没有游客，铁塔的影子刚好落在草坪上。",
+            date(2026, 4, 12),
+            "#d9a441",
+            "star",
+        ),
+        journal(
+            linwan,
+            "Petra",
+            "玫瑰色的峡谷",
+            "穿过蛇道时两侧岩壁有一人多高，尽头卡兹尼神殿只露出一条金色的缝。",
+            date(2026, 4, 25),
+            "#c05a4a",
+            "heart",
+        ),
+        journal(
+            linwan,
+            "LibertyStatue",
+            "自由女神的背面",
+            "从斯塔滕岛渡轮回望，她在逆光里只剩轮廓，比正面更像一座灯塔。",
+            date(2026, 1, 9),
+            "#8fa6ad",
+            "circle",
+        ),
+        journal(
+            linwan,
+            "Potala",
+            "布达拉宫的第一场雪",
+            "雪落在红宫的墙面上不化，远远看像有人给宫殿描了一道白边。",
+            date(2026, 1, 21),
+            "#3d7a68",
+            "pin",
+        ),
+        journal(
+            zhouyu,
+            "RomanColosseum",
+            "斗兽场的黄昏",
+            "闭馆前四十分钟，拱门里的光变成橘色，游客散得只剩脚步声。",
+            date(2026, 5, 6),
+            "#d9a441",
+            "star",
+        ),
+        journal(
+            zhouyu,
+            "Qomolangma",
+            "珠峰大本营的星空",
+            "夜里零下十几度，银河从山脊后面升起来，曝光三十秒才勉强拍到。",
+            date(2026, 6, 11),
+            "#5b6b3d",
+            "burst",
+        ),
+        journal(
+            zhouyu,
+            "TajMahal",
+            "白色大理石上的晨光",
+            "从西门进去，先看到的是倒影池，泰姬陵在水里比在天上更安静。",
+            date(2026, 2, 18),
+            "#c05a4a",
+            "heart",
+        ),
+        journal(
+            zhouyu,
+            "GreatWall",
+            "长城上的风",
+            "从北八楼往回走，城墙像一条灰线挂在山脊上，风把帽子吹跑了两次。",
+            date(2026, 3, 30),
+            "#8a6d3b",
+            "pin",
+        ),
         # 演示账号不进入公开内容：公开页只出现两个虚构旅行者的手账
-        journal(demo, "MachuPicchu", "云雾散开的那十五分钟",
-                "上山时整片山谷都是白的，等到十点，雾突然退开，石墙一层层露出来。",
-                date(2026, 3, 2), "#3d7a68", "pin", is_public=False),
+        journal(
+            demo,
+            "MachuPicchu",
+            "云雾散开的那十五分钟",
+            "上山时整片山谷都是白的，等到十点，雾突然退开，石墙一层层露出来。",
+            date(2026, 3, 2),
+            "#3d7a68",
+            "pin",
+            is_public=False,
+        ),
     ]
 
     # 2. 草稿与私密：演示账号自己用，检查"编辑 / 草稿"链路
-    journal(demo, "Huangguoshu", "黄果树：还没写完的一页",
-            "水声很大，照片先放上来，文字周末补。",
-            date(2026, 6, 20), "#8a6d3b", "star", is_draft=True)
+    journal(
+        demo,
+        "Huangguoshu",
+        "黄果树：还没写完的一页",
+        "水声很大，照片先放上来，文字周末补。",
+        date(2026, 6, 20),
+        "#8a6d3b",
+        "star",
+        is_draft=True,
+    )
 
-    private = journal(demo, "GizaPyramids", "只给自己看的一张",
-                      "这次没有发朋友圈，留个私密记录。",
-                      date(2025, 11, 6), "#6b4a6a", "heart", is_public=False)
+    private = journal(
+        demo,
+        "GizaPyramids",
+        "只给自己看的一张",
+        "这次没有发朋友圈，留个私密记录。",
+        date(2025, 11, 6),
+        "#6b4a6a",
+        "heart",
+        is_public=False,
+    )
 
     # 3. 评论：只在虚构旅行者之间发生（演示账号不参与）
-    def comment(user: User, content: str, journal_id=None, landmark_id=None,
-                parent_id=None):
+    def comment(
+        user: User, content: str, journal_id=None, landmark_id=None, parent_id=None
+    ):
         ok, result = comment_service.create_comment(
             user=user,
             landmark_id=landmark_id,
@@ -265,23 +344,44 @@ def seed_demo() -> dict[str, int]:
             raise SystemExit(f"评论创建失败: {result}")
         return result
 
-    first = comment(zhouyu, "这张的色调太喜欢了，像旧胶片。", journal_id=published[0].id)
-    reply = comment(linwan, "谢谢！那天正好有雾，光被压得很软。",
-                    journal_id=published[0].id, parent_id=first.id)
-    comment(zhouyu, "同感，尤其是塞纳河那一段。",
-            journal_id=published[0].id, parent_id=reply.id)
+    first = comment(
+        zhouyu, "这张的色调太喜欢了，像旧胶片。", journal_id=published[0].id
+    )
+    reply = comment(
+        linwan,
+        "谢谢！那天正好有雾，光被压得很软。",
+        journal_id=published[0].id,
+        parent_id=first.id,
+    )
+    comment(
+        zhouyu,
+        "同感，尤其是塞纳河那一段。",
+        journal_id=published[0].id,
+        parent_id=reply.id,
+    )
 
-    comment(linwan, "第一次上去的时候腿都软了，但真的值得。",
-            landmark_id=landmark("EiffelTower").id)
+    comment(
+        linwan,
+        "第一次上去的时候腿都软了，但真的值得。",
+        landmark_id=landmark("EiffelTower").id,
+    )
     comment(zhouyu, "蛇道尽头那一下真的会屏住呼吸。", journal_id=published[1].id)
     comment(linwan, "倒影池那张是几点拍的？", journal_id=published[6].id)
     comment(zhouyu, "清晨五点半，再晚就有人了。", journal_id=published[6].id)
 
     question = comment(linwan, "珠峰那张银河是几点拍的？", journal_id=published[5].id)
-    answer = comment(zhouyu, "凌晨两点多，风小的时候。",
-                     journal_id=published[5].id, parent_id=question.id)
-    comment(linwan, "这个点我也试过，得等风停。",
-            journal_id=published[5].id, parent_id=answer.id)
+    answer = comment(
+        zhouyu,
+        "凌晨两点多，风小的时候。",
+        journal_id=published[5].id,
+        parent_id=question.id,
+    )
+    comment(
+        linwan,
+        "这个点我也试过，得等风停。",
+        journal_id=published[5].id,
+        parent_id=answer.id,
+    )
 
     # 4. 点赞：只发生在虚构旅行者之间，看板有数字但不制造"自己赞自己"
     def like(user: User, target_type: str, target_id: int) -> None:
@@ -328,7 +428,7 @@ def seed_demo() -> dict[str, int]:
             src = element.get("src") if isinstance(element, dict) else ""
             if not src or not src.startswith("/lmimg/"):
                 continue
-            target = ROOT / "frontend" / "public" / "landmarks" / src[len("/lmimg/"):]
+            target = ROOT / "frontend" / "public" / "landmarks" / src[len("/lmimg/") :]
             if not target.exists():
                 missing_photos.append(src)
 
@@ -385,8 +485,10 @@ def main() -> None:
     print(f"  评论: {stats['comments']} 条 · 点赞: {stats['likes']} 次")
     print(f"  分享链接: /share/{stats['share']}")
     if stats["missing_photos"]:
-        print(f"  [警告] 有 {len(stats['missing_photos'])} 张画布图片找不到: "
-              f"{', '.join(stats['missing_photos'][:5])}")
+        print(
+            f"  [警告] 有 {len(stats['missing_photos'])} 张画布图片找不到: "
+            f"{', '.join(stats['missing_photos'][:5])}"
+        )
     else:
         print("  画布图片: 全部可访问")
     print("启动: python backend/manage.py runserver 127.0.0.1:8000")

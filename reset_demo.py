@@ -39,7 +39,12 @@ sys.dont_write_bytecode = True
 
 ROOT = Path(__file__).resolve().parent
 BACKEND = ROOT / "backend"
-DEMO_PASSWORD = "tripscape-demo"
+DEMO_PASSWORD_SUFFIX = "123456"
+
+
+def demo_password(username: str) -> str:
+    """演示账号密码规则：用户名 + 123456，便于评委直接登录。"""
+    return f"{username}{DEMO_PASSWORD_SUFFIX}"
 
 # 复用地标 / 徽章 / 内容素材（与 reset_project 的初始化口径保持一致）
 sys.path.insert(0, str(ROOT))
@@ -160,18 +165,23 @@ def seed_demo() -> dict[str, int]:
         share_service,
     )
 
-    def make_user(username: str, nickname: str, bio: str) -> User:
+    def make_user(username: str, nickname: str, bio: str, password: str | None) -> User:
+        """密码由调用方决定；重复执行时也重置为约定密码，避免"上次改过"的意外。"""
         user = User.objects.filter(username=username).first()
         if user:
+            if password:
+                user.set_password(password)
+                user.save(update_fields=["password"])
             return user
         user = User.objects.create_user(
-            username=username, password=DEMO_PASSWORD, nickname=nickname, bio=bio
+            username=username, password=password or None, nickname=nickname, bio=bio
         )
         return user
 
-    demo = make_user("demo", "演示用户", "把走过的路收进手账。")
-    linwan = make_user("linwan", "林晚", "在黄昏里找机位。")
-    zhouyu = make_user("zhouyu", "周屿", "一年去一次高原。")
+    # demo 沿用 init_tripscape 的种子密码；两个虚构旅行者用固定规则，方便现场登录
+    demo = make_user("demo", "演示用户", "把走过的路收进手账。", None)
+    linwan = make_user("linwan", "林晚", "在黄昏里找机位。", demo_password("linwan"))
+    zhouyu = make_user("zhouyu", "周屿", "一年去一次高原。", demo_password("zhouyu"))
 
     def landmark(target_id: str) -> Landmark:
         item = Landmark.objects.filter(target_id=target_id).first()
@@ -368,8 +378,9 @@ def main() -> None:
     for title, cost in base.TIMINGS:
         print(f"[耗时] {title}: {cost:.2f} 秒")
     print(f"展示状态就绪，总运行时间: {time.time() - overall:.2f} 秒")
-    print("  账号: demo（沿用种子密码）· linwan / zhouyu（密码 "
-          f"{DEMO_PASSWORD}）")
+    print("  账号: demo（沿用种子密码）")
+    print(f"        linwan / {demo_password('linwan')}")
+    print(f"        zhouyu / {demo_password('zhouyu')}")
     print(f"  手账: {stats['journals']} 篇（草稿 {stats['drafts']} 篇）")
     print(f"  评论: {stats['comments']} 条 · 点赞: {stats['likes']} 次")
     print(f"  分享链接: /share/{stats['share']}")

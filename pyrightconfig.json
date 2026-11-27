@@ -1,0 +1,24 @@
+{
+  "include": [
+    "backend",
+    "scripts",
+    "reset_project.py",
+    "reset_demo.py",
+    "desktop.py"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/.venv",
+    "**/__pycache__",
+    "backend/content",
+    "data",
+    "models",
+    "runtime",
+    "frontend"
+  ],
+  "extraPaths": ["backend"],
+  "pythonVersion": "3.13",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": "warning",
+  "reportMissingModuleSource": "none"
+}

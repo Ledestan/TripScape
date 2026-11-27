@@ -12,7 +12,6 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
-.pytest_cache/
 
 # ========== 环境与密钥 ==========
 .env
@@ -34,9 +33,6 @@ frontend/dist/
 frontend/.vite/
 
 # ========== 测试产物 ==========
-playwright-report/
-test-results/
-frontend/playwright/.cache/
 
 # ========== PyInstaller 产物 ==========
 build/

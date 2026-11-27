@@ -170,7 +170,7 @@ def clean_runtime() -> None:
 def reset_database() -> None:
     """删除本地 SQLite 库后重新迁移与播种，或让 init_tripscape 重建 MySQL 业务表。"""
     started = time.time()
-    print_banner("第 2 步 / 重置数据库")
+    print_banner("第 3 步 / 重置数据库")
 
     if uses_sqlite():
         db_path = ROOT / "runtime" / "tripscape.db"
@@ -202,7 +202,7 @@ def reset_database() -> None:
 def ensure_qa_index(force: bool) -> None:
     """问答索引缺失或要求强制时重建；已存在则跳过，避免每次重置都跑 40 秒。"""
     started = time.time()
-    print_banner("第 3 步 / 问答索引")
+    print_banner("第 2 步 / 问答索引")
 
     index_dir = ROOT / "runtime" / "index"
     chunks = index_dir / "qa_chunks.json"
@@ -281,9 +281,10 @@ def main() -> None:
     # 先补字节码钩子，再跑任何子进程，避免重置过程自己产出缓存
     ensure_no_bytecode_hook()
     clean_runtime()
+    # 先建索引再重建库：init_tripscape 生成地标页面时要读 runtime/index
+    ensure_qa_index(force=args.rebuild_index)
     if not args.skip_db:
         reset_database()
-    ensure_qa_index(force=args.rebuild_index)
     if not args.no_frontend:
         build_frontend()
 

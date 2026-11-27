@@ -191,7 +191,7 @@ class Command(BaseCommand):
 
         # ---------------- 徽章种子 ----------------
         # 数据来自 scripts/db/seed_badges.sql（新增徽章在文件里加一行即可）。
-        self.stdout.write("4) 写入徽章种子 ...")
+        self.stdout.write("3) 写入徽章种子 ...")
         for code, name, category, threshold, icon, desc in _parse_sqlite_values(
             BASE_DIR / "scripts" / "db" / "seed_badges.sql"
         ):
@@ -209,14 +209,14 @@ class Command(BaseCommand):
 
         # ---------------- 敏感词种子 ----------------
         # 基线词表来自 scripts/db/seed_sensitive_words.sql，运行期可在后台增删。
-        self.stdout.write("5) 写入敏感词种子 ...")
+        self.stdout.write("4) 写入敏感词种子 ...")
         for (word,) in _parse_sqlite_values(
             BASE_DIR / "scripts" / "db" / "seed_sensitive_words.sql"
         ):
             SensitiveWord.objects.get_or_create(word=word)
 
         # ---------------- 管理员账号 ----------------
-        self.stdout.write("6) 创建种子账号 ...")
+        self.stdout.write("5) 创建种子账号 ...")
         User = get_user_model()
         if not User.objects.filter(username="admin").exists():
             User.objects.create_superuser(
@@ -235,36 +235,49 @@ class Command(BaseCommand):
             )
             self.stdout.write("   演示用户 demo / demo123456")
 
-        # ---------------- 百科图片 ----------------
-        self.stdout.write("7) 挑选地标百科图片（data/valid 中取样）...")
-        picked = 0
-        valid_dir = BASE_DIR / "data" / "valid"
-        if valid_dir.exists():
-            import shutil
+        # ------ 百科图片（以 public/landmarks 为准，缺图时从 data/<target_id> 补） ------
+        self.stdout.write("6) 校验地标百科图片（frontend/public/landmarks）...")
+        import shutil
 
-            static_dir = BASE_DIR / "frontend" / "public" / "landmarks"
-            static_dir.mkdir(parents=True, exist_ok=True)
-            for lm in Landmark.objects.exclude(target_id=""):
-                src_dir = valid_dir / lm.target_id
-                if not src_dir.exists():
-                    continue
+        static_dir = BASE_DIR / "frontend" / "public" / "landmarks"
+        static_dir.mkdir(parents=True, exist_ok=True)
+        existing = copied = missing = 0
+        missing_ids: list[str] = []
+
+        for lm in Landmark.objects.exclude(target_id=""):
+            dst = static_dir / f"{lm.target_id}.jpg"
+            if not dst.exists():
+                # 训练图按 data/<target_id>/<target_id>_N.jpg 存放，取中间一张避开特写
                 images = sorted(
-                    list(src_dir.glob("*.jpg")) + list(src_dir.glob("*.jpeg"))
+                    list((BASE_DIR / "data" / lm.target_id).glob("*.jpg"))
+                    + list((BASE_DIR / "data" / lm.target_id).glob("*.jpeg"))
                 )
-                if not images:
+                if images:
+                    shutil.copyfile(images[len(images) // 2], dst)
+                    copied += 1
+                else:
+                    missing += 1
+                    missing_ids.append(lm.target_id)
                     continue
-                # 优先取中间一张作为百科图（避开特写/糊图）
-                src = images[len(images) // 2]
-                dst = static_dir / f"{lm.target_id}.jpg"
-                if not dst.exists():
-                    shutil.copyfile(src, dst)
-                lm.image_url = f"/lmimg/{lm.target_id}.jpg"
+            else:
+                existing += 1
+
+            # 展示地址统一走 /lmimg/（Django 侧指向 public/landmarks，带 dist 兜底）
+            expected = f"/lmimg/{lm.target_id}.jpg"
+            if lm.image_url != expected:
+                lm.image_url = expected
                 lm.save(update_fields=["image_url"])
-                picked += 1
-        self.stdout.write(f"   已为 {picked} 个地标挑选百科图片")
+
+        self.stdout.write(
+            f"   已有 {existing} 张 / 从 data 补齐 {copied} 张 / 仍缺失 {missing} 张"
+        )
+        if missing_ids:
+            self.stdout.write(
+                self.style.WARNING(f"   缺少百科图: {', '.join(missing_ids[:8])}")
+            )
 
         # ------ 地标页面（预置文件，前端档案直接读 JSON） ------
-        self.stdout.write("8) 生成地标页面文件（content/landmarks/*.json）...")
+        self.stdout.write("7) 生成地标页面文件（content/landmarks/*.json）...")
         try:
             from services import landmark_pages
 
@@ -276,5 +289,21 @@ class Command(BaseCommand):
         except FileNotFoundError as exc:
             # 语料没生成时不要让初始化失败：地标与账号已经可用，页面可稍后补
             self.stdout.write(self.style.WARNING(f"   跳过地标页面：{exc}"))
+
+        # ------ 收尾自检：数量与落盘文件对不上时明确提示，避免"看起来成功" ------
+        landmark_total = Landmark.objects.count()
+        page_files = list((BASE_DIR / "backend" / "content" / "landmarks").glob("*.json"))
+        image_files = list(static_dir.glob("*.jpg"))
+        self.stdout.write("8) 初始状态自检 ...")
+        self.stdout.write(
+            f"   地标 {landmark_total} / 页面 {len(page_files)} / 百科图 {len(image_files)}"
+            f" / 徽章 {Badge.objects.count()}"
+        )
+        if landmark_total != len(page_files) or landmark_total != len(image_files):
+            self.stdout.write(
+                self.style.WARNING(
+                    "   数量不一致：请检查 content/landmarks 与 public/landmarks 是否缺文件"
+                )
+            )
 
         self.stdout.write(self.style.SUCCESS("init_tripscape 完成。"))

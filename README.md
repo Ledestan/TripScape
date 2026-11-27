@@ -81,16 +81,15 @@ pnpm build                               # 构建后由 Django 提供 SPA；开�
 
 ```text
 backend/content/landmarks/<target_id>.json    # 预生成：整体介绍 / 时间轴 / 分节材料 / 卡片材料
-scripts/build_landmark_pages.py       # 从文章库一次性生成（幂等）
-backend/manage.py seed_landmark_pages # 同上的管理命令（init_tripscape 第 8 步自动调用）
+backend/manage.py seed_landmark_pages # 单独重建页面（init_tripscape 第 7 步自动调用）
 GET /api/narrative/story/{id}         # 档案接口：只读该 JSON
 GET /api/narrative/card/{id}          # 卡片接口：材料同样来自该 JSON
 ```
 
 - 内容顺序固定：`intro`（整体介绍）→ `timeline`（年份升序，无年份的句子标「未记年」）→ `sections`（站在这里 / 尺度与参数 / 到访之前 / 补记）。
 - **打开地标不触发分词**：jieba 与向量索引只服务问答（`/api/qa`）；地标页在毫秒级读文件返回。
-- 文件缺失时接口返回 404 并提示 `python scripts/build_landmark_pages.py`，不会现场建索引。
-- 来源：只摘编 `runtime/index/qa_chunks.json` 里该地标的文章章节，**不改写句意、不新增史实**，页面末尾标注出处。
+- 文件缺失时接口返回 404 并提示先运行 `python backend/manage.py seed_landmark_pages`，不会现场建索引。
+- 来源：只摘编 `backend/content/articles/` 里该地标的文章章节，**不改写句意、不新增史实**。
 
 > 提示：百度百科对脚本请求返回 403（安全验证），故内容来源是仓库内可离线核对的文章库。
 
@@ -164,7 +163,7 @@ TripScape/
 │  │  │  └─ admin/                       # AdminPanelWindow 管理后台（七 Tab 大浮窗）
 │  │  ├─ layouts/                        # FloatingDock 右上按钮组、LoginWindow、ProfileWindow、
 │  │  │  │                               # JournalViewWindow（含点赞）、SettingsWindow
-│  │  ├─ pages/                          # GlobeApp 主页、LandmarkDetail 详情、JournalEditWindow 编辑、Share 分享页
+│  │  ├─ pages/                          # GlobeApp 主页、LandmarkDetail 详情、Share 分享页
 │  │  ├─ hooks/ stores/ styles/ types/ utils/
 │  └─ vite.config.ts / tailwind.config.js / tsconfig.json / package.json
 ├─ runtime/                              # 运行时目录（uploads/cache/logs/tmp + index/ 索引产物）
@@ -193,7 +192,7 @@ TripScape/
 | 层 | 文件 |
 | --- | --- |
 | 数据 | `backend/apps/narrative/models.py`（ts_narrative_card / ts_journal_card） |
-| 服务 | `backend/services/narrative_service.py`（卡片组装、投递与拾取）、`narrative_story.py`（故事文档读取） |
+| 服务 | `backend/services/narrative_service.py`（卡片组装与故事读取） |
 | 接口 | `backend/api/narrative.py`（card / story / journal） |
 | 界面 | `frontend/src/features/narrative/`（胶片、档案、手记、故事渲染）、`stores/narrative.ts`（三层状态） |
 | 内容 | `backend/content/landmarks/*.json`（预生成：整体介绍 + 时间轴 + 分节材料，命令 `seed_landmark_pages`） |
@@ -329,7 +328,7 @@ python reset_demo.py --yes             # 展示状态：先重置，再写入演
 - `data/`：注册图（26 类 × 15 张），git 不入库，发布包需携带。
 - `models/`：bge-small-zh 向量模型（约 92MB），同上。
 - `scripts/db/`：种子数据（地标/徽章/敏感词 SQL、文章库 markdown），
-  `reset_all.py` 一键导入。
+  `init_tripscape` 一键导入。
 
 ## 许可
 

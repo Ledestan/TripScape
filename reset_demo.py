@@ -414,11 +414,11 @@ def seed_demo() -> dict[str, int]:
         badge_service.on_journal_created(user)
         badge_service.on_comment_created(user)
 
-    for user, text in (
-        (linwan, "你关注的地标有了新的手账"),
-        (zhouyu, "你的手账《斗兽场的黄昏》获得 3 个赞"),
+    for user, text, link in (
+        (linwan, "你关注的地标有了新的手账", f"/journals/{published[1].id}"),
+        (zhouyu, "你的手账《斗兽场的黄昏》获得 3 个赞", f"/journals/{published[4].id}"),
     ):
-        notification_service.push(user, "system", "系统提醒", text, "/")
+        notification_service.push(user, "system", "系统提醒", text, link)
 
     # 7. 自检：画布里的 /lmimg 必须真的能在 public/landmarks 找到，
     #    否则前端就是黑底 + 破图（这是演示版最容易被看出来的问题）

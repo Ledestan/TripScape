@@ -38,9 +38,25 @@ export default function FloatingDock() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const [profileOpen, setProfileOpen] = useState(false);
+  const [profileTab, setProfileTab] = useState<"footprints" | "journals" | "comments" | "favorites" | "badges">("footprints");
   // 消息中心等位置通过事件打开个人主页，避免各自维护一份开关
   useEffect(() => {
-    const onOpenProfile = () => setProfileOpen(true);
+    const onOpenProfile = (event: Event) => {
+      const detail = (event as CustomEvent<{ tab?: string }>).detail;
+      const tab = detail?.tab;
+      if (
+        tab === "footprints" ||
+        tab === "journals" ||
+        tab === "comments" ||
+        tab === "favorites" ||
+        tab === "badges"
+      ) {
+        setProfileTab(tab);
+      } else {
+        setProfileTab("footprints");
+      }
+      setProfileOpen(true);
+    };
     window.addEventListener("ts:open-profile", onOpenProfile);
     return () => window.removeEventListener("ts:open-profile", onOpenProfile);
   }, []);
@@ -267,7 +283,13 @@ export default function FloatingDock() {
 
       <LoginWindow open={loginOpen} onClose={() => setLoginOpen(false)} />
 
-      {profileOpen && <ProfileWindow onClose={() => setProfileOpen(false)} />}
+      {profileOpen && (
+        <ProfileWindow
+          key={profileTab}
+          initialTab={profileTab}
+          onClose={() => setProfileOpen(false)}
+        />
+      )}
 
       {settingsOpen && <SettingsWindow onClose={() => setSettingsOpen(false)} />}
 

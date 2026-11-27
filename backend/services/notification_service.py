@@ -68,5 +68,5 @@ def notify_badge(user, badge):
         type_="badge",
         title=f"恭喜获得徽章「{badge.name}」",
         content=badge.description or "",
-        link="/profile",
+        link="/profile?tab=badges",
     )

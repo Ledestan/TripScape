@@ -772,7 +772,10 @@ function NotificationTab({
       return;
     }
     if (link.startsWith("/profile")) {
-      window.dispatchEvent(new CustomEvent("ts:open-profile"));
+      const tab = new URLSearchParams(link.split("?")[1] || "").get("tab") || "";
+      window.dispatchEvent(
+        new CustomEvent("ts:open-profile", { detail: { tab } })
+      );
       return;
     }
     if (link && link !== "/") window.location.assign(link);

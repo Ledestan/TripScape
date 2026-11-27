@@ -40,10 +40,18 @@ interface ProfileData {
   favorites: { id: number; name: string; lat?: number; lon?: number }[];
 }
 
-export default function ProfileWindow({ onClose }: { onClose: () => void }) {
+export default function ProfileWindow({
+  onClose,
+  initialTab = "footprints",
+}: {
+  onClose: () => void;
+  initialTab?: "footprints" | "journals" | "comments" | "favorites" | "badges";
+}) {
   const qc = useQueryClient();
   const { user } = useAuthStore();
-  const [tab, setTab] = useState<"footprints" | "journals" | "comments" | "favorites" | "badges">("footprints");
+  const [tab, setTab] = useState<"footprints" | "journals" | "comments" | "favorites" | "badges">(
+    initialTab
+  );
   const [viewJournal, setViewJournal] = useState<number | null>(null);
 
   /* 足迹隐藏/显示 */

@@ -277,7 +277,7 @@ class Command(BaseCommand):
             )
 
         # ------ 地标页面（预置文件，前端档案直接读 JSON） ------
-        self.stdout.write("7) 生成地标页面文件（content/landmarks/*.json）...")
+        self.stdout.write("7) 生成地标页面文件（backend/content/landmarks/*.json）...")
         try:
             from services import landmark_pages
 
@@ -302,7 +302,7 @@ class Command(BaseCommand):
         if landmark_total != len(page_files) or landmark_total != len(image_files):
             self.stdout.write(
                 self.style.WARNING(
-                    "   数量不一致：请检查 content/landmarks 与 public/landmarks 是否缺文件"
+                    "   数量不一致：请检查 backend/content/landmarks 与 frontend/public/landmarks"
                 )
             )
 

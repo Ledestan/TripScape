@@ -46,16 +46,16 @@ sys.path.insert(0, str(ROOT))
 import reset_project as base  # noqa: E402
 
 PHOTOS = {
-    "EiffelTower": "/landmarks/EiffelTower.jpg",
-    "GizaPyramids": "/landmarks/GizaPyramids.jpg",
-    "MachuPicchu": "/landmarks/MachuPicchu.jpg",
-    "TajMahal": "/landmarks/TajMahal.jpg",
-    "GreatWall": "/landmarks/GreatWall.jpg",
-    "Petra": "/landmarks/Petra.jpg",
-    "LibertyStatue": "/landmarks/LibertyStatue.jpg",
-    "RomanColosseum": "/landmarks/RomanColosseum.jpg",
-    "Potala": "/landmarks/Potala.jpg",
-    "Qomolangma": "/landmarks/Qomolangma.jpg",
+    "EiffelTower": "/lmimg/EiffelTower.jpg",
+    "GizaPyramids": "/lmimg/GizaPyramids.jpg",
+    "MachuPicchu": "/lmimg/MachuPicchu.jpg",
+    "TajMahal": "/lmimg/TajMahal.jpg",
+    "GreatWall": "/lmimg/GreatWall.jpg",
+    "Petra": "/lmimg/Petra.jpg",
+    "LibertyStatue": "/lmimg/LibertyStatue.jpg",
+    "RomanColosseum": "/lmimg/RomanColosseum.jpg",
+    "Potala": "/lmimg/Potala.jpg",
+    "Qomolangma": "/lmimg/Qomolangma.jpg",
 }
 
 
@@ -76,7 +76,8 @@ def build_canvas(photo: str, title: str, note: str, accent: str, variant: str) -
 
     return normalize_canvas(
         {
-            "background": "#12161d",
+            # 米白纸张：手账是"纸 + 照片"，深色底会像海报而不是手账
+            "background": "#f5efe4",
             "elements": [
                 {
                     "type": "photo",
@@ -86,21 +87,21 @@ def build_canvas(photo: str, title: str, note: str, accent: str, variant: str) -
                     "width": 648,
                     "height": 432,
                     "rotation": -1.5,
-                    "cornerRadius": 10,
+                    "cornerRadius": 8,
                     "shadow": True,
-                    "borderWidth": 6,
-                    "borderColor": "#f6f1e7",
+                    "borderWidth": 8,
+                    "borderColor": "#ffffff",
                     "z": 0,
                 },
                 {
                     "type": "text",
                     "text": title,
                     "x": 48,
-                    "y": 516,
+                    "y": 520,
                     "width": 620,
-                    "height": 88,
-                    "fontSize": 40,
-                    "color": "#f3ece1",
+                    "height": 84,
+                    "fontSize": 38,
+                    "color": "#2f2a24",
                     "align": "left",
                     "z": 1,
                 },
@@ -108,11 +109,11 @@ def build_canvas(photo: str, title: str, note: str, accent: str, variant: str) -
                     "type": "text",
                     "text": note,
                     "x": 48,
-                    "y": 610,
+                    "y": 612,
                     "width": 620,
-                    "height": 190,
-                    "fontSize": 22,
-                    "color": "#c9bfae",
+                    "height": 180,
+                    "fontSize": 21,
+                    "color": "#6b6155",
                     "align": "left",
                     "z": 2,
                 },
@@ -120,21 +121,21 @@ def build_canvas(photo: str, title: str, note: str, accent: str, variant: str) -
                     "type": "sticker",
                     "variant": variant,
                     "color": accent,
-                    "x": 596,
-                    "y": 70,
-                    "width": 66,
-                    "height": 66,
+                    "x": 598,
+                    "y": 76,
+                    "width": 62,
+                    "height": 62,
                     "rotation": 12,
                     "z": 3,
                 },
                 {
                     "type": "tape",
-                    "color": "#d6ba84",
+                    "color": "#e2cf9f",
                     "pattern": "stripe",
-                    "x": 280,
-                    "y": 22,
-                    "width": 160,
-                    "height": 42,
+                    "x": 282,
+                    "y": 24,
+                    "width": 156,
+                    "height": 40,
                     "rotation": -3,
                     "z": 4,
                 },
@@ -260,8 +261,11 @@ def seed_demo() -> dict[str, int]:
             landmark_id=landmark("EiffelTower").id)
     comment(demo, "下次挑日落前半小时上去，排队会短一些。",
             journal_id=published[1].id)
-    comment(linwan, "珠峰那张银河是几点拍的？", journal_id=published[8].id)
-    comment(demo, "凌晨两点多，风小的时候。", journal_id=published[8].id)
+    question = comment(linwan, "珠峰那张银河是几点拍的？", journal_id=published[8].id)
+    answer = comment(demo, "凌晨两点多，风小的时候。", journal_id=published[8].id,
+                     parent_id=question.id)
+    comment(zhouyu, "这个点我也试过，得等风停。", journal_id=published[8].id,
+            parent_id=answer.id)
 
     # 4. 点赞：手账 / 商品文章 / 评论都铺一点，看板才有数字
     def like(user: User, target_type: str, target_id: int) -> None:
@@ -288,8 +292,8 @@ def seed_demo() -> dict[str, int]:
             UserFavorite.objects.get_or_create(user=user, landmark=landmark(target_id))
     share_token = share_service.create_share_token("journal", published[0].id, demo)
 
-    # 6. 通知：回复与徽章，右侧通知中心一打开就有内容
-    notification_service.notify_reply(linwan, first, reply)
+    # 6. 通知：回复由 comment_service 自动发出，这里只补徽章与系统提醒
+    #     （再手动调 notify_reply 会造出"自己回复自己"的错误通知）
     badge_service.on_journal_created(demo)
     badge_service.on_comment_created(demo)
 
@@ -299,6 +303,18 @@ def seed_demo() -> dict[str, int]:
     ):
         notification_service.push(user, "system", "系统提醒", text, "/")
 
+    # 7. 自检：画布里的 /lmimg 必须真的能在 public/landmarks 找到，
+    #    否则前端就是黑底 + 破图（这是演示版最容易被看出来的问题）
+    missing_photos: list[str] = []
+    for item in Journal.objects.all():
+        for element in (item.canvas or {}).get("elements") or []:
+            src = element.get("src") if isinstance(element, dict) else ""
+            if not src or not src.startswith("/lmimg/"):
+                continue
+            target = ROOT / "frontend" / "public" / "landmarks" / src[len("/lmimg/"):]
+            if not target.exists():
+                missing_photos.append(src)
+
     return {
         "users": User.objects.count(),
         "journals": Journal.objects.count(),
@@ -307,6 +323,7 @@ def seed_demo() -> dict[str, int]:
         "likes": Like.objects.count(),
         "share": share_token,
         "private_id": private.id,
+        "missing_photos": sorted(set(missing_photos)),
     }
 
 
@@ -344,10 +361,16 @@ def main() -> None:
     for title, cost in base.TIMINGS:
         print(f"[耗时] {title}: {cost:.2f} 秒")
     print(f"展示状态就绪，总运行时间: {time.time() - overall:.2f} 秒")
-    print(f"  账号: demo / linwan / zhouyu（密码 {DEMO_PASSWORD}）")
+    print("  账号: demo（沿用种子密码）· linwan / zhouyu（密码 "
+          f"{DEMO_PASSWORD}）")
     print(f"  手账: {stats['journals']} 篇（草稿 {stats['drafts']} 篇）")
     print(f"  评论: {stats['comments']} 条 · 点赞: {stats['likes']} 次")
     print(f"  分享链接: /share/{stats['share']}")
+    if stats["missing_photos"]:
+        print(f"  [警告] 有 {len(stats['missing_photos'])} 张画布图片找不到: "
+              f"{', '.join(stats['missing_photos'][:5])}")
+    else:
+        print("  画布图片: 全部可访问")
     print("启动: python backend/manage.py runserver 127.0.0.1:8000")
 
 

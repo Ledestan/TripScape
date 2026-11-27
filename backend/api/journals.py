@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / api/journals
-创建日期: 2025-09-01
 
 手账 API。
 
@@ -21,10 +20,19 @@ from apps.journals.models import Journal
 from ninja import Router, Schema
 from ninja.errors import HttpError
 from services import journal_service, share_service
-from services.journal_canvas import CanvasError, normalize_canvas
 from services.audit_service import write_audit
+from services.journal_canvas import CanvasError, normalize_canvas
+from services.journal_service import ImageListError, normalize_images
 
 router = Router()
+
+
+def _images_or_422(raw) -> list:
+    """图片列表校验：不合法直接 422（结构性问题，不是业务校验）。"""
+    try:
+        return normalize_images(raw)
+    except ImageListError as exc:
+        raise HttpError(422, str(exc))
 
 
 def _parse_date(v):
@@ -93,7 +101,7 @@ def create(request, payload: JournalIn):
         landmark_id=payload.landmark_id,
         title=payload.title,
         content=payload.content,
-        images=payload.images or [],
+        images=_images_or_422(payload.images),
         visited_at=_parse_date(payload.visited_at),
         is_public=payload.is_public,
         canvas=canvas,
@@ -166,6 +174,8 @@ def update(request, journal_id: int, payload: JournalUpdateIn):
     fields = payload.dict(exclude_unset=True)
     if "visited_at" in fields:
         fields["visited_at"] = _parse_date(fields["visited_at"])
+    if "images" in fields:
+        fields["images"] = _images_or_422(fields["images"])
     if "canvas" in fields:
         try:
             fields["canvas"] = normalize_canvas(fields["canvas"])

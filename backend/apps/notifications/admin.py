@@ -1,6 +1,7 @@
 """
 行旅识景 TripScape / apps/notifications/admin
-创建日期: 2025-09-01
+
+通知后台：注册通知模型，支持按类型与已读状态检索。
 """
 
 from apps.notifications.models import Notification

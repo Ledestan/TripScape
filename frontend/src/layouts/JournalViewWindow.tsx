@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/layouts/JournalViewWindow
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 手账查看窗：画布/图片渲染、点赞、评论与作者修改入口。
  */
 
 import { Suspense, lazy, useEffect, useState } from "react";

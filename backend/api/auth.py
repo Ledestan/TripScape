@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / api/auth
-创建日期: 2025-09-01
 
 认证 API：注册 / 登录 / 当前用户 / 个人主页。
 
@@ -12,16 +11,35 @@ PUT  /api/auth/profile    更新昵称 / 头像 / 签名
 """
 
 from apps.core.auth import login_required, make_token
-from apps.core.ratelimit import login_limiter
+from apps.core.net import client_ip
+from apps.core.ratelimit import login_limiter, register_limiter
 from django.contrib.auth import get_user_model
 from ninja import Router, Schema
 from ninja.errors import HttpError
 from services import user_service
-from services.audit_service import _client_ip, write_audit
+from services.audit_service import write_audit
 
 router = Router()
 
 User = get_user_model()
+
+# 头像只允许站内相对路径或 http(s) 绝对地址（防 javascript:/data: 之类危险 scheme）
+_ALLOWED_AVATAR_PREFIXES = ("http://", "https://")
+
+
+def _clean_avatar(value) -> str:
+    """校验并归一化头像地址；非法 scheme 抛 400。"""
+    raw = (value or "").strip() if isinstance(value, str) else ""
+    if not raw:
+        return ""
+    if len(raw) > 512:
+        raise HttpError(400, "头像地址过长（最多 512 字符）")
+    lowered = raw.lower()
+    if raw.startswith("/") and not raw.startswith("//"):
+        return raw
+    if lowered.startswith(_ALLOWED_AVATAR_PREFIXES):
+        return raw
+    raise HttpError(400, "头像地址只支持站内路径或 http(s) 链接")
 
 
 class RegisterIn(Schema):
@@ -59,6 +77,10 @@ class TokenOut(Schema):
 @router.post("/register", response=TokenOut, auth=None, summary="用户注册")
 def register(request, payload: RegisterIn):
     """用户注册：用户名限英文/数字/下划线，密码≥6位且含字母数字。"""
+    ip = client_ip(request)
+    # 注册刷号防护（每 IP 5 次/分钟）
+    if not register_limiter.allow(f"register:{ip}", limit=5, window_seconds=60):
+        raise HttpError(429, "注册过于频繁，请稍后再试")
     ok, result = user_service.register_user(
         username=payload.username.strip(),
         password=payload.password,
@@ -71,11 +93,18 @@ def register(request, payload: RegisterIn):
 
 @router.post("/login", response=TokenOut, auth=None, summary="用户登录（限流）")
 def login(request, payload: LoginIn):
-    """账号密码登录（IP 限流），返回 JWT Token 与用户信息。"""
-    ip = _client_ip(request)
-    if not login_limiter.allow(f"login:{ip}", limit=10, window_seconds=60):
+    """账号密码登录（IP + 账号双限流），返回 JWT Token 与用户信息。"""
+    ip = client_ip(request)
+    username = payload.username.strip()
+    # IP 维度：拦同一来源的批量尝试
+    if not login_limiter.allow(f"login:ip:{ip}", limit=10, window_seconds=60):
         raise HttpError(429, "尝试过于频繁，请稍后再试")
-    user, msg = user_service.login_user(payload.username.strip(), payload.password)
+    # 账号维度：拦换 IP 的定向爆破（阈值放宽，避免误伤正常重试）
+    if username and not login_limiter.allow(
+        f"login:user:{username.lower()}", limit=20, window_seconds=60
+    ):
+        raise HttpError(429, "尝试过于频繁，请稍后再试")
+    user, msg = user_service.login_user(username, payload.password)
     if user is None:
         raise HttpError(400, msg)
     return {"token": make_token(user), "user": _user_dict(user)}
@@ -103,10 +132,15 @@ def update_profile(request, payload: ProfileUpdateIn):
     fields = payload.dict(exclude_unset=True)
     update_fields = []
     if "nickname" in fields and fields["nickname"]:
-        user.nickname = fields["nickname"].strip()[:64]
+        nickname = fields["nickname"].strip()
+        if not nickname:
+            raise HttpError(400, "昵称不能为空")
+        if len(nickname) > 64:
+            raise HttpError(400, "昵称最多 64 个字符")
+        user.nickname = nickname
         update_fields.append("nickname")
     if "avatar" in fields:
-        user.avatar = (fields["avatar"] or "")[:512]
+        user.avatar = _clean_avatar(fields["avatar"])
         update_fields.append("avatar")
     if "bio" in fields:
         user.bio = (fields["bio"] or "").strip()[:255]
@@ -150,26 +184,38 @@ def public_profile(request, user_id: int):
 
     from apps.comments.models import Comment
     from apps.journals.models import Footprint, Journal
+    from django.db.models import Q
     from services import badge_service
+
+    # 公开主页口径：列表与计数必须同源，且不得泄露私密/待审/软删内容
+    journals_qs = Journal.objects.filter(
+        user=u,
+        status="approved",
+        is_public=True,
+        edit_pending=False,
+        deleted_at__isnull=True,
+    )
+    footprints_qs = Footprint.objects.filter(user=u, hidden=False)
+    # 评论可见性：地标评论，或公开且已通过、未软删的手账下的评论
+    comments_qs = Comment.objects.filter(
+        user=u, is_hidden=False, deleted_at__isnull=True
+    ).filter(
+        Q(landmark__isnull=False)
+        | Q(
+            journal__is_public=True,
+            journal__status="approved",
+            journal__deleted_at__isnull=True,
+        )
+    )
 
     counts = {
         "footprints": (
-            Footprint.objects.filter(user=u).values("landmark_id").distinct().count()
+            footprints_qs.values("landmark_id").distinct().count()
             if u.public_footprints
             else 0
         ),
-        "journals": (
-            Journal.objects.filter(user=u, status="approved", is_public=True).count()
-            if u.public_journals
-            else 0
-        ),
-        "comments": (
-            Comment.objects.filter(
-                user=u, is_hidden=False, deleted_at__isnull=True
-            ).count()
-            if u.public_comments
-            else 0
-        ),
+        "journals": journals_qs.count() if u.public_journals else 0,
+        "comments": comments_qs.count() if u.public_comments else 0,
         "favorites": u.favorite_landmarks.count() if u.public_favorites else 0,
     }
 
@@ -183,9 +229,7 @@ def public_profile(request, user_id: int):
                 "lon": float(f.landmark.lon),
                 "visits": f.visits,
             }
-            for f in Footprint.objects.filter(user=u, hidden=False).select_related(
-                "landmark"
-            )[:50]
+            for f in footprints_qs.select_related("landmark")[:50]
         ]
 
     journals = []
@@ -203,13 +247,7 @@ def public_profile(request, user_id: int):
                 "visited_at": j.visited_at.isoformat() if j.visited_at else None,
                 "created_at": j.created_at.isoformat(),
             }
-            for j in Journal.objects.filter(
-                user=u,
-                status="approved",
-                is_public=True,
-                edit_pending=False,
-                deleted_at__isnull=True,
-            ).select_related("landmark")[:50]
+            for j in journals_qs.select_related("landmark")[:50]
         ]
 
     comments = []
@@ -226,9 +264,7 @@ def public_profile(request, user_id: int):
                 "content": c.content,
                 "created_at": c.created_at.isoformat(),
             }
-            for c in Comment.objects.filter(
-                user=u, is_hidden=False, deleted_at__isnull=True
-            ).select_related("landmark", "journal")[:50]
+            for c in comments_qs.select_related("landmark", "journal")[:50]
         ]
 
     favorites = []
@@ -248,7 +284,20 @@ def public_profile(request, user_id: int):
 
     badges = []
     if u.public_badges:
-        badges = [b for b in badge_service.user_badges(u) if b["owned"]]
+        # 只给"已获得"的徽章，且不带 current/progress——
+        # 这两个值来自私密内容计数（私密手账/评论），不应向他人暴露
+        badges = [
+            {
+                "code": b["code"],
+                "name": b["name"],
+                "description": b["description"],
+                "icon": b["icon"],
+                "category": b["category"],
+                "awarded_at": b["awarded_at"],
+            }
+            for b in badge_service.user_badges(u)
+            if b["owned"]
+        ]
 
     return {
         "user": _user_dict(u),

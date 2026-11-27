@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/features/admin/AdminPanelWindow
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 管理后台：审核、地标、回收站、看板、账号、举报与审计。
  */
 
 import { useState } from "react";
@@ -285,7 +284,7 @@ export default function AdminPanelWindow({ onClose }: { onClose: () => void }) {
 
   return (
     <FloatingWindow open onClose={onClose} title="管理后台" width={940} fixedHeight="min(90vh, 800px)">
-      <div className="grid grid-cols-7 gap-1 rounded-xl bg-muted p-1">
+      <div className="grid grid-cols-4 gap-1 rounded-xl bg-muted p-1 sm:grid-cols-7">
         {tabs.map((t) => (
           <button
             key={t.key}

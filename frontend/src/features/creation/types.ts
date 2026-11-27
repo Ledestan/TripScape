@@ -1,6 +1,5 @@
 /**
  * 行旅识景 TripScape / src/features/creation/types
- * 创建日期: 2026-11-26
  *
  * 旅行拼贴画布（CreationComposeWindow）的数据模型与纯函数，完成:
  *     1. ComposeDoc / ComposeElement：照片、文字、贴纸、胶带四类元素

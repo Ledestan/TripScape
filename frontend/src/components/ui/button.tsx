@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/components/ui/button
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 按钮样式：尺寸、变体与禁用态。
  */
 
 import * as React from "react";

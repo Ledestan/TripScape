@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/pages/LandmarkDetail
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 地标详情窗：介绍、时间轴、评论与手账页签。
  */
 
 import { useState } from "react";
@@ -420,4 +419,3 @@ export default function LandmarkDetailWindow({
   );
 
 }
-

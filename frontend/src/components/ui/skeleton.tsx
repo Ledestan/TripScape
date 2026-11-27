@@ -1,6 +1,5 @@
 /**
  * 行旅识景 TripScape / src/components/ui/skeleton
- * 创建日期: 2026-11-26
  *
  * 统一的加载占位，替代各处手写的"加载中…"文字，完成:
  *     1. Skeleton：一块带呼吸动画的占位条（宽度可调）

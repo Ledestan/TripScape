@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / apps/badges/__init__
-创建日期: 2025-09-01
 
 badges 应用。
 """

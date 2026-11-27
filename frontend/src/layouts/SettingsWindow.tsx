@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/layouts/SettingsWindow
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 设置浮窗：头像/昵称/签名、主题与隐私开关。
  */
 
 import { useEffect, useState } from "react";

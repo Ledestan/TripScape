@@ -1,12 +1,12 @@
 """
 行旅识景 TripScape / services/journal_service
-创建日期: 2025-09-01
 
 手账服务：创建 / 更新 / 审核联动（敏感词、通知、足迹、搜索索引）。
 """
 
 import logging
 from datetime import date
+from urllib.parse import urlparse
 
 from apps.core import sensitive
 from apps.journals.models import Journal
@@ -15,6 +15,54 @@ from services import notification_service as notify_service
 from services.search_service import sync_journal_to_meili
 
 logger = logging.getLogger("tripscape.journal")
+
+MAX_IMAGES = 9
+IMAGE_URL_MAX = 512
+CONTENT_MAX = 20000
+
+
+class ImageListError(ValueError):
+    """图片列表不合法（API 层翻译成 422）。"""
+
+
+def normalize_images(raw) -> list:
+    """校验并归一化手账图片列表。
+
+    安全口径：只接受字符串地址，只允许站内相对路径或 http(s) 绝对地址，
+    数量与长度均设上限——否则任意 JSON（对象/超长列表/危险 scheme）
+    会被原样写进 JSONField，前端渲染时崩或把用户导去外部站点。
+    """
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        raise ImageListError("图片列表必须是数组")
+    if len(raw) > MAX_IMAGES:
+        raise ImageListError(f"最多上传 {MAX_IMAGES} 张图片")
+
+    out: list[str] = []
+    for item in raw:
+        if not isinstance(item, str):
+            raise ImageListError("图片地址必须是字符串")
+        url = item.strip()
+        if not url:
+            continue
+        if len(url) > IMAGE_URL_MAX:
+            raise ImageListError(f"图片地址最长 {IMAGE_URL_MAX} 字符")
+        if url.startswith("/") and not url.startswith("//"):
+            out.append(url)
+            continue
+        parsed = urlparse(url)
+        if parsed.scheme in ("http", "https") and parsed.netloc:
+            out.append(url)
+            continue
+        raise ImageListError("图片地址只支持站内路径或 http(s) 链接")
+    return out
+
+
+def normalize_content(raw) -> str:
+    """正文归一化（去首尾空白 + 长度上限，防单条记录撑爆存储）。"""
+    text = (raw or "").strip() if isinstance(raw, str) else ""
+    return text[:CONTENT_MAX]
 
 
 def _check_sensitive(text: str):
@@ -38,7 +86,11 @@ def create_journal(
     返回 (ok, journal_or_message)
     """
     title = (title or "").strip()
-    content = (content or "").strip()
+    content = normalize_content(content)
+    try:
+        images = normalize_images(images)
+    except ImageListError as exc:
+        return False, str(exc)
     if not title:
         return False, "标题不能为空"
     if getattr(user, "is_muted", False):
@@ -108,6 +160,19 @@ def update_journal(journal: Journal, data: dict) -> tuple:
     if "is_public" in data and data["is_public"] is not None:
         patch["is_public"] = data["is_public"]
 
+    # 字段归一化（防超长标题/正文落库报 DataError，防非法图片地址）
+    if "title" in patch:
+        patch["title"] = (patch["title"] or "").strip()[:128]
+        if not patch["title"]:
+            return False, "标题不能为空"
+    if "content" in patch:
+        patch["content"] = normalize_content(patch["content"])
+    if "images" in patch:
+        try:
+            patch["images"] = normalize_images(patch["images"])
+        except ImageListError as exc:
+            return False, str(exc)
+
     # 敏感词检查（针对新内容）
     new_title = patch.get("title", journal.title)
     new_content = patch.get("content", journal.content)
@@ -125,7 +190,9 @@ def update_journal(journal: Journal, data: dict) -> tuple:
         # 显式传 is_draft=False 才是"发布"；否则继续存草稿
         if data.get("is_draft") is False:
             journal.status = "approved"
-            journal.is_public = True if data.get("is_public") is None else bool(data.get("is_public"))
+            journal.is_public = (
+                True if data.get("is_public") is None else bool(data.get("is_public"))
+            )
             journal.save()
             _post_create(journal)
             return True, journal

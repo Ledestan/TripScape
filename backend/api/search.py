@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / api/search
-创建日期: 2025-09-01
 
 搜索 API。
 

@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / apps/journals/models
-创建日期: 2025-09-01
 
 手账模型 —— 替代手动打卡的核心功能。
 

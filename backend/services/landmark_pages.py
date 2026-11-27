@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / 地标页面预置内容
-创建日期: 2026-11-25
 
 把「地标页要显示的一切」预生成成文件，避免打开地标时再去分词/建索引，提供:
     1. PAGES_DIR：backend/content/landmarks/<target_id>.json 的固定位置
@@ -29,7 +28,6 @@ from datetime import datetime
 from pathlib import Path
 
 from django.conf import settings
-
 from services.text_utils import extract_year, split_sentences
 
 PAGES_DIR = Path(settings.BASE_DIR) / "backend" / "content" / "landmarks"
@@ -151,7 +149,9 @@ def build_page(landmark, chunks: list[dict]) -> dict:
             if any(_jaccard(grams, other) > 0.5 for other in kept_bigrams):
                 continue
             numbers = _key_numbers(item)
-            if len(numbers) >= 2 and any(len(numbers & other) >= 2 for other in kept_numbers):
+            if len(numbers) >= 2 and any(
+                len(numbers & other) >= 2 for other in kept_numbers
+            ):
                 continue
             seen.add(item)
             kept_bigrams.append(grams)
@@ -313,7 +313,13 @@ def build_pages(verbose: bool = False) -> dict:
     PAGES_DIR.mkdir(parents=True, exist_ok=True)
     written = skipped = unchanged = 0
     # 排序后遍历：同一份语料每次生成顺序一致
+    from apps.landmarks.validators import is_valid_target_id
+
     for landmark in Landmark.objects.order_by("target_id"):
+        if not is_valid_target_id(landmark.target_id):
+            # 非法 target_id 不落盘（既防穿越，也避免生成不可读文件）
+            skipped += 1
+            continue
         chunks = grouped.get(landmark.target_id, [])
         if not chunks:
             skipped += 1
@@ -337,16 +343,40 @@ def build_pages(verbose: bool = False) -> dict:
     return {"written": written, "unchanged": unchanged, "skipped": skipped}
 
 
+def _page_path(landmark) -> Path | None:
+    """页面文件路径（含目录穿越防护）。
+
+    target_id 直接拼进文件名，必须校验字符集并确认解析后仍落在 PAGES_DIR 内；
+    否则把 target_id 设成 "../../runtime/index/qa_chunks" 就能通过故事接口
+    读到目录外的 JSON。
+    """
+    from apps.landmarks.validators import is_valid_target_id
+
+    target_id = str(getattr(landmark, "target_id", "") or "")
+    if not is_valid_target_id(target_id):
+        return None
+    base = PAGES_DIR.resolve()
+    candidate = (base / f"{target_id}.json").resolve()
+    if candidate.parent != base:
+        return None
+    return candidate
+
+
 def page_for(landmark) -> dict | None:
-    """读取地标页面文件（按 mtime 缓存）；没有文件返回 None。"""
-    target = PAGES_DIR / f"{getattr(landmark, 'target_id', '')}.json"
-    if not target.exists():
+    """读取地标页面文件（按 mtime 缓存）；没有文件/内容非法返回 None。"""
+    target = _page_path(landmark)
+    if target is None or not target.is_file():
         return None
     mtime = target.stat().st_mtime
     cached = _CACHE.get(str(target))
     if cached and cached.get("mtime") == mtime:
         return cached["data"]
-    data = json.loads(target.read_text(encoding="utf-8"))
+    try:
+        data = json.loads(target.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return None
+    if not isinstance(data, dict):
+        return None
     _CACHE[str(target)] = {"mtime": mtime, "data": data}
     return data
 

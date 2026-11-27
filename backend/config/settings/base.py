@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / config/settings/base
-创建日期: 2025-09-01
 
 Django settings —— TripScape
 
@@ -22,6 +21,7 @@ import os
 # ----------------------------------------------------------------------
 import sys as _sys
 from pathlib import Path
+
 import environ
 
 if getattr(_sys, "frozen", False):
@@ -36,6 +36,9 @@ env = environ.Env(
     DJANGO_SECRET_KEY=(str, "django-insecure-tripscape-dev-key-change-me"),
     DJANGO_ALLOWED_HOSTS=(list, ["*"]),
     DJANGO_CSRF_TRUSTED_ORIGINS=(list, []),
+    # 受信反向代理 IP 列表（只有来自这些地址的 X-Forwarded-For 才被采信；
+    # 不配置时一律以 TCP 直连地址为准，防止伪造 header 绕过限流）
+    TRUSTED_PROXY_IPS=(list, []),
     # ---------------- 数据库 ----------------
     DB_ENGINE=(str, "mysql"),  # mysql | sqlite（打包分发用单文件库）
     MYSQL_HOST=(str, "127.0.0.1"),
@@ -78,6 +81,8 @@ env = environ.Env(
     # ------ 叙事层（TripScape 2.0 本体，2026-11 起默认启用） ------
     # 同一用户对同一地标的碎片投递上限（SPEC §2 S3）
     NARRATIVE_MAX_FRAGMENTS_PER_LANDMARK=(int, 3),
+    # 接口文档（/api/docs）开关：生产建议关闭，减少接口面暴露
+    API_DOCS_ENABLED=(bool, True),
 )
 
 # 优先读取仓库根 .env（存在即读）
@@ -90,6 +95,7 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env("DJANGO_CSRF_TRUSTED_ORIGINS")
+TRUSTED_PROXY_IPS = env("TRUSTED_PROXY_IPS")
 
 # ----------------------------------------------------------------------
 # 应用
@@ -256,6 +262,9 @@ JWT_EXPIRE_HOURS = env("JWT_EXPIRE_HOURS")
 
 # 叙事层参数（TripScape 2.0 本体，默认启用）
 NARRATIVE_MAX_FRAGMENTS_PER_LANDMARK = env("NARRATIVE_MAX_FRAGMENTS_PER_LANDMARK")
+
+# 接口文档开关（/api/docs、/api/openapi.json）
+API_DOCS_ENABLED = env("API_DOCS_ENABLED")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

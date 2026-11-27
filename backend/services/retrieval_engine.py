@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / 检索式识别引擎
-创建日期: 2025-10-08
 
 以图检索替代分类：DINOv2 全局检索，完成:
     1. DINOv2 ViT-S/14 提取查询图全局特征（384 维）
@@ -30,6 +29,7 @@ import json
 import logging
 import time
 from pathlib import Path
+
 import numpy as np
 
 logger = logging.getLogger(__name__)

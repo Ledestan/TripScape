@@ -102,10 +102,12 @@ services:
       - mysql_data:/var/lib/mysql
       - ./runtime/backups:/backup
     ports:
-      - "3306:3306"
+      # 仅本机可达：数据库/缓存/检索/对象存储不对公网暴露
+      - "127.0.0.1:3306:3306"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pRoot@123456"]
+      # 密码从容器环境读取，不在仓库里重复写死
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -118,7 +120,8 @@ services:
     volumes:
       - redis_data:/data
     ports:
-      - "6379:6379"
+      # 仅本机可达（未设密码的 Redis 不能对公网暴露）
+      - "127.0.0.1:6379:6379"
     restart: unless-stopped
     logging: *default_logging
 
@@ -131,7 +134,7 @@ services:
     volumes:
       - meili_data:/meili_data
     ports:
-      - "7700:7700"
+      - "127.0.0.1:7700:7700"
     restart: unless-stopped
     logging: *default_logging
 
@@ -145,8 +148,8 @@ services:
     volumes:
       - minio_data:/data
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     restart: unless-stopped
     logging: *default_logging
 
@@ -166,12 +169,15 @@ services:
 
   backup:
     image: alpine:3.19
+    environment:
+      # 备份脚本从环境读密码，不在命令行里重复写死
+      - MYSQL_ROOT_PASSWORD=Root@123456
     command: >
       sh -c "apk add --no-cache mysql-client curl tzdata >/dev/null &&
              cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime &&
              while true; do
                TS=$$(date +%Y%m%d_%H%M%S);
-               mysqldump -h mysql -uroot -pRoot@123456 tripscape | gzip > /backup/mysql_$$TS.sql.gz;
+               mysqldump -h mysql -uroot -p$$MYSQL_ROOT_PASSWORD tripscape | gzip > /backup/mysql_$$TS.sql.gz;
                find /backup -name '*.gz' -mtime +7 -delete;
                find /backup -name '*.json' -mtime +7 -delete;
                echo \"[$$(date)] backup done\";

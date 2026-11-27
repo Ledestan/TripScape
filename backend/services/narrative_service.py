@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / 叙事服务
-创建日期: 2025-11-24
 
 叙事层的业务实现（2.0 本体），提供:
     1. build_narrative_card / latest_card：卡片组装与读取
@@ -25,12 +24,9 @@
 """
 
 import logging
-from apps.narrative.models import (
-    JournalCard,
-    NarrativeCard,
-)
-from django.conf import settings
 
+from apps.narrative.models import JournalCard, NarrativeCard
+from django.conf import settings
 from services.text_utils import extract_year, split_sentences
 
 logger = logging.getLogger(__name__)

@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / apps/landmarks/admin
-创建日期: 2025-09-01
 
 Django 后台的地标配配置
 

@@ -1,6 +1,5 @@
 """
-行旅识景 TripScape / badges 迁移：图标从 emoji 改为 lucide 名称
-创建日期: 2026-11-26
+行旅识景 TripScape / badges
 
 说明:
     1. 老数据里 icon 存的是 emoji，这里按 code 统一换成语义化名称（前端映射到 lucide 图标）。

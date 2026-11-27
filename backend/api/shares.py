@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / api/shares
-创建日期: 2025-09-01
 
 公开分享 API（免登录）。
 

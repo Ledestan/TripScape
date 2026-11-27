@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / apps/core/apps
-创建日期: 2025-09-01
 
 公共基础：Token 认证、角色装饰器、限流、敏感词、请求日志中间件、init_tripscape 命令。
 """

@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / services/footprint_service
-创建日期: 2025-09-01
 
 手账与足迹服务。
 
@@ -11,6 +10,7 @@
 """
 
 import logging
+
 from apps.journals.models import Footprint, Journal
 from apps.landmarks.models import Landmark
 from django.db.models import Count, F, Sum

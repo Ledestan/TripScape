@@ -1,6 +1,5 @@
 /**
  * 行旅识景 TripScape / src/features/narrative/canvas-types
- * 创建日期: 2026-11-26
  *
  * 手账画布的数据模型与纯函数，与渲染（react-konva）解耦，完成:
  *     1. CanvasDoc / CanvasElement：3:4 版式上的照片、文字、贴纸、胶带

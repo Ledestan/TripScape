@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / 文本切分工具
-创建日期: 2026-11-25
 
 供叙事卡片与地标页面共用的一套切句/取年规则，提供:
     1. split_sentences：按中文句末标点切句，并清掉 markdown 残留
@@ -32,8 +31,9 @@ _FOUR_DIGIT_RE = re.compile(r"(\d{4})\s*年(?!代)")
 # 摘编残留：模板括号、表格竖线、图片尺寸、空括号、括号内以标点开头——命中就整句丢弃
 # 注意：不能把「；」「：」当残留——它们是正常中文标点，切句后句尾就带「；」
 _CJK_RE = re.compile(r"[\u4e00-\u9fff]")
-_ARTIFACT_RE = re.compile(r"[{}|]|thumb|\d{2,4}\s*px|（\s*）|（\s*[；：，、]|</?[a-zA-Z]")
-
+_ARTIFACT_RE = re.compile(
+    r"[{}|]|thumb|\d{2,4}\s*px|（\s*）|（\s*[；：，、]|</?[a-zA-Z]"
+)
 
 
 def split_sentences(text: str) -> list[str]:

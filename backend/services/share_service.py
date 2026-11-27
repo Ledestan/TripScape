@@ -1,11 +1,11 @@
 """
 行旅识景 TripScape / services/share_service
-创建日期: 2025-09-01
 
 分享服务。
 """
 
 import secrets
+
 from apps.shares.models import ShareLink
 
 

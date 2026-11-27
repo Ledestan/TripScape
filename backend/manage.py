@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """
 行旅识景 TripScape / manage
-创建日期: 2025-09-01
 
 Django 管理入口（backend/）。
 
@@ -12,7 +11,6 @@ Django 管理入口（backend/）。
 
 所有 manage.py 子命令的统一入口：runserver / migrate / makemigrations / init_tripscape / celery 相关。执行时全局禁用 __pycache__。
 """
-
 
 import os
 import sys

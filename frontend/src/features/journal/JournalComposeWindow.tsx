@@ -1,6 +1,5 @@
 /**
  * 行旅识景 TripScape / 写手账浮窗
- * 创建日期: 2026-11-26
  *
  * 用 CreationComposeWindow 作为唯一的手账创作界面，完成:
  *     1. 标题 / 日期 / 公开开关（通过 metaBar 注入到创作浮窗顶部；手账不写正文）
@@ -247,4 +246,3 @@ export default function JournalComposeWindow({
     />
   );
 }
-

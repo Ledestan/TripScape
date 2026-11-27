@@ -1,11 +1,11 @@
 """
 行旅识景 TripScape / services/notification_service
-创建日期: 2025-09-01
 
 通知服务。
 """
 
 import logging
+
 from apps.notifications.models import Notification
 
 logger = logging.getLogger("tripscape.notify")

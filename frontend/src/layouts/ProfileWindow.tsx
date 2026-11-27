@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/layouts/ProfileWindow
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 个人主页浮窗：足迹、手账、评论、收藏、徽章五个页签。
  */
 
 import { useState } from "react";

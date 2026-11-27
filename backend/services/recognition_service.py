@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / 识别服务
-创建日期: 2025-10-08
 
 识别入口：调度检索式引擎（DINOv2 + FAISS），完成:
     1. 检索引擎识别（top-3 候选 + 置信度）
@@ -25,6 +24,7 @@
 
 import logging
 import time
+
 from apps.landmarks.models import Landmark
 from django.conf import settings
 from django.db.models import F
@@ -67,9 +67,10 @@ def recognize_image(image_bytes: bytes, user=None) -> dict:
             return {"success": False, "message": "未能识别出地标"}
 
         return _build_result(lms, user, started, engine="retrieval")
-    except Exception as exc:
+    except Exception:
+        # 只记日志，不回显内部异常（曾把 PIL/torch 的完整错误文本回给客户端）
         logger.exception("识别出错")
-        return {"success": False, "message": f"识别出错: {exc}"}
+        return {"success": False, "message": "识别出错，请换一张清晰的照片重试"}
 
 
 def _build_result(results, user, started, engine):

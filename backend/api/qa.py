@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / api/qa
-创建日期: 2025-09-01
 
 问答 API（文章式管线 + 会话上下文 + 低置信度返回"不知道"）。
 
@@ -11,11 +10,18 @@ POST /api/qa/chat
 """
 
 from apps.core.auth import OptionalAuth, login_required
+from apps.core.net import client_ip
+from apps.core.ratelimit import heavy_limiter
 from apps.landmarks.models import QAContext
 from ninja import Router, Schema
 from ninja.errors import HttpError
 
 router = Router()
+
+# 单 IP 每分钟提问次数（RAG 是重接口，匿名可调，必须限流）
+QA_PER_MINUTE = 30
+QUESTION_MAX = 500
+SESSION_ID_MAX = 48
 
 
 class ChatIn(Schema):
@@ -52,15 +58,25 @@ def history(request, limit: int = 50):
 @router.post("/chat", summary="智能问答（RAG + 会话上下文）", auth=OptionalAuth())
 def chat(request, payload: ChatIn):
     """智能问答（RAG 检索 + 上下文；低置信度回答不知道）。"""
+    ip = client_ip(request)
+    if not heavy_limiter.allow(f"qa:{ip}", limit=QA_PER_MINUTE, window_seconds=60):
+        raise HttpError(429, "提问过于频繁，请稍后再试")
+
     question = (payload.question or "").strip()
     if not question:
         raise HttpError(400, "问题不能为空")
+    if len(question) > QUESTION_MAX:
+        raise HttpError(400, f"问题最多 {QUESTION_MAX} 字")
 
-    # 会话 ID 加用户前缀（登录时），便于历史页按用户过滤
-    session_id = payload.session_id
+    # 会话 ID 加用户前缀（登录时），便于历史页按用户过滤；
+    # 匿名会话统一加 anon- 前缀，防止伪造 "u<id>-xxx" 往他人历史里塞记录。
+    session_id = (payload.session_id or "")[:SESSION_ID_MAX]
     user = getattr(request, "auth", None)
-    if user and getattr(user, "is_authenticated", False) and session_id:
-        session_id = f"u{user.id}-{session_id}"
+    if session_id:
+        if user and getattr(user, "is_authenticated", False):
+            session_id = f"u{user.id}-{session_id}"
+        else:
+            session_id = f"anon-{session_id}"
 
     # 取会话历史（最近 10 轮，用带用户前缀的 session_id 查）
     history = []

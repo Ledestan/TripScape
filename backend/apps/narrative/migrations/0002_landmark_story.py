@@ -1,6 +1,6 @@
 """
 行旅识景 TripScape / apps/narrative/migrations/0002_landmark_story
-创建日期: 2026-11-25
+
 数据库迁移（由 makemigrations 生成，勿手改；回滚用 migrate <app> <编号>）。
 """
 

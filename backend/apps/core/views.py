@@ -1,11 +1,11 @@
 """
 行旅识景 TripScape / apps/core/views
-创建日期: 2025-09-01
 
 通用视图（404/500 JSON 响应）与分页助手。
 """
 
 import math
+
 from django.http import JsonResponse
 
 

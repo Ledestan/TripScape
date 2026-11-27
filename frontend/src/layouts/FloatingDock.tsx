@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/layouts/FloatingDock
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 右上角头像菜单：个人主页、旅行手记、设置与管理后台入口。
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -288,4 +287,3 @@ function MenuItem({ icon, label, onClick, testId }: { icon: React.ReactNode; lab
   );
 
 }
-

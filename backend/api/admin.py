@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / api/admin
-创建日期: 2025-09-01
 
 审核中心 + 管理端 API（/api/admin）。
 
@@ -29,6 +28,20 @@ from services.audit_service import _client_ip, write_audit
 router = Router()
 
 User = get_user_model()
+
+# 单次批量审核的最大条数（防一条请求拖着 DB 做超大批量写）
+MAX_BATCH_IDS = 500
+
+
+def _int_ids(values) -> list[int]:
+    """把 ids 列表收敛成整数数组；非法值返回 400 而不是 500。"""
+    try:
+        ids = [int(value) for value in (values or [])]
+    except (TypeError, ValueError):
+        raise HttpError(400, "ids 必须是整数数组")
+    if len(ids) > MAX_BATCH_IDS:
+        raise HttpError(400, f"单次最多处理 {MAX_BATCH_IDS} 条")
+    return ids
 
 
 class AdminLoginIn(Schema):
@@ -222,8 +235,9 @@ def moderate_journals(request, payload: ModerateIn):
         raise HttpError(400, "不支持的审核动作")
     from django.utils import timezone
 
+    ids = _int_ids(payload.ids)
     done = 0
-    for jid in payload.ids or []:
+    for jid in ids:
         j = Journal.objects.filter(id=jid).first()
         if not j:
             continue
@@ -246,17 +260,18 @@ def moderate_comments(request, payload: ModerateIn):
         raise HttpError(400, "不支持的审核动作")
     from django.utils import timezone
 
+    ids = _int_ids(payload.ids)
     if payload.action == "hide":
-        done = Comment.objects.filter(id__in=payload.ids or []).update(is_hidden=True)
+        done = Comment.objects.filter(id__in=ids).update(is_hidden=True)
     elif payload.action == "restore":
-        done = Comment.objects.filter(id__in=payload.ids or []).update(
+        done = Comment.objects.filter(id__in=ids).update(
             is_hidden=False, deleted_at=None
         )
     else:
-        done = Comment.objects.filter(id__in=payload.ids or []).update(
+        done = Comment.objects.filter(id__in=ids).update(
             deleted_at=timezone.now(), is_hidden=True
         )
-    write_audit(request, f"comment.{payload.action}", f"comments:{payload.ids}", "")
+    write_audit(request, f"comment.{payload.action}", f"comments:{ids}", "")
     return {"success": True, "processed": done}
 
 
@@ -430,9 +445,9 @@ def users(request, page: int = 1, page_size: int = 0, q: str = ""):
     page_size = page_size or settings.PAGE_SIZE
     qs = User.objects.all().order_by("-id")
     if q:
-        qs = qs.filter(username__icontains=q) | User.objects.filter(
-            nickname__icontains=q
-        ).order_by("-id")
+        from django.db.models import Q
+
+        qs = qs.filter(Q(username__icontains=q) | Q(nickname__icontains=q))
     items, meta = paginate(qs, page, page_size)
     return {
         "success": True,
@@ -465,6 +480,9 @@ def set_role(request, user_id: int, payload: RoleIn):
     u = User.objects.filter(id=user_id).first()
     if not u:
         raise HttpError(404, "用户不存在")
+    if u.id == request.auth.id:
+        # 防止管理员把自己降权后无人可管理（可用另一个管理员操作）
+        raise HttpError(400, "不能修改自己的角色")
     u.role = payload.role
     u.save(update_fields=["role"])
     write_audit(
@@ -591,11 +609,16 @@ def sensitive_words(request):
 @router.post("/sensitive-words", summary="新增敏感词")
 @any_admin_required
 def add_sensitive_word(request, payload: SensitiveWordIn):
-    """新增敏感词。"""
-    obj, created = SensitiveWord.objects.get_or_create(word=payload.word.strip())
+    """新增敏感词（空词/超长词直接 400）。"""
+    word = (payload.word or "").strip()
+    if not word:
+        raise HttpError(400, "敏感词不能为空")
+    if len(word) > 64:
+        raise HttpError(400, "敏感词最长 64 个字符")
+    obj, created = SensitiveWord.objects.get_or_create(word=word)
     obj.is_active = payload.is_active
     obj.save(update_fields=["is_active"])
-    write_audit(request, "sensitive_word.add", payload.word, "")
+    write_audit(request, "sensitive_word.add", word, "")
     return {"success": True, "created": created}
 
 
@@ -620,6 +643,13 @@ def audit_logs_export(request, username: str = "", action: str = ""):
 
     from django.http import HttpResponse
 
+    def safe_cell(value) -> str:
+        """CSV 公式注入防护：= + - @ 开头的单元格加前缀单引号。"""
+        text = "" if value is None else str(value)
+        if text[:1] in ("=", "+", "-", "@", "\t", "\r"):
+            return "'" + text
+        return text
+
     qs = AuditLog.objects.all().order_by("-created_at")
     if username:
         qs = qs.filter(username__icontains=username)
@@ -633,12 +663,12 @@ def audit_logs_export(request, username: str = "", action: str = ""):
         writer.writerow(
             [
                 a.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-                a.username,
-                a.action,
-                a.target,
-                a.detail,
-                a.level,
-                a.ip,
+                safe_cell(a.username),
+                safe_cell(a.action),
+                safe_cell(a.target),
+                safe_cell(a.detail),
+                safe_cell(a.level),
+                safe_cell(a.ip),
             ]
         )
     resp = HttpResponse(buf.getvalue(), content_type="text/csv; charset=utf-8")
@@ -733,6 +763,8 @@ def trash_list(request, kind: str = "journal"):
 @any_admin_required
 def trash_restore(request, kind: str, item_id: int):
     """从回收站恢复单条内容。"""
+    if kind not in ("journal", "comment"):
+        raise HttpError(400, "kind 只能是 journal 或 comment")
     if kind == "journal":
         obj = Journal.objects.filter(id=item_id).first()
         if not obj:
@@ -763,9 +795,9 @@ def trash_purge(request):
     from django.utils import timezone
 
     cutoff = timezone.now() - timezone.timedelta(days=30)
-    j, cj = Journal.objects.filter(deleted_at__lt=cutoff).delete()
-    c, cc = Comment.objects.filter(deleted_at__lt=cutoff).delete()
-    total = cj + cc
+    journal_total, _ = Journal.objects.filter(deleted_at__lt=cutoff).delete()
+    comment_total, _ = Comment.objects.filter(deleted_at__lt=cutoff).delete()
+    total = journal_total + comment_total
     write_audit(request, "trash.purge", "trash", f"{total} items")
     return {"success": True, "purged": total}
 

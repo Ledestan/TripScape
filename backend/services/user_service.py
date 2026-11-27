@@ -1,11 +1,11 @@
 """
 行旅识景 TripScape / services/user_service
-创建日期: 2025-09-01
 
 用户服务：注册 / 登录 / 个人资料。
 """
 
 import re
+
 from apps.accounts.models import User
 from django.contrib.auth import authenticate
 from django.db import IntegrityError
@@ -13,9 +13,11 @@ from django.utils import timezone
 
 # 用户名：仅英文字母/数字/下划线，3-30 位
 _USERNAME_RE = re.compile(r"^[A-Za-z0-9_]{3,30}$")
-# 密码：至少 6 位，且同时包含字母与数字（允许特殊符号）
+# 密码：至少 6 位，且同时包含字母与数字（允许特殊符号）；上限防哈希 DoS
 _PASSWORD_LETTER = re.compile(r"[A-Za-z]")
 _PASSWORD_DIGIT = re.compile(r"[0-9]")
+PASSWORD_MAX_LENGTH = 128
+NICKNAME_MAX_LENGTH = 64
 
 
 def register_user(username: str, password: str, nickname: str = ""):
@@ -30,6 +32,8 @@ def register_user(username: str, password: str, nickname: str = ""):
         return False, "用户名仅限英文字母、数字、下划线，3-30 位"
     if not password or len(password) < 6:
         return False, "密码至少 6 位"
+    if len(password) > PASSWORD_MAX_LENGTH:
+        return False, f"密码最长 {PASSWORD_MAX_LENGTH} 位"
     if not _PASSWORD_LETTER.search(password) or not _PASSWORD_DIGIT.search(password):
         return False, "密码需同时包含字母和数字"
     if User.objects.filter(username=username).exists():
@@ -38,7 +42,8 @@ def register_user(username: str, password: str, nickname: str = ""):
         user = User.objects.create_user(
             username=username,
             password=password,
-            nickname=nickname or username,
+            # 昵称按列宽截断：超长昵称曾直接落到 MySQL 报 DataError（500）
+            nickname=(nickname or username).strip()[:NICKNAME_MAX_LENGTH] or username,
         )
         return True, user
     except IntegrityError:
@@ -51,6 +56,13 @@ def login_user(username: str, password: str):
     返回：
         (user 或 None, message)
     """
+    # 超长密码直接拒绝：避免用超长串白耗 PBKDF2 计算（配合限流做纵深防御）
+    if (
+        not isinstance(password, str)
+        or not password
+        or len(password) > PASSWORD_MAX_LENGTH
+    ):
+        return None, "用户名或密码错误"
     user = authenticate(username=username, password=password)
     if user is None:
         return None, "用户名或密码错误"

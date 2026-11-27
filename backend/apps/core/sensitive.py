@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / apps/core/sensitive
-创建日期: 2025-09-01
 
 敏感词服务：评论 / 手账发布时自动拦截。
 
@@ -25,13 +24,28 @@ BUILTIN_WORDS = [
 ]
 
 
+# 零宽/不可见字符：常被用来把敏感词拆开（"加\u200b微信"）绕过匹配
+_INVISIBLE = {
+    0x200B,  # ZERO WIDTH SPACE
+    0x200C,  # ZERO WIDTH NON-JOINER
+    0x200D,  # ZERO WIDTH JOINER
+    0x200E,
+    0x200F,
+    0x2060,
+    0xFEFF,  # BOM
+    0x00AD,  # SOFT HYPHEN
+}
+
+
 def _normalize(text: str) -> str:
-    """全角转半角 + 去空白，规避常见绕过。"""
+    """全角转半角 + 去空白/零宽字符，规避常见绕过。"""
     if not text:
         return ""
     out = []
     for ch in text:
         code = ord(ch)
+        if code in _INVISIBLE:
+            continue
         if code == 0x3000:
             code = 32
         elif 0xFF01 <= code <= 0xFF5E:

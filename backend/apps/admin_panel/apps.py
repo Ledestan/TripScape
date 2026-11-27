@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / apps/admin_panel/apps
-创建日期: 2025-09-01
 
 审核中心数据：审计日志 + 敏感词（应用 label 为 audit）。
 """

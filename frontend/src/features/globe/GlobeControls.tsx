@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/features/globe/GlobeControls
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 地球控件：重置视角、方位角、缩放与全屏。
  */
 
 import { useEffect, useRef, useState } from "react";

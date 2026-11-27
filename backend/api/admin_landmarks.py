@@ -1,14 +1,27 @@
 """
 行旅识景 TripScape / api/admin_landmarks
-创建日期: 2025-09-01
 
 地标管理区块（并入 admin.py 主路由）。
 
 从 admin_landmarks.py 合并而来；路由路径与原先 /api/admin/landmarks/* 完全一致。
+
+安全口径：
+- 分页统一走 core.views.paginate（页码/页宽夹取，负页码不再 500、页宽有上限）
+- target_id / 经纬度做合法性校验（target_id 参与磁盘文件名，必须防穿越）
 """
 
 from api.admin import admin_required, router, write_audit
+from apps.core.views import paginate
 from apps.landmarks.models import Landmark
+from apps.landmarks.validators import (
+    IMAGE_URL_MAX,
+    INTRO_MAX,
+    NAME_MAX,
+    SHORT_TEXT_MAX,
+    clean_coordinates,
+    clean_target_id,
+)
+from django.db import IntegrityError
 from ninja import Schema
 from ninja.errors import HttpError
 
@@ -51,7 +64,7 @@ def list_landmarks(
     region: str = "",
     is_active: str = "",
     page: int = 1,
-    page_size: int = 50,
+    page_size: int = 0,
 ):
     """地标列表（管理端）：支持 名称/地区/上下架 筛选与分页。"""
     qs = Landmark.objects.all().order_by("id")
@@ -67,12 +80,12 @@ def list_landmarks(
         qs = qs.filter(is_active=True)
     elif is_active == "false":
         qs = qs.filter(is_active=False)
-    total = qs.count()
-    items = qs[(page - 1) * page_size : page * page_size]
+
+    items, meta = paginate(qs, page, page_size or 50)
     return {
         "success": True,
         "data": [_lm_dict(lm, with_intro=True) for lm in items],
-        "meta": {"total": total, "page": page},
+        "meta": meta,
     }
 
 
@@ -80,22 +93,34 @@ def list_landmarks(
 @admin_required
 def create_landmark(request, payload: LandmarkIn):
     """新增地标（target_id 缺省由名称生成，重复即 400）。"""
-    if not payload.name.strip():
+    name = (payload.name or "").strip()
+    if not name:
         raise HttpError(400, "名称不能为空")
-    tid = payload.target_id.strip() or payload.name.strip().lower().replace(" ", "_")
+    try:
+        lat, lon = clean_coordinates(payload.lat, payload.lon)
+    except ValueError as exc:
+        raise HttpError(400, str(exc))
+    fallback = name.lower().replace(" ", "_")
+    try:
+        tid = clean_target_id(payload.target_id, fallback=fallback)
+    except ValueError as exc:
+        raise HttpError(400, str(exc))
     if Landmark.objects.filter(target_id=tid).exists():
         raise HttpError(400, f"target_id「{tid}」已存在")
-    lm = Landmark.objects.create(
-        target_id=tid[:50],
-        name=payload.name.strip()[:100],
-        name_en=payload.name_en.strip()[:100],
-        region=payload.region.strip()[:64],
-        country=payload.country.strip()[:64],
-        lat=payload.lat,
-        lon=payload.lon,
-        intro=payload.intro,
-        image_url=payload.image_url[:512],
-    )
+    try:
+        lm = Landmark.objects.create(
+            target_id=tid,
+            name=name[:NAME_MAX],
+            name_en=(payload.name_en or "").strip()[:NAME_MAX],
+            region=(payload.region or "").strip()[:SHORT_TEXT_MAX],
+            country=(payload.country or "").strip()[:SHORT_TEXT_MAX],
+            lat=lat,
+            lon=lon,
+            intro=(payload.intro or "")[:INTRO_MAX],
+            image_url=(payload.image_url or "").strip()[:IMAGE_URL_MAX],
+        )
+    except IntegrityError:
+        raise HttpError(400, f"target_id「{tid}」已存在")
     write_audit(request, "landmark.create", f"landmark:{lm.id}", lm.name)
     return {"success": True, "data": _lm_dict(lm, with_intro=True)}
 
@@ -103,12 +128,12 @@ def create_landmark(request, payload: LandmarkIn):
 @router.put("/landmarks/{landmark_id}", summary="修改地标")
 @admin_required
 def update_landmark(request, landmark_id: int, payload: LandmarkUpdateIn):
-    """修改地标字段（仅更新传入的非空字段）。"""
+    """修改地标字段（仅更新传入的非空字段；经纬度做区间校验）。"""
     lm = Landmark.objects.filter(id=landmark_id).first()
     if not lm:
         raise HttpError(404, "地标不存在")
     changed = []
-    for f, v in (
+    for field, value in (
         ("name", payload.name),
         ("name_en", payload.name_en),
         ("region", payload.region),
@@ -116,16 +141,31 @@ def update_landmark(request, landmark_id: int, payload: LandmarkUpdateIn):
         ("intro", payload.intro),
         ("image_url", payload.image_url),
     ):
-        if v:
-            setattr(lm, f, v)
-            changed.append(f)
-    if payload.lat is not None:
-        lm.lat = payload.lat
-        changed.append("lat")
-    if payload.lon is not None:
-        lm.lon = payload.lon
-        changed.append("lon")
-    lm.save()
+        if value:
+            limit = {
+                "name": NAME_MAX,
+                "name_en": NAME_MAX,
+                "region": SHORT_TEXT_MAX,
+                "country": SHORT_TEXT_MAX,
+                "intro": INTRO_MAX,
+                "image_url": IMAGE_URL_MAX,
+            }[field]
+            setattr(lm, field, value.strip()[:limit])
+            changed.append(field)
+    if payload.lat is not None or payload.lon is not None:
+        try:
+            lat, lon = clean_coordinates(
+                payload.lat if payload.lat is not None else lm.lat,
+                payload.lon if payload.lon is not None else lm.lon,
+            )
+        except ValueError as exc:
+            raise HttpError(400, str(exc))
+        lm.lat, lm.lon = lat, lon
+        changed.extend(["lat", "lon"])
+    try:
+        lm.save()
+    except IntegrityError:
+        raise HttpError(400, "地标数据冲突（target_id 或名称重复）")
     write_audit(request, "landmark.update", f"landmark:{lm.id}", ",".join(changed))
     return {"success": True, "data": _lm_dict(lm, with_intro=True)}
 

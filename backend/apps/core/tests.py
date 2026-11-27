@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / apps/core/tests
-创建日期: 2025-09-01
 
 core tests。
 """

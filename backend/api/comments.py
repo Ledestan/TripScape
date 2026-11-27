@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / api/comments
-创建日期: 2025-09-01
 
 评论 API。
 
@@ -80,7 +79,9 @@ def landmark_comments(request, landmark_id: int):
     return {"success": True, "data": _tree(records)}
 
 
-@router.get("/journal/{journal_id}", summary="手账评论（公开或作者）", auth=OptionalAuth())
+@router.get(
+    "/journal/{journal_id}", summary="手账评论（公开或作者）", auth=OptionalAuth()
+)
 def journal_comments(request, journal_id: int):
     """手账下的评论树：公开手账任何人可读，私密手账仅作者/管理员。"""
     from apps.journals.models import Journal
@@ -89,9 +90,14 @@ def journal_comments(request, journal_id: int):
     if not journal:
         raise HttpError(404, "手账不存在")
     viewer = getattr(request, "auth", None)
-    is_owner = getattr(viewer, "is_authenticated", False) and journal.user_id == viewer.id
-    if not journal.is_public and not is_owner and not is_any_admin(viewer):
-        raise HttpError(403, "该手账未公开")
+    is_owner = (
+        getattr(viewer, "is_authenticated", False) and journal.user_id == viewer.id
+    )
+    if not is_owner and not is_any_admin(viewer):
+        if not journal.is_public:
+            raise HttpError(403, "该手账未公开")
+        if journal.status != "approved":
+            raise HttpError(403, "该手账审核中")
     records = list(
         Comment.objects.filter(
             journal_id=journal_id,
@@ -137,19 +143,36 @@ def report(request, payload: ReportIn):
     if payload.target_type not in ("comment", "journal"):
         raise HttpError(400, "目标类型不合法")
 
-    # 目标存在且有效（软删/隐藏内容不可举报）
+    from django.db.models import Q
+
+    # 目标存在且对举报人可见（软删/隐藏内容不可举报；
+    # 私密手账及其评论只有作者本人能举报，避免拿 ID 探测他人私密内容）
     if payload.target_type == "comment":
         from apps.comments.models import Comment
 
-        exists = Comment.objects.filter(
-            id=payload.target_id, deleted_at__isnull=True, is_hidden=False
-        ).exists()
+        exists = (
+            Comment.objects.filter(
+                id=payload.target_id, deleted_at__isnull=True, is_hidden=False
+            )
+            .filter(
+                Q(landmark__isnull=False)
+                | Q(
+                    journal__is_public=True,
+                    journal__status="approved",
+                    journal__deleted_at__isnull=True,
+                )
+                | Q(user=request.auth)
+            )
+            .exists()
+        )
     else:
         from apps.journals.models import Journal
 
-        exists = Journal.objects.filter(
-            id=payload.target_id, deleted_at__isnull=True
-        ).exists()
+        exists = (
+            Journal.objects.filter(id=payload.target_id, deleted_at__isnull=True)
+            .filter(Q(is_public=True, status="approved") | Q(user=request.auth))
+            .exists()
+        )
     if not exists:
         raise HttpError(404, "举报目标不存在")
 
@@ -205,8 +228,8 @@ def update(request, comment_id: int, payload: CommentIn):
 @router.delete("/{comment_id}", summary="删除评论")
 @login_required
 def delete(request, comment_id: int):
-    """删除手账（作者或管理员）。"""
-    c = Comment.objects.filter(id=comment_id).first()
+    """删除评论（作者或管理员）。"""
+    c = Comment.objects.filter(id=comment_id, deleted_at__isnull=True).first()
     if not c:
         raise HttpError(404, "评论不存在")
     if c.user_id != request.auth.id and not is_any_admin(request.auth):

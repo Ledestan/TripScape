@@ -1,6 +1,5 @@
 /**
- * 行旅识景 TripScape / HTTP 客户端
- * 创建日期: 2025-09-01
+ * 行旅识景 TripScape / HTTP
  *
  * 统一的 axios 实例与错误文案，提供:
  *     1. api：自动附带登录 token 的请求实例

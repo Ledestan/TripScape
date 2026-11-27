@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / apps/core/auth
-创建日期: 2025-09-01
 
 JWT 认证 + 权限校验。
 
@@ -12,6 +11,7 @@ JWT 认证 + 权限校验。
 
 import time
 from functools import wraps
+
 import jwt as pyjwt
 from django.conf import settings
 from django.contrib.auth import get_user_model

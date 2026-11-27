@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / tasks/recognition_tasks
-创建日期: 2025-09-01
 
 landmarks 异步任务：识别 + 知识库重建向量索引。
 """
@@ -8,6 +7,7 @@ landmarks 异步任务：识别 + 知识库重建向量索引。
 import logging
 import os
 from pathlib import Path
+
 from celery import shared_task
 from django.conf import settings
 
@@ -38,6 +38,9 @@ def recognize_image_task(image_path: str, user_id=None):
     if result.get("success") and user:
         # 异步识别成功后为用户生成一条"待确认手账"提示数据（不自动创建手账）
         pass
+    # 带上任务归属，供 /api/recognition/task 校验（防止越权读他人任务）
+    if isinstance(result, dict):
+        result["_owner_id"] = user_id
     return result
 
 

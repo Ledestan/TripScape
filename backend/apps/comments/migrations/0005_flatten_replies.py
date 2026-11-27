@@ -1,6 +1,5 @@
 """
-行旅识景 TripScape / comments 0005 拉平多层回复
-创建日期: 2026-11-26
+行旅识景 TripScape / comments
 
 把历史上"回复的回复"（parent.parent 不为空）改成两级：
     reply_to = 原来的 parent（被回复的人）

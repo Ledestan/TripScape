@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / config/celery
-创建日期: 2025-09-01
 
 Celery 应用。
 

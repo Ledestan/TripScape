@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / api/dashboard
-创建日期: 2025-09-01
 
 看板 API（管理员）。
 """

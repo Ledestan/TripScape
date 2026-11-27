@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / 文章式问答服务
-创建日期: 2025-10-08
 
 以"每地标一篇章节式文章"为知识源的新问答管线，完成:
     1. 离线建库：解析 backend/content/articles/*.md -> 按章节分块（问答用全文，与地标页分离）
@@ -40,6 +39,7 @@ import logging
 import re
 import time
 from pathlib import Path
+
 from django.conf import settings
 
 logger = logging.getLogger(__name__)

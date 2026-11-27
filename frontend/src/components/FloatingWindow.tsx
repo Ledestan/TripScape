@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/components/FloatingWindow
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 通用浮窗容器：居中卡片、Esc/遮罩关闭、可定制宽度与高度。
  */
 
 import { useEffect } from "react";
@@ -46,7 +45,7 @@ export function FloatingWindow({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       {/* 极轻遮罩：保留背景可见度，点击关闭 */}
       <div className="absolute inset-0 bg-black/25" onClick={onClose} />
       <div
@@ -60,7 +59,7 @@ export function FloatingWindow({
         )}
         style={{ maxWidth: width, ...(fixedHeight ? { height: fixedHeight, maxHeight: fixedHeight } : {}) }}
       >
-        <div className="flex items-center justify-between border-b px-5 py-3.5">
+        <div className="flex items-center justify-between border-b px-4 py-2.5 sm:px-5 sm:py-3.5">
           <div className="text-sm font-semibold">{title}</div>
           <button
             onClick={onClose}
@@ -69,7 +68,7 @@ export function FloatingWindow({
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-5" style={fixedHeight ? undefined : { maxHeight }}>
+        <div className="flex-1 overflow-y-auto p-3.5 sm:p-5" style={fixedHeight ? undefined : { maxHeight }}>
           {children}
         </div>
       </div>

@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / tasks/maintenance_tasks
-创建日期: 2025-09-01
 
 core 定时任务：runtime 目录清理。
 """
@@ -8,6 +7,7 @@ core 定时任务：runtime 目录清理。
 import logging
 import time
 from pathlib import Path
+
 from celery import shared_task
 from django.conf import settings
 

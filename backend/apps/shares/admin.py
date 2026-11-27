@@ -1,6 +1,7 @@
 """
 行旅识景 TripScape / apps/shares/admin
-创建日期: 2025-09-01
+
+分享链接后台：注册分享记录，便于排查失效或越权链接。
 """
 
 from apps.shares.models import ShareLink

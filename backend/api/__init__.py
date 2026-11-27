@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / api/__init__
-创建日期: 2025-09-01
 
 Django Ninja API 聚合。
 
@@ -26,13 +25,19 @@ Django Ninja API 聚合。
 """
 
 from apps.core.auth import GlobalAuth
+from django.conf import settings
 from ninja import NinjaAPI
+
+# 接口文档默认开放（开发/评审方便）；生产可在 .env 设 API_DOCS_ENABLED=false
+_DOCS_ENABLED = getattr(settings, "API_DOCS_ENABLED", True)
 
 api = NinjaAPI(
     title="TripScape API",
     description="行旅识景 · 世界著名地标智能识别平台",
     version="1.0.0",
     auth=GlobalAuth(),
+    docs_url="/docs" if _DOCS_ENABLED else None,
+    openapi_url="/openapi.json" if _DOCS_ENABLED else None,
 )
 
 from api.admin import router as audit_router

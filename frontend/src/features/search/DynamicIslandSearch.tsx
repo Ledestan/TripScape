@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/features/search/DynamicIslandSearch
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 灵动岛搜索：输入联想、键盘导航与结果跳转。
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -324,4 +323,3 @@ export default function DynamicIslandSearch({
     </div>
   );
 }
-

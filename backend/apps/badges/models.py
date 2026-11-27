@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / apps/badges/models
-创建日期: 2025-09-01
 
 成就徽章。
 

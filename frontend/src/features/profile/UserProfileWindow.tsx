@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/features/profile/UserProfileWindow
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 他人公开主页：按隐私开关展示足迹、手账、评论、收藏与徽章。
  */
 
 import { useState } from "react";

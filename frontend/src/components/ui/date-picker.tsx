@@ -1,6 +1,5 @@
 /**
  * 行旅识景 TripScape / src/components/ui/date-picker
- * 创建日期: 2026-11-26
  *
  * 轻量日历选择器，完成:
  *     1. 按钮显示"2026年11月26日"，不显示 yyyy/mm/dd 那种输入框格式

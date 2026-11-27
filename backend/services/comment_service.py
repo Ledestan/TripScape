@@ -1,11 +1,11 @@
 """
 行旅识景 TripScape / services/comment_service
-创建日期: 2025-09-01
 
 评论服务：发评论（敏感词拦截）、回复通知、搜索索引。
 """
 
 import logging
+
 from apps.comments.models import Comment
 from apps.core import sensitive
 from services import notification_service as notify_service
@@ -15,7 +15,11 @@ logger = logging.getLogger("tripscape.comment")
 
 
 def create_comment(
-    user, landmark_id: int = None, content: str = "", parent_id=None, journal_id: int = None
+    user,
+    landmark_id: int = None,
+    content: str = "",
+    parent_id=None,
+    journal_id: int = None,
 ) -> tuple:
     """发表评论。
 
@@ -41,7 +45,10 @@ def create_comment(
         journal = Journal.objects.filter(id=journal_id, deleted_at__isnull=True).first()
         if not journal:
             return False, "手账不存在"
-        if not journal.is_public and journal.user_id != user.id:
+        # 只允许在"公开且已通过"的手账下评论（待审/被驳回内容不产生公开互动）
+        if journal.user_id != user.id and not (
+            journal.is_public and journal.status == "approved"
+        ):
             return False, "该手账未公开"
     else:
         lm = Landmark.objects.filter(id=landmark_id).first()

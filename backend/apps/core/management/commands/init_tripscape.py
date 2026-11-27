@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / apps/core/management/commands/init_tripscape
-创建日期: 2025-09-01
 
 数据库初始化命令：迁移 + 地标/知识库/徽章/敏感词/账号种子（幂等）。
 
@@ -21,6 +20,7 @@ import sys
 
 sys.dont_write_bytecode = True
 from pathlib import Path
+
 from apps.admin_panel.models import SensitiveWord
 from apps.badges.models import Badge
 from apps.landmarks.models import Landmark
@@ -128,6 +128,7 @@ class Command(BaseCommand):
             from apps.comments.models import Comment, CommentReport
             from apps.comments.models_like import Like
             from apps.journals.models import Footprint, Journal, JournalImage
+            from apps.narrative.models import JournalCard, NarrativeCard
             from apps.landmarks.models import QAContext, RecognitionRecord, UserFavorite
             from apps.notifications.models import Notification
             from apps.shares.models import ShareLink
@@ -142,6 +143,8 @@ class Command(BaseCommand):
                 Like,
                 JournalImage,
                 Journal,
+                JournalCard,
+                NarrativeCard,
                 Footprint,
                 RecognitionRecord,
                 UserFavorite,

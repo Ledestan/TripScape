@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / apps/notifications/models
-创建日期: 2025-09-01
 
 站内通知模型。
 

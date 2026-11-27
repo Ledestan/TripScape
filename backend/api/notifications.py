@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / api/notifications
-创建日期: 2025-09-01
 
 通知 API。
 

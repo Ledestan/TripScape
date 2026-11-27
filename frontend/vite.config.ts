@@ -1,6 +1,5 @@
 /**
  * 行旅识景 TripScape / vite.config
- * 创建日期: 2026-10-09
  *
  * 前端构建配置，负责:
  *     1. 路径别名 @ -> src，开发代理到 Django（/api /media /landmarks）

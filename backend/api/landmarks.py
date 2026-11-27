@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / api/landmarks
-创建日期: 2025-09-01
 
 地标 API。
 
@@ -14,11 +13,25 @@ POST   /api/landmarks/{id}/favorite    收藏 / 取消收藏
 GET    /api/landmarks/{id}/comments    地标下的公开评论
 """
 
-from apps.core.auth import OptionalAuth, any_admin_required, login_required
+from apps.core.auth import (
+    OptionalAuth,
+    any_admin_required,
+    is_any_admin,
+    login_required,
+)
 from apps.core.views import paginate
 from apps.landmarks.models import Landmark, UserFavorite
+from apps.landmarks.validators import (
+    IMAGE_URL_MAX,
+    INTRO_MAX,
+    NAME_MAX,
+    SHORT_TEXT_MAX,
+    clean_coordinates,
+    clean_target_id,
+)
 from django.conf import settings
-from ninja import Router, Schema
+from django.db import IntegrityError
+from ninja import File, Router, Schema
 from ninja.errors import HttpError
 from ninja.files import UploadedFile
 from services.audit_service import write_audit
@@ -37,6 +50,27 @@ class LandmarkIn(Schema):
     lon: float
     intro: str = ""
     image_url: str = ""
+
+
+def _clean_landmark_payload(payload) -> dict:
+    """地标字段校验与截断（非法输入一律 400，不让脏数据/DB 异常冒 500）。"""
+    name = (payload.name or "").strip()
+    if not name:
+        raise HttpError(400, "地标名称不能为空")
+    try:
+        lat, lon = clean_coordinates(payload.lat, payload.lon)
+    except ValueError as exc:
+        raise HttpError(400, str(exc))
+    return {
+        "name": name[:NAME_MAX],
+        "name_en": (payload.name_en or "").strip()[:NAME_MAX],
+        "region": (payload.region or "").strip()[:SHORT_TEXT_MAX],
+        "country": (payload.country or "").strip()[:SHORT_TEXT_MAX],
+        "lat": lat,
+        "lon": lon,
+        "intro": (payload.intro or "")[:INTRO_MAX],
+        "image_url": (payload.image_url or "").strip()[:IMAGE_URL_MAX],
+    }
 
 
 @router.get(
@@ -106,37 +140,33 @@ def list_landmarks(
 @router.get("/{landmark_id}", summary="地标详情（浏览量+1）", auth=OptionalAuth())
 def landmark_detail(request, landmark_id: int):
     """地标详情：百科介绍 + 计数（评论/手账/访客）。"""
-    try:
-        from django.db.models import F
+    from django.db.models import F
 
-        lm = Landmark.objects.filter(id=landmark_id).first()
-        if not lm:
-            raise HttpError(404, "地标不存在")
-        Landmark.objects.filter(id=lm.id).update(view_count=F("view_count") + 1)
-        return {"success": True, "data": lm.as_dict(with_intro=True)}
-    except HttpError:
-        raise
-    except Exception as exc:
-        raise HttpError(500, f"查询失败: {exc}")
+    lm = Landmark.objects.filter(id=landmark_id).first()
+    if not lm:
+        raise HttpError(404, "地标不存在")
+    # 已下架地标只对管理员可见（下架 = 地球/搜索/详情都不再对外展示）
+    if not lm.is_active and not is_any_admin(getattr(request, "auth", None)):
+        raise HttpError(404, "地标不存在")
+    Landmark.objects.filter(id=lm.id).update(view_count=F("view_count") + 1)
+    return {"success": True, "data": lm.as_dict(with_intro=True)}
 
 
 @router.post("/", summary="新增地标（管理员）")
 @any_admin_required
 def create_landmark(request, payload: LandmarkIn):
     """新增地标（target_id 缺省由名称生成，重复即 400）。"""
-    if Landmark.objects.filter(target_id=payload.target_id).exists():
+    try:
+        target_id = clean_target_id(payload.target_id)
+    except ValueError as exc:
+        raise HttpError(400, str(exc))
+    fields = _clean_landmark_payload(payload)
+    if Landmark.objects.filter(target_id=target_id).exists():
         raise HttpError(400, "target_id 已存在")
-    lm = Landmark.objects.create(
-        target_id=payload.target_id,
-        name=payload.name,
-        name_en=payload.name_en,
-        region=payload.region,
-        country=payload.country,
-        lat=payload.lat,
-        lon=payload.lon,
-        intro=payload.intro,
-        image_url=payload.image_url,
-    )
+    try:
+        lm = Landmark.objects.create(target_id=target_id, **fields)
+    except IntegrityError:
+        raise HttpError(400, "target_id 已存在")
     sync_landmark_to_meili(lm)
     write_audit(request, "landmark.create", f"landmark:{lm.id}", lm.name)
     return {"success": True, "data": lm.as_dict()}
@@ -145,22 +175,24 @@ def create_landmark(request, payload: LandmarkIn):
 @router.put("/{landmark_id}", summary="修改地标（管理员）")
 @any_admin_required
 def update_landmark(request, landmark_id: int, payload: LandmarkIn):
-    """修改地标字段（仅更新传入的非空字段）。"""
+    """修改地标字段（管理员；target_id 唯一性冲突返回 400）。"""
     lm = Landmark.objects.filter(id=landmark_id).first()
     if not lm:
         raise HttpError(404, "地标不存在")
-    for field in (
-        "target_id",
-        "name",
-        "name_en",
-        "region",
-        "country",
-        "intro",
-        "image_url",
-    ):
-        setattr(lm, field, getattr(payload, field))
-    lm.lat, lm.lon = payload.lat, payload.lon
-    lm.save()
+    try:
+        target_id = clean_target_id(payload.target_id)
+    except ValueError as exc:
+        raise HttpError(400, str(exc))
+    fields = _clean_landmark_payload(payload)
+    if Landmark.objects.filter(target_id=target_id).exclude(id=lm.id).exists():
+        raise HttpError(400, "target_id 已存在")
+    for field, value in fields.items():
+        setattr(lm, field, value)
+    lm.target_id = target_id
+    try:
+        lm.save()
+    except IntegrityError:
+        raise HttpError(400, "target_id 已存在")
     sync_landmark_to_meili(lm)
     write_audit(request, "landmark.update", f"landmark:{lm.id}", lm.name)
     return {"success": True, "data": lm.as_dict()}
@@ -169,12 +201,17 @@ def update_landmark(request, landmark_id: int, payload: LandmarkIn):
 @router.delete("/{landmark_id}", summary="删除地标（管理员）")
 @any_admin_required
 def delete_landmark(request, landmark_id: int):
-    """删除地标（管理员；被评论/手账引用时拒绝）。"""
+    """删除地标（管理员；被评论/手账引用时拒绝，返回 400 而不是 500）。"""
+    from django.db.models import ProtectedError
+
     lm = Landmark.objects.filter(id=landmark_id).first()
     if not lm:
         raise HttpError(404, "地标不存在")
     name = lm.name
-    lm.delete()
+    try:
+        lm.delete()
+    except ProtectedError:
+        raise HttpError(400, "该地标已被手账引用，不能删除（请先处理关联手账）")
     try:
         from services.search_service import remove_from_meili
 
@@ -201,7 +238,7 @@ def toggle_favorite(request, landmark_id: int):
 
 @router.post("/{landmark_id}/image", summary="上传地标百科图片（管理员）")
 @any_admin_required
-def upload_landmark_image(request, landmark_id: int, image: UploadedFile):
+def upload_landmark_image(request, landmark_id: int, image: UploadedFile = File(...)):
     """上传地标百科图片。"""
     from services import file_service
 

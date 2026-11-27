@@ -1,6 +1,5 @@
 /**
  * 行旅识景 TripScape / src/features/creation/ComposeStage
- * 创建日期: 2026-11-26
  *
  * 拼贴画布的 Konva 渲染层，完成:
  *     1. 720×960 逻辑画布，等比适配容器，支持缩放与平移查看

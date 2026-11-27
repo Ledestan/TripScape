@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/App
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 路由入口：登录、地球主页、地标页、分享页与 404 的分发。
  */
 
 import { lazy, Suspense, useEffect } from "react";

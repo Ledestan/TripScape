@@ -1,6 +1,5 @@
 /**
  * 行旅识景 TripScape / src/features/creation/useHistory
- * 创建日期: 2026-11-26
  *
  * 画布撤销/重做的小型历史栈，完成:
  *     1. 提交式更新：apply(next) 记一步，replace(next) 不记步（用于拖拽中的实时预览）

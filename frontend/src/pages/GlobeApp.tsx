@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/pages/GlobeApp
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 地球主界面：三维地球、四角浮层、叙事层与各功能浮窗的挂载点。
  */
 
 import { lazy, Suspense, useEffect, useState } from "react";

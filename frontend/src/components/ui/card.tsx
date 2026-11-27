@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/components/ui/card
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 卡片容器：圆角、边框与内容分区。
  */
 
 import * as React from "react";

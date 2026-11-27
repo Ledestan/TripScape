@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / 手账画布校验
-创建日期: 2026-11-26
 
 手账画布（3:4 版式）的服务端归一化，完成:
     1. 固定版式：逻辑尺寸 720×960、比例 "3:4"，前端传什么都按此校准
@@ -158,7 +157,9 @@ def normalize_element(raw, index: int) -> dict:
         element["color"] = _color(element.get("color"), "#f5f2ea")
         element["align"] = "center" if raw.get("align") == "center" else "left"
         element["fontFamily"] = _text(element.get("fontFamily"), 40) or "serif"
-        element["fontStyle"] = "italic" if raw.get("fontStyle") == "italic" else "normal"
+        element["fontStyle"] = (
+            "italic" if raw.get("fontStyle") == "italic" else "normal"
+        )
     elif kind == "sticker":
         variant = str(raw.get("variant") or "star")
         element["variant"] = variant if variant in STICKER_VARIANTS else "star"
@@ -197,7 +198,9 @@ def normalize_canvas(payload) -> dict:
     if len(raw_elements) > MAX_ELEMENTS:
         raise CanvasError(f"画布元素最多 {MAX_ELEMENTS} 个")
 
-    elements = [normalize_element(item, index) for index, item in enumerate(raw_elements)]
+    elements = [
+        normalize_element(item, index) for index, item in enumerate(raw_elements)
+    ]
     # 层级按数组顺序重排，避免前端传来重复 z 导致回放顺序漂移
     for order, element in enumerate(elements):
         element["z"] = order

@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / api/footprints
-创建日期: 2025-09-01
 
 足迹 API —— 从手账自动生成，取消手动打卡。
 

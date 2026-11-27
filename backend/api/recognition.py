@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / api/recognition
-创建日期: 2025-09-01
 
 识别 API（异步 Celery 任务 + 同步两种模式）。
 
@@ -11,7 +10,10 @@ GET  /api/recognition/task/{id}   查询异步任务结果（前端轮询，
 """
 
 import logging
+
 from apps.core.auth import OptionalAuth, login_required
+from apps.core.net import client_ip
+from apps.core.ratelimit import heavy_limiter
 from django.conf import settings
 from ninja import Router
 from ninja.errors import HttpError
@@ -25,9 +27,21 @@ logger = logging.getLogger("tripscape.recognition")
 ALLOWED_EXTS = (".png", ".jpg", ".jpeg")
 ALLOWED_MIME = ("image/png", "image/jpeg")
 
+# 单 IP 每分钟识别次数（模型推理是重接口，匿名可调，必须限流）
+RECOGNIZE_PER_MINUTE = 10
+
+
+def _valid_magic(header: bytes) -> bool:
+    """图片文件头校验（只认 PNG / JPEG）。"""
+    if header.startswith(b"\x89PNG\r\n\x1a\n"):
+        return True
+    if header.startswith(b"\xff\xd8\xff"):
+        return True
+    return False
+
 
 def _validate(file) -> bytes:
-    """上传类型与大小校验（安全底线）。"""
+    """上传类型与大小校验（安全底线：扩展名 + 文件头 + 大小）。"""
     if file is None or not getattr(file, "name", ""):
         raise HttpError(400, "请上传图片文件")
     name = file.name.lower()
@@ -40,6 +54,9 @@ def _validate(file) -> bytes:
         )
     if not data:
         raise HttpError(400, "文件为空")
+    # 扩展名可伪造：必须校验魔数，否则非图片字节会直接喂给图像库
+    if not _valid_magic(data[:16]):
+        raise HttpError(400, "文件内容不是有效图片")
     return data
 
 
@@ -52,6 +69,11 @@ def recognize_sync(request, image: UploadedFile = None, photo_url: str = ""):
         ragSnippets / confidence / source
     开关关闭时响应与既有行为完全一致（新增键不出现）。
     """
+    ip = client_ip(request)
+    if not heavy_limiter.allow(
+        f"recognize:{ip}", limit=RECOGNIZE_PER_MINUTE, window_seconds=60
+    ):
+        raise HttpError(429, "识别过于频繁，请稍后再试")
     data = _validate(image)
     user = request.auth if getattr(request.auth, "is_authenticated", False) else None
     result = recognizer.recognize_image(data, user=user)
@@ -105,6 +127,11 @@ def submit(request, image: UploadedFile = None):
     """提交异步识别任务（Celery；分发包无 worker 时明确 503，TS-18）。"""
     if not _celery_available():
         raise HttpError(503, "异步识别在当前环境不可用，请使用同步识别接口")
+    ip = client_ip(request)
+    if not heavy_limiter.allow(
+        f"recognize-submit:{ip}", limit=RECOGNIZE_PER_MINUTE, window_seconds=60
+    ):
+        raise HttpError(429, "提交过于频繁，请稍后再试")
     data = _validate(image)
     # 暂存文件供 worker 读取（目录来自 settings，文件名用 uuid 防冲突）
     import uuid
@@ -135,5 +162,9 @@ def task_result(request, task_id: str):
     payload = get_result(task_id)
     if payload is None:
         return {"status": "pending"}
+    # 任务归属校验：任务 ID 不是访问凭据，别人的任务结果不能看
+    owner_id = payload.pop("_owner_id", None)
+    if owner_id is not None and owner_id != request.auth.id:
+        raise HttpError(403, "无权查看该识别任务")
     payload["status"] = "done"
     return payload

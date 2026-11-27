@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / services/search_service
-创建日期: 2025-09-01
 
 Meilisearch 全局搜索服务。
 
@@ -10,6 +9,7 @@ Meilisearch 全局搜索服务。
 """
 
 import logging
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -402,29 +402,51 @@ def _search_orm(
             )
 
     if kind in ("all", "comment"):
-        qs = Comment.objects.filter(is_hidden=False).select_related("user", "landmark")
+        from django.db.models import Q
+
+        # 可见性口径：未隐藏、未软删，且要么是地标评论，要么挂在公开且已通过、
+        # 未软删的手账下——否则私密手账里的评论会被全局搜索命中（越权读取）
+        qs = (
+            Comment.objects.filter(is_hidden=False, deleted_at__isnull=True)
+            .filter(
+                Q(landmark__isnull=False)
+                | Q(
+                    journal__is_public=True,
+                    journal__status="approved",
+                    journal__deleted_at__isnull=True,
+                )
+            )
+            .select_related("user", "landmark", "journal")
+        )
         if query:
             qs = qs.filter(content__icontains=query)
         if landmark_id:
             qs = qs.filter(landmark_id=landmark_id)
         if user_id:
             qs = qs.filter(user_id=user_id)
-        qs = qs.order_by(
-            "-created_at" if sort in ("time", "relevance") else "-created_at"
-        )
+        qs = qs.order_by("-created_at")
         for c in qs[offset : offset + page_size]:
             if not in_range(c.created_at):
                 continue
+            where = (
+                c.landmark.name
+                if c.landmark_id
+                else (c.journal.title if c.journal_id else "")
+            )
             items.append(
                 {
                     "kind": "comment",
                     "id": c.id,
                     "title": c.content[:60],
-                    "subtitle": f"{c.user.nickname or c.user.username} @ {c.landmark.name}",
+                    "subtitle": f"{c.user.nickname or c.user.username} @ {where}".strip(),
                     "image_url": c.user.avatar,
                     "extra": "",
                     "created_ts": ts(c.created_at),
-                    "link": f"/landmarks/{c.landmark_id}?tab=comments",
+                    "link": (
+                        f"/landmarks/{c.landmark_id}?tab=comments"
+                        if c.landmark_id
+                        else f"/journals/{c.journal_id}"
+                    ),
                 }
             )
 
@@ -434,7 +456,10 @@ def _search_orm(
         ).select_related("user", "landmark")
         if query:
             qs = qs.filter(title__icontains=query) | Journal.objects.filter(
-                content__icontains=query, is_public=True, status="approved"
+                content__icontains=query,
+                is_public=True,
+                status="approved",
+                deleted_at__isnull=True,
             )
         if landmark_id:
             qs = qs.filter(landmark_id=landmark_id)

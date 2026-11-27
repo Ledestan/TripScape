@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / api/uploads
-创建日期: 2026-11-26
 
 文件上传 API（目前只有图片）。
 
@@ -15,10 +14,9 @@ POST /api/uploads/image    上传一张图片，返回可访问地址
     2. 只返回 URL，不写业务表；引用关系由手账的 canvas / images 字段负责。
 """
 
+from apps.core.auth import login_required
 from ninja import File, Router
 from ninja.files import UploadedFile
-
-from apps.core.auth import login_required
 from services import file_service
 
 router = Router()

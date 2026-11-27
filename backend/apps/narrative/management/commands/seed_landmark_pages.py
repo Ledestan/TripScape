@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / 地标页面预置命令
-创建日期: 2026-11-25
 
 把文章语料一次性生成为地标页面文件（content/landmarks/*.json），完成:
     1. 触发 services.landmark_pages.build_pages（幂等覆盖）

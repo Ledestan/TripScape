@@ -1,6 +1,5 @@
 /**
  * 行旅识景 TripScape / 评论树（两级平铺）
- * 创建日期: 2026-11-26
  *
  * 一份评论组件，地标与手账共用，完成:
  *     1. 一级评论 + 回复（二级平铺）：回复的回复仍然在同一层，前面标"回复 @昵称"
@@ -260,7 +259,7 @@ export default function CommentSection({
             <div key={node.id}>
               {renderNode(node)}
               {node.replies?.length ? (
-                <div className="ml-5 border-l border-border/50 pl-2">
+                <div className="ml-3 border-l border-border/50 pl-2 sm:ml-5">
                   {node.replies.map((reply) => renderNode(reply, true))}
                 </div>
               ) : null}

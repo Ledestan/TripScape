@@ -1,6 +1,5 @@
 /**
  * 行旅识景 TripScape / src/components/ui/badge-icon
- * 创建日期: 2026-11-26
  *
  * 徽章图标：把后端返回的图标名映射成 lucide 图标，完成:
  *     1. 语义化名称（footprints / compass / trophy…）→ 对应 lucide 组件

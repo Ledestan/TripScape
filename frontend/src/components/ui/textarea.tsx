@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/components/ui/textarea
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 多行输入：统一内边距、焦点环与禁用态。
  */
 
 import * as React from "react";

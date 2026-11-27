@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/features/qa/MessageBar
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 左下角消息栏：智能问答与通知中心，窄屏收成图标。
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";

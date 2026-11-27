@@ -1,11 +1,11 @@
 """
 行旅识景 TripScape / services/audit_service
-创建日期: 2025-09-01
 
 core 服务：审计日志写入。
 """
 
 import logging
+
 from apps.admin_panel.models import AuditLog
 
 logger = logging.getLogger("tripscape.audit")
@@ -41,7 +41,7 @@ def write_audit(
 
 
 def _client_ip(request):
-    xff = request.META.get("HTTP_X_FORWARDED_FOR")
-    if xff:
-        return xff.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR", "")
+    """审计用来源 IP（与限流同口径，不采信伪造的 X-Forwarded-For）。"""
+    from apps.core.net import client_ip
+
+    return client_ip(request)

@@ -1,6 +1,5 @@
 /**
  * 行旅识景 TripScape / src/utils/save-file
- * 创建日期: 2026-11-26
  *
  * 导出文件的保存入口，完成:
  *     1. 优先用 File System Access API（showSaveFilePicker）让用户自己选目录与文件名

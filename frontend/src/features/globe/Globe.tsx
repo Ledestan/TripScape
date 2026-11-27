@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/features/globe/Globe
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 三维地球渲染：贴图、星空、区域气泡/散点标记与背面隐藏。
  */
 
 import { useEffect, useMemo, useRef, useState, Suspense, useCallback } from "react";

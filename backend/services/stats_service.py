@@ -1,12 +1,12 @@
 """
 行旅识景 TripScape / services/stats_service
-创建日期: 2025-09-01
 
 运营看板数据服务。
 """
 
 import logging
 from datetime import timedelta
+
 from apps.comments.models import Comment
 from apps.journals.models import Journal
 from apps.landmarks.models import Landmark, RecognitionRecord

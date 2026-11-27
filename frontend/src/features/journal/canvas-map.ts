@@ -1,6 +1,5 @@
 /**
  * 行旅识景 TripScape / src/features/journal/canvas-map
- * 创建日期: 2026-11-26
  *
  * 在「编辑器文档」与「后端画布文档」之间做映射，完成:
  *     1. composeToJournalCanvas：把创作画布（kind 字段）转成 /api/journals 的 canvas（type 字段）

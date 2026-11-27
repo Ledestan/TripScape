@@ -32,7 +32,6 @@
 | 存储 | MinIO（可回退本地 `runtime/uploads/`） |
 | 前端 | React 18 + Vite + TypeScript，Tailwind CSS + shadcn/ui 组件，Zustand 状态，TanStack Query，ECharts 图表，Sonner 提示，react-three-fiber 三维地球，PWA + 暗色模式 |
 | 部署 | Docker Compose + Nginx + Gunicorn |
-| 测试 | pytest-django（后端）/ Vitest（前端单元）/ Playwright（端到端） |
 
 ## 快速开始
 
@@ -55,30 +54,17 @@ pnpm build                               # 构建后由 Django 提供 SPA；开�
 - 用户级环境变量 `PYTHONDONTWRITEBYTECODE=1`（解释器启动前生效，覆盖 `.pth` 早导入）。
 - venv 内 `sitecustomize.py` 再兜一层 `sys.dont_write_bytecode = True`；`reset_project.py` 会重建它。
 - 所有入口脚本（`desktop.py`、`manage.py`、`scripts/*.py`、管理命令）都显式设置该标记。
-- `pytest.ini` 已关闭 `cacheprovider`，不会产生 `.pytest_cache`。
 
 ### 启动图与素材来源
 
-启动页的两张背景图不是素材站找的，而是**用自有数据渲染**（`scripts/make_boot_art.py`）：
+启动页与地球贴图均为仓库内静态素材（`public/stars.jpg`、`public/earth-arc.jpg`、
+`public/earth.webp`），随代码一起分发，不需要额外生成步骤。
 
-```bash
-python scripts/make_boot_art.py --catalog D:/tmp/hyg_v41.csv   # 生成两张图
-python scripts/make_boot_art.py --catalog ... --only stars     # 只重画星野
-```
+一键重置（恢复初始状态）：`python reset_project.py`（清 runtime → 重建数据库与种子 → 校验问答索引
+→ 重建前端；`--yes` 免确认、`--no-frontend` 跳过构建、`--rebuild-index` 强制重建索引）。
 
-| 产物 | 来源 | 生成方式 |
-| --- | --- | --- |
-| `public/stars.jpg` | HYG 星表（CC BY-SA 4.0，`github.com/astronexus/HYG-Database`） | 按真实赤经/赤纬/星等/色指数做 46° 小视场投影，亮星画高斯光斑 |
-| `public/earth-arc.jpg` | 仓库内 `public/earth.webp` 等距圆柱贴图 | 球面正交投影 + 临边昏暗 + 边缘大气辉光 |
-
-投递说明可写：*星空按 HYG 星表的真实星位渲染；地球由项目自有贴图程序化生成。*
-
-> 注意：`public/earth.webp`（产品内贴图地球用）若同样来自第三方，建议换成 NASA Blue Marble
-> （公有领域，`visibleearth.nasa.gov`）后重跑脚本——贴图与地平线弧会一起换成 NASA 版本。
-
-一键重置（恢复初始状态）：`python reset_project.py`（清 runtime → 重建数据库与种子 → 重建前端；
-`--yes` 免确认、`--no-frontend` 跳过构建、`--with-tests` 重置后跑测试）。
-旧命令 `python scripts/reset_all.py` 保留为转发入口，两者等价。
+展示状态（可直接演示的数据）：`python reset_demo.py --yes`（先重置，再写入演示账号、手账、评论、
+点赞、收藏与分享链接）。
 
 桌面应用（免命令行）：`python desktop.py`（pywebview 窗口内嵌 Django 服务）。
 
@@ -180,31 +166,25 @@ TripScape/
 │  │  │  │                               # JournalViewWindow（含点赞）、SettingsWindow
 │  │  ├─ pages/                          # GlobeApp 主页、LandmarkDetail 详情、JournalEditWindow 编辑、Share 分享页
 │  │  ├─ hooks/ stores/ styles/ types/ utils/
-│  ├─ tests/frontend/                    # Vitest 单元测试
-│  ├─ e2e/                               # Playwright 端到端
 │  └─ vite.config.ts / tailwind.config.js / tsconfig.json / package.json
 ├─ runtime/                              # 运行时目录（uploads/cache/logs/tmp + index/ 索引产物）
 ├─ data/                                 # 精选注册图（26 类 × 15 张，约 75MB，git 不入库随发布包分发）
 ├─ models/                               # bge-small-zh 向量模型（约 92MB，git 不入库随发布包分发）
 ├─ scripts/
-│  ├─ reset_all.py                       # 旧重置入口（转发到根目录 reset_project.py）
-│  ├─ register_landmarks.py              # 识别索引构建（注册图 → DINOv2 → FAISS，幂等）
-│  ├─ build_qa_index.py                  # 问答索引构建
+│  ├─ build_qa_index.py                  # 问答索引构建（reset_project 会调用）
 │  └─ db/                                # 全部种子数据（新增数据只改文件、不改代码）
 │     ├─ seed_landmarks.sql              #   地标（26 个：名称/地区/国家/经纬度/百科）
 │     ├─ seed_badges.sql                 #   徽章（10 枚成就定义）
-│     ├─ seed_sensitive_words.sql        #   敏感词基线（运行期可在后台增删）
-│     ├─ register_images.json            #   识别注册图清单（指纹缓存，可手工增删）
-│     └─ articles/                       #   地标文章库（每地标一篇章节式 markdown）
+│     └─ seed_sensitive_words.sql        #   敏感词基线（运行期可在后台增删）
 ├─ backend/content/                      # 内容资产（与代码同仓，逻辑随 backend 走）
 │  ├─ landmarks/                        #   26 个地标页面 JSON（打开即读，不触发分词）
 │  └─ articles/                         #   26 篇问答语料 markdown（全文，供问答索引）
-├─ tests/backend/                        # pytest-django 后端测试
 ├─ docker/                               # Dockerfile.backend / Dockerfile.frontend、nginx.conf、mysql/my.cnf
 ├─ desktop.py                            # 桌面应用入口（pywebview）
 ├─ reset_project.py                      # 一键重置：清 runtime → 重建库与种子 → 重建前端
 ├─ docker-compose.yml                    # Web/Celery/Beat/MySQL/Redis/Meilisearch/MinIO/Nginx/备份
-├─ .env.example / .gitignore / LICENSE / requirements.txt / pytest.ini
+├─ reset_demo.py                         # 展示状态：重置后写入演示内容
+├─ .env.example / .gitignore / LICENSE / requirements.txt
 └─ README.md
 ```
 
@@ -212,9 +192,9 @@ TripScape/
 
 | 层 | 文件 |
 | --- | --- |
-| 数据 | `backend/apps/narrative/models.py`（ts_narrative_card / journal_card / fragment / fragment_pickup） |
+| 数据 | `backend/apps/narrative/models.py`（ts_narrative_card / ts_journal_card） |
 | 服务 | `backend/services/narrative_service.py`（卡片组装、投递与拾取）、`narrative_story.py`（故事文档读取） |
-| 接口 | `backend/api/narrative.py`（card / story / journal / fragments 共 7 个端点） |
+| 接口 | `backend/api/narrative.py`（card / story / journal） |
 | 界面 | `frontend/src/features/narrative/`（胶片、档案、手记、故事渲染）、`stores/narrative.ts`（三层状态） |
 | 内容 | `backend/content/landmarks/*.json`（预生成：整体介绍 + 时间轴 + 分节材料，命令 `seed_landmark_pages`） |
 
@@ -284,12 +264,11 @@ docker compose exec web sh -c "cd /app/backend && python manage.py init_tripscap
 编排服务：Web、Celery、Celery Beat、MySQL（慢查询日志 + my.cnf）、Redis、
 Meilisearch、MinIO、Nginx、每日备份（MySQL dump，保留 7 天）。
 
-## 测试
+## 重置与展示
 
 ```bash
-pytest                                  # 后端（tests/backend）
-cd frontend && npx vitest run           # 前端单元（tests/frontend）
-cd frontend && npx playwright test      # 端到端（e2e/，先启动后端并 pnpm build）
+python reset_project.py --yes          # 初始状态：清产物、重建库与种子、校验索引、构建前端
+python reset_demo.py --yes             # 展示状态：先重置，再写入演示账号与内容
 ```
 
 ## 运维要点
@@ -299,7 +278,7 @@ cd frontend && npx playwright test      # 端到端（e2e/，先启动后端并 
 - **定时任务**：03:00 清理 runtime/tmp 与回收站；每小时看板聚合
 - **备份**：`runtime/backups/`（每日，保留 7 天）
 - **__pycache__ 根除**：虚拟环境 `site-packages/sitecustomize.py` 全局禁用字节码写入，
-  `scripts/reset_all.py` 会自愈重建该文件
+  `reset_project.py` 会自愈重建该文件
 
 ## 识别引擎（检索式）
 

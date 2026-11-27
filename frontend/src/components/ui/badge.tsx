@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/components/ui/badge
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 徽章样式：状态色与描边变体。
  */
 
 import * as React from "react";

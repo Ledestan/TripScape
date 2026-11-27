@@ -1,8 +1,7 @@
 /**
  * 行旅识景 TripScape / src/pages/Share
- * 创建日期: 2026-10-09
  *
- * 该组件的界面与交互实现；结构与事件约定见下方代码。
+ * 公开分享页：免登录阅读手账并展示作者信息。
  */
 
 import { useParams, Link } from "react-router-dom";

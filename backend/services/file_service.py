@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / services/file_service
-创建日期: 2025-09-01
 
 文件服务：MinIO 优先，本地 runtime/uploads 兜底。
 
@@ -16,6 +15,7 @@ _MINIO_DOWN = False
 import re
 import uuid
 from pathlib import Path
+
 from django.conf import settings
 from django.core.files.uploadedfile import UploadedFile
 

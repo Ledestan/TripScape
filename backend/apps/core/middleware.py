@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / apps/core/middleware
-创建日期: 2025-09-01
 
 请求日志中间件：request_id + 耗时 + 用户 + 路径。
 """

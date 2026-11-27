@@ -1,6 +1,5 @@
 """
 行旅识景 TripScape / apps/badges/admin
-创建日期: 2025-09-01
 
 Django 后台的徽章配置
 

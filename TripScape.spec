@@ -21,6 +21,7 @@ datas = [
     ("models", "models"),
     # 预构建的识别/问答索引（免用户本地重建）
     ("runtime/index", "runtime/index"),
+    ("runtime/demo.db", "runtime"),
     # 种子数据（首启自动建库导入）
     ("scripts/db", "scripts/db"),
     # .env 不入包：desktop.py 首启自动生成 sqlite 配置（避免密码打包泄露）

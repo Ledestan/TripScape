@@ -181,6 +181,14 @@ export default function FloatingDock() {
 
                     setMenuOpen(false);
 
+                    // 从菜单进入时始终从足迹页开始；徽章页只由通知跳转指定
+                    setProfileTab("footprints");
+                    try {
+                      sessionStorage.setItem("ts:profile-tab", "footprints");
+                    } catch {
+                      /* 隐私模式忽略 */
+                    }
+
                     setProfileOpen(true);
 
                   }}

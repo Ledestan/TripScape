@@ -786,9 +786,21 @@ function NotificationTab({
     }
     if (link.startsWith("/profile")) {
       const tab = new URLSearchParams(link.split("?")[1] || "").get("tab") || "";
+      // 个人主页可能已经挂载过，用 sessionStorage 传目标页签，避免沿用上次状态
+      try {
+        sessionStorage.setItem("ts:profile-tab", tab || "footprints");
+      } catch {
+        /* 隐私模式忽略 */
+      }
       window.dispatchEvent(
         new CustomEvent("ts:open-profile", { detail: { tab } })
       );
+      // 主页可能已经挂载，等它打开后再切页签
+      window.setTimeout(() => {
+        window.dispatchEvent(
+          new CustomEvent("ts:profile-tab", { detail: { tab: tab || "footprints" } })
+        );
+      }, 60);
       return;
     }
     if (link && link !== "/") window.location.assign(link);

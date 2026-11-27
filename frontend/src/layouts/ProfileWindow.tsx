@@ -4,7 +4,7 @@
  * 个人主页浮窗：足迹、手账、评论、收藏、徽章五个页签。
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -50,9 +50,45 @@ export default function ProfileWindow({
   const qc = useQueryClient();
   const { user } = useAuthStore();
   const [tab, setTab] = useState<"footprints" | "journals" | "comments" | "favorites" | "badges">(
-    initialTab
+    () => {
+      // 通知跳转可能指定页签；菜单进入则始终从足迹开始
+      try {
+        const wanted = sessionStorage.getItem("ts:profile-tab");
+        sessionStorage.removeItem("ts:profile-tab");
+        if (
+          wanted === "footprints" ||
+          wanted === "journals" ||
+          wanted === "comments" ||
+          wanted === "favorites" ||
+          wanted === "badges"
+        ) {
+          return wanted;
+        }
+      } catch {
+        /* 隐私模式忽略 */
+      }
+      return initialTab;
+    }
   );
   const [viewJournal, setViewJournal] = useState<number | null>(null);
+
+  // 通知跳转：主页已经打开时也能切到指定页签
+  useEffect(() => {
+    const onTab = (event: Event) => {
+      const tab = (event as CustomEvent<{ tab?: string }>).detail?.tab;
+      if (
+        tab === "footprints" ||
+        tab === "journals" ||
+        tab === "comments" ||
+        tab === "favorites" ||
+        tab === "badges"
+      ) {
+        setTab(tab);
+      }
+    };
+    window.addEventListener("ts:profile-tab", onTab);
+    return () => window.removeEventListener("ts:profile-tab", onTab);
+  }, []);
   // 正在切换可见性的足迹（防连点：两次 toggle 会把状态转回原样）
   const [footprintBusy, setFootprintBusy] = useState<number | null>(null);
 

@@ -130,6 +130,16 @@ def main():
                 encoding="utf-8",
             )
 
+        # 打包版自带演示库：首次启动直接复制，展开展示内容而不是空白初始态
+        live_db = ROOT / "runtime" / "tripscape.db"
+        demo_db = ROOT / "runtime" / "demo.db"
+        if demo_db.is_dir():
+            demo_db = demo_db / "demo.db"
+        if not live_db.exists() and demo_db.exists():
+            import shutil
+
+            shutil.copyfile(demo_db, live_db)
+
     # 后台启动 Django
     t = threading.Thread(target=start_django, daemon=True)
     t.start()

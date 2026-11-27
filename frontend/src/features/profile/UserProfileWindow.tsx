@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, NotebookPen, MessageSquare, Star, Award, Compass, EyeOff } from "lucide-react";
 import { api } from "@/api/client";
+import { BadgeIcon } from "@/components/ui/badge-icon";
 import { FloatingWindow } from "@/components/FloatingWindow";
 import { globeBus } from "@/features/globe/bus";
 import { JournalViewWindow } from "@/layouts/JournalViewWindow";
@@ -19,7 +20,7 @@ interface PublicProfile {
   counts: { footprints: number; journals: number; comments: number; favorites: number };
   footprints: { landmark_id: number; name: string; lat: number; lon: number; visits: number }[];
   journals: { id: number; title: string; content?: string; landmark: string; landmark_id: number; lat: number; lon: number; visited_at: string | null; images?: string[] }[];
-  comments: { id: number; landmark: string; landmark_id: number; lat?: number; lon?: number; content: string; created_at: string }[];
+  comments: { id: number; landmark: string; landmark_id?: number | null; journal_id?: number | null; journal_title?: string; lat?: number | null; lon?: number | null; content: string; created_at: string }[];
   favorites: { id: number; name: string; lat: number; lon: number }[];
   badges: { code: string; name: string; icon: string; description: string }[];
 }
@@ -41,6 +42,20 @@ export default function UserProfileWindow({ userId, onClose }: { userId: number;
   const flyTo = (lat: number, lon: number, id?: number) => {
     globeBus.flyTo(lat, lon, id);
     onClose();
+  };
+
+  /** 公开主页的评论行：手账评论打开手账，地标评论打开地标评论页签 */
+  const openComment = (c: PublicProfile["comments"][number]) => {
+    onClose();
+    if (c.journal_id) {
+      window.dispatchEvent(new CustomEvent("ts:open-journal-view", { detail: c.journal_id }));
+    } else if (c.landmark_id) {
+      window.dispatchEvent(
+        new CustomEvent("ts:open-landmark-window", {
+          detail: { landmarkId: c.landmark_id, tab: "comments" },
+        })
+      );
+    }
   };
 
   const p = data?.privacy;
@@ -162,13 +177,27 @@ export default function UserProfileWindow({ userId, onClose }: { userId: number;
               <div className="space-y-1.5">
                 {data.comments.length ? (
                   data.comments.map((c) => (
-                    <div key={c.id} className="rounded-xl border border-border bg-muted/40 px-3.5 py-2.5">
+                    <div
+                      key={c.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openComment(c)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          openComment(c);
+                        }
+                      }}
+                      className="cursor-pointer rounded-xl border border-border bg-muted/40 px-3.5 py-2.5 transition hover:border-primary/40 hover:bg-accent/40"
+                    >
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="truncate">在 {c.landmark}</span>
+                        <span className="truncate">
+                          在 {c.journal_id ? `手账「${c.journal_title || "无题"}」` : c.landmark}
+                        </span>
                         <div className="ml-2 flex shrink-0 items-center gap-1.5">
                           <span>{new Date(c.created_at).toLocaleString("zh-CN")}</span>
-                          {c.lat !== undefined && c.lon !== undefined && (
-                            <FlyBtn onClick={() => flyTo(c.lat!, c.lon!, c.landmark_id)} />
+                          {c.landmark_id && c.lat !== undefined && c.lon !== undefined && (
+                            <FlyBtn onClick={() => flyTo(c.lat!, c.lon!, c.landmark_id!)} />
                           )}
                         </div>
                       </div>
@@ -204,7 +233,7 @@ export default function UserProfileWindow({ userId, onClose }: { userId: number;
                 {data.badges?.length ? (
                   data.badges.map((b) => (
                     <div key={b.code} className="flex items-center gap-2.5 rounded-xl border border-amber-400/60 bg-amber-400/10 p-3">
-                      <div className="text-2xl">{b.icon}</div>
+                      <BadgeIcon icon={b.icon} className="h-6 w-6 text-amber-500" />
                       <div className="min-w-0">
                         <div className="truncate text-sm font-medium">{b.name}</div>
                         <div className="truncate text-[11px] text-muted-foreground">{b.description}</div>
@@ -229,7 +258,10 @@ export default function UserProfileWindow({ userId, onClose }: { userId: number;
 function FlyBtn({ onClick }: { onClick: () => void }) {
   return (
     <button
-      onClick={onClick}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
       className="flex items-center gap-1 rounded-lg border border-border bg-card px-2 py-1 text-[11px] transition hover:bg-accent"
       title="在地球上查看"
     >

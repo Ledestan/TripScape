@@ -86,6 +86,23 @@ export default function ProfileWindow({ onClose }: { onClose: () => void }) {
 
   const flyTo = (lat: number, lon: number, id?: number) => globeBus.flyTo(lat, lon, id);
 
+  /** 评论行点击：手账评论打开手账，地标评论打开地标详情；先关主页避免叠层 */
+  const openCommentTarget = (comment: {
+    journal_id?: number | null;
+    landmark_id?: number | null;
+  }) => {
+    onClose();
+    if (comment.journal_id) {
+      window.dispatchEvent(
+        new CustomEvent("ts:open-journal-view", { detail: comment.journal_id })
+      );
+    } else if (comment.landmark_id) {
+      window.dispatchEvent(
+        new CustomEvent("ts:open-detail", { detail: comment.landmark_id })
+      );
+    }
+  };
+
   return (
     <>
       <FloatingWindow
@@ -202,7 +219,20 @@ export default function ProfileWindow({ onClose }: { onClose: () => void }) {
                 <Section title={`我的评论（${data.comments.length}）`}>
                   {data.comments.length ? (
                     data.comments.map((c) => (
-                      <div key={c.id} className="rounded-xl border border-border bg-muted/40 px-3.5 py-2.5">
+                      <div
+                        key={c.id}
+                        role="button"
+                        tabIndex={0}
+                        title={c.journal_id ? "打开这篇手账" : "打开这个地标"}
+                        onClick={() => openCommentTarget(c)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            openCommentTarget(c);
+                          }
+                        }}
+                        className="cursor-pointer rounded-xl border border-border bg-muted/40 px-3.5 py-2.5 transition hover:border-primary/50 hover:bg-accent/40"
+                      >
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
                           <span className="truncate">{c.journal_title ? `在手账「${c.journal_title}」` : `在 ${c.landmark}`}</span>
                           <div className="ml-2 flex shrink-0 items-center gap-1.5">

@@ -56,6 +56,7 @@ PHOTOS = {
     "RomanColosseum": "/lmimg/RomanColosseum.jpg",
     "Potala": "/lmimg/Potala.jpg",
     "Qomolangma": "/lmimg/Qomolangma.jpg",
+    "Huangguoshu": "/lmimg/Huangguoshu.jpg",
 }
 
 
@@ -186,7 +187,8 @@ def seed_demo() -> dict[str, int]:
             user=user,
             landmark_id=lm.id,
             title=title,
-            content=note,
+            # 手账只存画布与图片，正文留空（避免出现编辑器里改不了的正文）
+            content="",
             images=[PHOTOS[target_id]],
             visited_at=visited,
             is_public=is_public,
@@ -197,47 +199,49 @@ def seed_demo() -> dict[str, int]:
             raise SystemExit(f"手账创建失败: {result}")
         return result
 
-    # 1. 已经发布的手账：覆盖不同地区、不同作者，保证地球上的足迹分布自然
+    # 1. 已发布的手账：公开内容全部挂在两个虚构旅行者名下，
+    #    演示账号只保留自己的记录，避免出现"演示用户和林晚互相评论"的痕迹
     published = [
-        journal(demo, "EiffelTower", "在巴黎的第七区醒来",
+        journal(linwan, "EiffelTower", "在巴黎的第七区醒来",
                 "清晨六点的战神广场几乎没有游客，铁塔的影子刚好落在草坪上。",
                 date(2026, 4, 12), "#d9a441", "star"),
-        journal(demo, "MachuPicchu", "云雾散开的那十五分钟",
-                "上山时整片山谷都是白的，等到十点，雾突然退开，石墙一层层露出来。",
-                date(2026, 3, 2), "#3d7a68", "pin"),
-        journal(demo, "TajMahal", "白色大理石上的晨光",
-                "从西门进去，先看到的是倒影池，泰姬陵在水里比在天上更安静。",
-                date(2026, 2, 18), "#c05a4a", "heart"),
-        journal(demo, "GizaPyramids", "金字塔：私人记录",
-                "骑骆驼绕了一圈，最深的印象不是高，而是石块之间的缝隙几乎插不进刀片。",
-                date(2025, 12, 30), "#d9a441", "burst"),
         journal(linwan, "Petra", "玫瑰色的峡谷",
                 "穿过蛇道时两侧岩壁有一人多高，尽头卡兹尼神殿只露出一条金色的缝。",
                 date(2026, 4, 25), "#c05a4a", "heart"),
         journal(linwan, "LibertyStatue", "自由女神的背面",
                 "从斯塔滕岛渡轮回望，她在逆光里只剩轮廓，比正面更像一座灯塔。",
                 date(2026, 1, 9), "#8fa6ad", "circle"),
+        journal(linwan, "Potala", "布达拉宫的第一场雪",
+                "雪落在红宫的墙面上不化，远远看像有人给宫殿描了一道白边。",
+                date(2026, 1, 21), "#3d7a68", "pin"),
         journal(zhouyu, "RomanColosseum", "斗兽场的黄昏",
                 "闭馆前四十分钟，拱门里的光变成橘色，游客散得只剩脚步声。",
                 date(2026, 5, 6), "#d9a441", "star"),
-        journal(zhouyu, "Potala", "布达拉宫的第一场雪",
-                "雪落在红宫的墙面上不化，远远看像有人给宫殿描了一道白边。",
-                date(2026, 1, 21), "#3d7a68", "pin"),
         journal(zhouyu, "Qomolangma", "珠峰大本营的星空",
                 "夜里零下十几度，银河从山脊后面升起来，曝光三十秒才勉强拍到。",
                 date(2026, 6, 11), "#5b6b3d", "burst"),
+        journal(zhouyu, "TajMahal", "白色大理石上的晨光",
+                "从西门进去，先看到的是倒影池，泰姬陵在水里比在天上更安静。",
+                date(2026, 2, 18), "#c05a4a", "heart"),
+        journal(zhouyu, "GreatWall", "长城上的风",
+                "从北八楼往回走，城墙像一条灰线挂在山脊上，风把帽子吹跑了两次。",
+                date(2026, 3, 30), "#8a6d3b", "pin"),
+        # 演示账号不进入公开内容：公开页只出现两个虚构旅行者的手账
+        journal(demo, "MachuPicchu", "云雾散开的那十五分钟",
+                "上山时整片山谷都是白的，等到十点，雾突然退开，石墙一层层露出来。",
+                date(2026, 3, 2), "#3d7a68", "pin", is_public=False),
     ]
 
-    # 2. 草稿与私密：让"我的手账"能看出状态差异
-    journal(demo, "GreatWall", "长城：还没写完的一页",
-            "风很大，照片先放上来，文字周末补。",
+    # 2. 草稿与私密：演示账号自己用，检查"编辑 / 草稿"链路
+    journal(demo, "Huangguoshu", "黄果树：还没写完的一页",
+            "水声很大，照片先放上来，文字周末补。",
             date(2026, 6, 20), "#8a6d3b", "star", is_draft=True)
 
     private = journal(demo, "GizaPyramids", "只给自己看的一张",
                       "这次没有发朋友圈，留个私密记录。",
                       date(2025, 11, 6), "#6b4a6a", "heart", is_public=False)
 
-    # 3. 评论：手账评论 + 地标评论 + 回复 + 回复的回复（两级平铺）
+    # 3. 评论：只在虚构旅行者之间发生（演示账号不参与）
     def comment(user: User, content: str, journal_id=None, landmark_id=None,
                 parent_id=None):
         ok, result = comment_service.create_comment(
@@ -251,32 +255,34 @@ def seed_demo() -> dict[str, int]:
             raise SystemExit(f"评论创建失败: {result}")
         return result
 
-    first = comment(linwan, "这张的色调太喜欢了，像旧胶片。", journal_id=published[0].id)
-    reply = comment(demo, "谢谢！那天正好有雾，光被压得很软。", journal_id=published[0].id,
-                    parent_id=first.id)
-    comment(zhouyu, "同感，尤其是塞纳河那一段。", journal_id=published[0].id,
-            parent_id=reply.id)
+    first = comment(zhouyu, "这张的色调太喜欢了，像旧胶片。", journal_id=published[0].id)
+    reply = comment(linwan, "谢谢！那天正好有雾，光被压得很软。",
+                    journal_id=published[0].id, parent_id=first.id)
+    comment(zhouyu, "同感，尤其是塞纳河那一段。",
+            journal_id=published[0].id, parent_id=reply.id)
 
-    comment(zhouyu, "第一次上去的时候腿都软了，但真的值得。",
+    comment(linwan, "第一次上去的时候腿都软了，但真的值得。",
             landmark_id=landmark("EiffelTower").id)
-    comment(demo, "下次挑日落前半小时上去，排队会短一些。",
-            journal_id=published[1].id)
-    question = comment(linwan, "珠峰那张银河是几点拍的？", journal_id=published[8].id)
-    answer = comment(demo, "凌晨两点多，风小的时候。", journal_id=published[8].id,
-                     parent_id=question.id)
-    comment(zhouyu, "这个点我也试过，得等风停。", journal_id=published[8].id,
-            parent_id=answer.id)
+    comment(zhouyu, "蛇道尽头那一下真的会屏住呼吸。", journal_id=published[1].id)
+    comment(linwan, "倒影池那张是几点拍的？", journal_id=published[6].id)
+    comment(zhouyu, "清晨五点半，再晚就有人了。", journal_id=published[6].id)
 
-    # 4. 点赞：手账 / 商品文章 / 评论都铺一点，看板才有数字
+    question = comment(linwan, "珠峰那张银河是几点拍的？", journal_id=published[5].id)
+    answer = comment(zhouyu, "凌晨两点多，风小的时候。",
+                     journal_id=published[5].id, parent_id=question.id)
+    comment(linwan, "这个点我也试过，得等风停。",
+            journal_id=published[5].id, parent_id=answer.id)
+
+    # 4. 点赞：只发生在虚构旅行者之间，看板有数字但不制造"自己赞自己"
     def like(user: User, target_type: str, target_id: int) -> None:
         Like.objects.get_or_create(
             user=user, target_type=target_type, target_id=target_id
         )
 
-    for item in published[:6]:
-        like(linwan, "journal", item.id)
-    for item in published[2:8]:
+    for item in published[0:4]:
         like(zhouyu, "journal", item.id)
+    for item in published[4:8]:
+        like(linwan, "journal", item.id)
     like(linwan, "comment", first.id)
     like(demo, "article", landmark("EiffelTower").id)
     like(linwan, "article", landmark("Petra").id)
@@ -285,17 +291,18 @@ def seed_demo() -> dict[str, int]:
     from apps.landmarks.models import UserFavorite
 
     for user, target_ids in (
-        (demo, ("EiffelTower", "MachuPicchu", "TajMahal")),
+        (demo, ("MachuPicchu", "TajMahal")),
         (linwan, ("Petra", "LibertyStatue")),
+        (zhouyu, ("RomanColosseum", "Qomolangma")),
     ):
         for target_id in target_ids:
             UserFavorite.objects.get_or_create(user=user, landmark=landmark(target_id))
-    share_token = share_service.create_share_token("journal", published[0].id, demo)
+    share_token = share_service.create_share_token("journal", published[0].id, linwan)
 
-    # 6. 通知：回复由 comment_service 自动发出，这里只补徽章与系统提醒
-    #     （再手动调 notify_reply 会造出"自己回复自己"的错误通知）
-    badge_service.on_journal_created(demo)
-    badge_service.on_comment_created(demo)
+    # 6. 徽章与通知：三个账号都结算一遍，避免只有 demo 有徽章
+    for user in (demo, linwan, zhouyu):
+        badge_service.on_journal_created(user)
+        badge_service.on_comment_created(user)
 
     for user, text in (
         (linwan, "你关注的地标有了新的手账"),

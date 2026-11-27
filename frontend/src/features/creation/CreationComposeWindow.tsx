@@ -842,7 +842,7 @@ export default function CreationComposeWindow({
 
   return (
     <div
-      className="fixed inset-0 z-[45] flex items-center justify-center bg-black/35 p-4 motion-reduce:transition-none"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/35 p-4 motion-reduce:transition-none"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) requestClose();
       }}

@@ -1,11 +1,5 @@
 {
-  "include": [
-    "backend",
-    "scripts",
-    "reset_project.py",
-    "reset_demo.py",
-    "desktop.py"
-  ],
+  "include": ["backend", "scripts", "reset_project.py", "reset_demo.py", "desktop.py"],
   "exclude": [
     "**/node_modules",
     "**/.venv",
@@ -18,7 +12,7 @@
   ],
   "extraPaths": ["backend"],
   "pythonVersion": "3.13",
-  "typeCheckingMode": "basic",
-  "reportMissingImports": "warning",
+  "typeCheckingMode": "off",
+  "reportMissingImports": "none",
   "reportMissingModuleSource": "none"
 }

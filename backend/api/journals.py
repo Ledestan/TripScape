@@ -122,6 +122,8 @@ def create(request, payload: JournalIn):
 @router.get("/landmark/{landmark_id}", summary="地标下的公开手账", auth=OptionalAuth())
 def landmark_journals(request, landmark_id: int):
     """地标下的公开手账列表（排除软删，TS-03）。"""
+    from services.like_service import like_stats
+
     viewer = getattr(request, "auth", None)
     qs = (
         Journal.objects.filter(
@@ -133,12 +135,26 @@ def landmark_journals(request, landmark_id: int):
         .select_related("landmark", "user")
         .order_by("-created_at")
     )
-    return {"success": True, "data": [j.as_dict(viewer=viewer) for j in qs[:50]]}
+    items = list(qs[:50])
+    counts, liked = like_stats("journal", [j.id for j in items], viewer=viewer)
+    return {
+        "success": True,
+        "data": [
+            j.as_dict(
+                viewer=viewer,
+                like_count=counts.get(j.id, 0),
+                liked=j.id in liked,
+            )
+            for j in items
+        ],
+    }
 
 
 @router.get("/{journal_id}", summary="手账详情", auth=OptionalAuth())
 def detail(request, journal_id: int):
     """手账详情（公开可见或作者；软删对象 404，TS-03/04）。"""
+    from services.like_service import like_stats
+
     j = (
         Journal.objects.filter(id=journal_id, deleted_at__isnull=True)
         .select_related("landmark", "user")
@@ -153,7 +169,16 @@ def detail(request, journal_id: int):
         raise HttpError(403, "该手账未公开")
     if j.status != "approved" and not is_owner and not is_admin:
         raise HttpError(403, "该手账审核中")
-    return {"success": True, "data": j.as_dict(with_content=True, viewer=user)}
+    counts, liked = like_stats("journal", [j.id], viewer=user)
+    return {
+        "success": True,
+        "data": j.as_dict(
+            with_content=True,
+            viewer=user,
+            like_count=counts.get(j.id, 0),
+            liked=j.id in liked,
+        ),
+    }
 
 
 @router.put("/{journal_id}", summary="更新手账（作者）")

@@ -1441,7 +1441,19 @@ function LandmarkEditBox({ lm, onClose, onSaved }: { lm: AdminLandmark | null; o
 
   const save = useMutation({
     mutationFn: async () => {
-      const payload = { ...form, lat: Number(form.lat), lon: Number(form.lon) };
+      // 空字符串经 Number() 会变成 0：之前"纬度留空"会静默把地标落在 (0,0)。
+      // 这里先做前端校验，错误信息直接进 onError 的 toast。
+      const rawLat = form.lat.trim();
+      const rawLon = form.lon.trim();
+      const lat = Number(rawLat);
+      const lon = Number(rawLon);
+      if (!form.name.trim()) throw new Error("中文名称不能为空");
+      if (!rawLat || !rawLon || !Number.isFinite(lat) || !Number.isFinite(lon)) {
+        throw new Error("经纬度必须是数字，且不能留空");
+      }
+      if (lat < -90 || lat > 90) throw new Error("纬度必须在 -90 ~ 90 之间");
+      if (lon < -180 || lon > 180) throw new Error("经度必须在 -180 ~ 180 之间");
+      const payload = { ...form, name: form.name.trim(), lat, lon };
       if (lm) return api.put(`/admin/landmarks/${lm.id}`, payload);
       return api.post("/admin/landmarks", payload);
     },

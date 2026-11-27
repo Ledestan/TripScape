@@ -53,14 +53,22 @@ export default function ProfileWindow({
     initialTab
   );
   const [viewJournal, setViewJournal] = useState<number | null>(null);
+  // 正在切换可见性的足迹（防连点：两次 toggle 会把状态转回原样）
+  const [footprintBusy, setFootprintBusy] = useState<number | null>(null);
 
-  /* 足迹隐藏/显示 */
-  const toggleFootprint = async (lmId: number) => {
+  /* 足迹隐藏/显示：显式提交目标状态，重复/重试不会翻转 */
+  const toggleFootprint = async (lmId: number, nextHidden: boolean) => {
+    if (footprintBusy !== null) return;
+    setFootprintBusy(lmId);
     try {
-      await api.post(`/footprints/${lmId}/visibility`);
+      await api.post(`/footprints/${lmId}/visibility`, null, {
+        params: { hidden: nextHidden },
+      });
       qc.invalidateQueries({ queryKey: ["profile"] });
     } catch (e) {
       toast.error(errMessage(e, "操作失败"));
+    } finally {
+      setFootprintBusy(null);
     }
   };
 
@@ -69,7 +77,11 @@ export default function ProfileWindow({
     mutationFn: async (id: number) => api.delete(`/journals/${id}`),
     onSuccess: () => {
       toast.success("手账已删除");
+      // 手账删除会牵动足迹/收藏/光点计数，全部失效重取，避免残留旧条目
       qc.invalidateQueries({ queryKey: ["profile"] });
+      qc.invalidateQueries({ queryKey: ["journals"] });
+      qc.invalidateQueries({ queryKey: ["landmarks"] });
+      qc.invalidateQueries({ queryKey: ["footprints"] });
     },
     onError: (e) => toast.error(errMessage(e, "删除失败")),
   });
@@ -176,8 +188,9 @@ export default function ProfileWindow({
                           <span className="text-xs text-muted-foreground">到访 {f.visits} 次</span>
                           <FlyButton onClick={() => flyTo(f.lat, f.lon, f.landmark_id)} />
                           <button
-                            onClick={() => toggleFootprint(f.landmark_id)}
-                            className="rounded-lg border border-border bg-card p-1.5 transition hover:bg-accent"
+                            onClick={() => toggleFootprint(f.landmark_id, !f.hidden)}
+                            disabled={footprintBusy === f.landmark_id}
+                            className="rounded-lg border border-border bg-card p-1.5 transition hover:bg-accent disabled:opacity-50"
                             title={f.hidden ? "显示足迹" : "隐藏足迹"}
                           >
                             {f.hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}

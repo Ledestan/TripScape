@@ -89,6 +89,22 @@ def list_landmarks(
     }
 
 
+def _fallback_target_id(name: str) -> str:
+    """由名称推导安全 target_id。
+
+    中文名称直接 lower/替换后仍是非 ASCII，会被 clean_target_id 拒绝
+    （管理端表单没有 target_id 输入框，等于"中文名地标永远创建不了"）。
+    这里先抽 ASCII 片段，抽不出来就生成 lm_<随机>，保证可用且不冲突。
+    """
+    import re
+    import uuid
+
+    ascii_part = re.sub(r"[^a-z0-9_-]+", "_", name.lower()).strip("_")
+    if ascii_part:
+        return ascii_part[:50]
+    return f"lm_{uuid.uuid4().hex[:10]}"
+
+
 @router.post("/landmarks", summary="新增地标")
 @admin_required
 def create_landmark(request, payload: LandmarkIn):
@@ -100,7 +116,7 @@ def create_landmark(request, payload: LandmarkIn):
         lat, lon = clean_coordinates(payload.lat, payload.lon)
     except ValueError as exc:
         raise HttpError(400, str(exc))
-    fallback = name.lower().replace(" ", "_")
+    fallback = _fallback_target_id(name)
     try:
         tid = clean_target_id(payload.target_id, fallback=fallback)
     except ValueError as exc:

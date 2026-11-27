@@ -4,9 +4,13 @@
  * 通用浮窗容器：居中卡片、Esc/遮罩关闭、可定制宽度与高度。
  */
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/utils/cn";
+
+// 浮窗叠放顺序：Esc 只关最上面那层（之前每个浮窗都监听 keydown，
+// 叠了"详情 + 手账查看"之类两层时按一次 Esc 会把两层一起关掉）
+const windowStack: symbol[] = [];
 
 /**
  * 小窗口容器（替代全屏 Dialog）：
@@ -33,13 +37,24 @@ export function FloatingWindow({
   /** 可选测试锚点 */
   testId?: string;
 }) {
+  const stackId = useRef<symbol>(Symbol("floating-window"));
+
   useEffect(() => {
     if (!open) return;
+    const id = stackId.current;
+    windowStack.push(id);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      if (windowStack[windowStack.length - 1] !== id) return;
+      e.stopPropagation();
+      onClose();
     };
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      const index = windowStack.indexOf(id);
+      if (index >= 0) windowStack.splice(index, 1);
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -63,6 +78,8 @@ export function FloatingWindow({
           <div className="text-sm font-semibold">{title}</div>
           <button
             onClick={onClose}
+            data-testid="window-close"
+            aria-label="关闭"
             className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
           >
             <X className="h-4 w-4" />

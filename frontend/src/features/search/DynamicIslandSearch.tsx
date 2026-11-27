@@ -117,10 +117,10 @@ export default function DynamicIslandSearch({
 
   const pickLandmark = (item: SearchItem) => {
     const s = spots.find((x) => x.id === item.id);
-    if (s) {
-      onPickLandmark?.(s);
-      setShowPanel(false);
-    }
+    // 光点数据可能滞后（刚上架/下架）：找不到也要能打开，别让点击变"死点"
+    if (s) onPickLandmark?.(s);
+    else window.dispatchEvent(new CustomEvent("ts:open-detail", { detail: item.id }));
+    setShowPanel(false);
   };
 
   /* 结果面板（固定尺寸，只含地标+用户） */
@@ -180,7 +180,11 @@ export default function DynamicIslandSearch({
               <button
                 key={`j-${item.id}-${i}`}
                 onClick={() => {
-                  window.dispatchEvent(new CustomEvent("ts:open-detail", { detail: item.id }));
+                  // 手账结果要打手账查看窗；之前误发地标事件，
+                  // 会用地标 id 打开一篇手账（id 相同却是别的地标）
+                  window.dispatchEvent(
+                    new CustomEvent("ts:open-journal-view", { detail: item.id })
+                  );
                   setShowPanel(false);
                 }}
                 className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition hover:bg-accent hover:text-accent-foreground"

@@ -65,7 +65,7 @@ class Journal(models.Model):
     def __str__(self):
         return f"{self.user.username}·{self.title}"
 
-    def as_dict(self, with_content=False, viewer=None):
+    def as_dict(self, with_content=False, viewer=None, like_count=0, liked=False):
         """序列化手账。
 
         参数：
@@ -73,6 +73,8 @@ class Journal(models.Model):
             viewer : User 或 None，查看者身份决定待审核草稿的可见性——
                      仅作者本人与任意管理员可见（TS-02：公开响应
                      不得泄露 pending_edit）
+            like_count : int，点赞数（由 API 层批量查好后注入）
+            liked : bool，当前查看者是否点过赞
         """
         can_see_pending = viewer is not None and (
             viewer.id == self.user_id or getattr(viewer, "role", "") == "admin"
@@ -104,6 +106,9 @@ class Journal(models.Model):
                 self.pending_edit if (self.edit_pending and can_see_pending) else None
             ),
             "created_at": self.created_at.isoformat(),
+            # 点赞：前端手账查看窗直接用它渲染"赞 N / 已赞"
+            "like_count": int(like_count or 0),
+            "liked": bool(liked),
             # 画布是手账主体，列表也要带（详情页卡片直接拿它做预览图）
             "canvas": self.canvas or {},
         }

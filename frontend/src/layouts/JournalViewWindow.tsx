@@ -23,8 +23,10 @@ const JournalCanvasView = lazy(() => import("@/features/narrative/JournalCanvasV
 /* ================================================================== */
 export function JournalViewWindow({ journalId, onClose }: { journalId: number; onClose: () => void }) {
   const [reportOpen, setReportOpen] = useState(false);
-  const me = useAuthStore.getState()?.user;
-  const { data: j } = useQuery({
+  // 必须订阅 store：getState() 只在渲染那一刻取值，登录/退出后按钮不会更新
+  const me = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
+  const { data: j, refetch: refetchJournal } = useQuery({
     queryKey: ["journal", journalId],
     queryFn: async () =>
       (
@@ -38,8 +40,16 @@ export function JournalViewWindow({ journalId, onClose }: { journalId: number; o
         canvas?: unknown;
         visited_at: string | null;
         created_at: string;
+        like_count?: number;
+        liked?: boolean;
       },
   });
+
+  // 登录/退出后重取：liked 是按当前用户算的，不重取会显示错误的已赞状态
+  useEffect(() => {
+    refetchJournal();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, journalId]);
 
   // 有画布就优先展示画布；老手账没有画布时退回图片九宫格
   const hasCanvas =
@@ -81,7 +91,12 @@ export function JournalViewWindow({ journalId, onClose }: { journalId: number; o
           </div>
 
           <div className="mt-3 flex items-center gap-2">
-            <LikeButton targetType="journal" targetId={journalId} />
+            <LikeButton
+              targetType="journal"
+              targetId={journalId}
+              count={j.like_count ?? 0}
+              initialLiked={!!j.liked}
+            />
             {me?.id === j.user.id && (
               <button
                 type="button"
@@ -112,49 +127,76 @@ export function LikeButton({
   targetType,
   targetId,
   count = 0,
+  initialLiked,
 }: {
   targetType: "journal" | "comment" | "article";
   targetId: number;
   count?: number;
+  /** 父级已经从详情接口拿到"我是否点过"时传入，省一次请求 */
+  initialLiked?: boolean;
 }) {
-  const [liked, setLiked] = useState(false);
+  const token = useAuthStore((s) => s.token);
+  const [liked, setLiked] = useState(!!initialLiked);
   const [n, setN] = useState(count);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    let alive = true;
-    const tk = JSON.parse(localStorage.getItem("tripscape-auth") || "{}").state;
-    if (tk?.token) {
-      api
-        .get("/likes/status", { params: { target_type: targetType, ids: String(targetId) } })
-        .then((r) => {
-          if (alive) setLiked((r.data.liked_ids || []).includes(targetId));
-        })
-        .catch(() => {});
+    if (initialLiked !== undefined) {
+      setLiked(!!initialLiked);
+      setN(count);
+      return;
     }
+    let alive = true;
+    // 只拿到 id 的场景：批量统计接口同时给"赞数"和"我点过没有"
+    api
+      .get("/likes/stats", { params: { target_type: targetType, ids: String(targetId) } })
+      .then((r) => {
+        if (!alive) return;
+        setN(Number(r.data.counts?.[String(targetId)] || 0));
+        setLiked((r.data.liked_ids || []).includes(targetId));
+      })
+      .catch(() => {});
     return () => {
       alive = false;
     };
-  }, [targetType, targetId]);
+  }, [targetType, targetId, token, initialLiked, count]);
 
   const toggle = async () => {
-    const tk = JSON.parse(localStorage.getItem("tripscape-auth") || "{}").state;
-    if (!tk?.token) {
+    if (busy) return;
+    if (!token) {
       toast.error("登录后才能点赞");
       return;
     }
+    const target = !liked;
+    setBusy(true);
+    // 乐观更新：网络慢时也有即时反馈；失败回滚
+    setLiked(target);
+    setN((value) => Math.max(0, value + (target ? 1 : -1)));
     try {
-      const r = await api.post("/likes/", { target_type: targetType, target_id: targetId });
-      setLiked(r.data.liked);
-      setN(r.data.count);
+      const r = await api.post("/likes/", {
+        target_type: targetType,
+        target_id: targetId,
+        // 显式目标状态：双击/重试不会把赞来回抵消
+        liked: target,
+      });
+      setLiked(!!r.data.liked);
+      setN(Number(r.data.count ?? 0));
     } catch (e) {
+      setLiked(!target);
+      setN((value) => Math.max(0, value + (target ? -1 : 1)));
       toast.error(errMessage(e, "操作失败"));
+    } finally {
+      setBusy(false);
     }
   };
 
   return (
     <button
       onClick={toggle}
-      className={`flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition ${
+      disabled={busy}
+      data-testid="like-button"
+      aria-pressed={liked}
+      className={`flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition disabled:opacity-60 ${
         liked
           ? "border-rose-400/60 bg-rose-400/10 text-rose-500"
           : "border-border bg-card hover:border-rose-400/40 hover:text-rose-400"
@@ -162,7 +204,7 @@ export function LikeButton({
       title={liked ? "取消点赞" : "点赞"}
     >
       <Heart className={`h-3.5 w-3.5 ${liked ? "fill-rose-400 text-rose-400" : ""}`} />
-      {n > 0 ? n : "赞"}
+      {n > 0 ? n : liked ? "已赞" : "赞"}
     </button>
   );
 }

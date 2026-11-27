@@ -33,9 +33,12 @@ from services import narrative_service as narrative
 router = Router()
 
 
-def _landmark_or_404(landmark_id: int) -> Landmark:
+def _landmark_or_404(landmark_id: int, viewer=None) -> Landmark:
+    """取地标；已下架的地标对非管理员等同不存在（与详情接口同口径）。"""
+    from apps.core.auth import is_any_admin
+
     lm = Landmark.objects.filter(id=landmark_id).first()
-    if lm is None:
+    if lm is None or (not lm.is_active and not is_any_admin(viewer)):
         raise HttpError(404, "地标不存在")
     return lm
 
@@ -46,10 +49,27 @@ class AddCardIn(Schema):
 
 @router.get("/card/{landmark_id}", summary="地标叙事卡片", auth=OptionalAuth())
 def get_card(request, landmark_id: int):
-    """取该地标最新卡片；没有则按真实种子数据现建一张（source=landmark）。"""
-    lm = _landmark_or_404(landmark_id)
+    """取该地标最新卡片；没有则按真实种子数据现建一张（source=landmark）。
+
+    附带当前查看者的收藏态与文章点赞数：档案面板不再依赖"个人主页前 50 条
+    收藏"来判断是否已收藏（收藏超过 50 个时会显示成未收藏）。
+    """
+    lm = _landmark_or_404(landmark_id, getattr(request, "auth", None))
     card = narrative.latest_card(lm)
-    return {"success": True, "data": card.as_card()}
+    data = card.as_card()
+
+    viewer = getattr(request, "auth", None)
+    from apps.landmarks.models import UserFavorite
+    from services.like_service import like_stats
+
+    counts, liked = like_stats("article", [lm.id], viewer=viewer)
+    data["like_count"] = counts.get(lm.id, 0)
+    data["liked"] = lm.id in liked
+    data["favorited"] = bool(
+        getattr(viewer, "is_authenticated", False)
+        and UserFavorite.objects.filter(user=viewer, landmark=lm).exists()
+    )
+    return {"success": True, "data": data}
 
 
 @router.get(
@@ -59,7 +79,7 @@ def get_card(request, landmark_id: int):
 )
 def get_story(request, landmark_id: int):
     """读预置的地标页面文件；没有预置时返回 404，不现场分词拼内容。"""
-    lm = _landmark_or_404(landmark_id)
+    lm = _landmark_or_404(landmark_id, getattr(request, "auth", None))
     payload = landmark_pages.story_payload(lm)
     if payload is None:
         raise HttpError(404, "该地标还没有预置内容，请运行 seed_landmark_pages")

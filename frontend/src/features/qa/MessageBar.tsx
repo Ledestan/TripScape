@@ -337,6 +337,16 @@ export default function MessageBar({
       } else if (text) {
         await chat.mutateAsync(text);
       }
+    } catch (error) {
+      // 请求失败（图片格式不对/限流/网络断开）时必须收掉"识别中"骨架屏，
+      // 否则它会一直转、用户以为卡死；这里同时给出可读原因。
+      if (currentFile) {
+        updateMessage(pendingId, {
+          pending: false,
+          content: `识别失败：${errMessage(error, "请换一张清晰的照片再试")}`,
+        });
+      }
+      toast.error(errMessage(error, "请求失败，请稍后再试"));
     } finally {
       setSending(false);
     }
@@ -420,6 +430,7 @@ export default function MessageBar({
           maxWidth: hasUnread && !narrow ? "var(--ui-strip-w)" : undefined,
         }}
         title={hasUnread ? "有未读通知" : "智能问答"}
+        data-testid="message-bar-toggle"
       >
         {historyWindow}
         {viewMsgWindow}
@@ -612,6 +623,7 @@ export default function MessageBar({
             ref={fileRef}
             type="file"
             accept="image/png,image/jpeg"
+            data-testid="qa-file-input"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -631,6 +643,7 @@ export default function MessageBar({
           </button>
           <button
             onClick={handleSend}
+            data-testid="qa-send"
             disabled={sending || (!input.trim() && !file)}
             className="flex h-8 shrink-0 items-center gap-1 rounded-lg bg-sky-500 px-2.5 text-[var(--ui-fs-sm)] font-medium text-foreground transition hover:bg-sky-400 disabled:opacity-50"
           >

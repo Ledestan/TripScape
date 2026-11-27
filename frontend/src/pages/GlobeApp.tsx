@@ -5,7 +5,7 @@
  */
 
 import { lazy, Suspense, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";import { useQuery } from "@tanstack/react-query";
+import { useLocation, useParams } from "react-router-dom";import { useQuery } from "@tanstack/react-query";
 import { Globe2 } from "lucide-react";
 import Globe, { Spot } from "@/features/globe/Globe";
 import { globeBus } from "@/features/globe/bus";
@@ -35,6 +35,7 @@ import { useViewport } from "@/hooks/useViewport";
 export default function GlobeApp() {
   const { compact, narrow } = useViewport();
   const routeParams = useParams();
+  const location = useLocation();
 
   const [highlightIds, setHighlightIds] = useState<Set<number> | undefined>(undefined);
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -67,11 +68,13 @@ export default function GlobeApp() {
   };
 
   // 路由直达 /landmarks/:id：等 spots 就绪后再进入，才能带上地标名与飞行动画
+  // /journals/:id 交给下面单独处理（否则会把她当成地标 id，打开错的地标档案）
   useEffect(() => {
+    if (location.pathname.startsWith("/journals/")) return;
     const id = Number(routeParams.id || 0);
     if (id) openNarrative(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routeParams.id, spots]);
+  }, [routeParams.id, spots, location.pathname]);
 
   // 离开页面时复位叙事层：层状态只在本次会话有效，下次进入从地球层开始
   useEffect(() => () => resetNarrative(), [resetNarrative]);
@@ -138,6 +141,12 @@ export default function GlobeApp() {
     window.addEventListener("ts:open-journal-view", onView);
     return () => window.removeEventListener("ts:open-journal-view", onView);
   }, []);
+
+  // 深链 /journals/:id（分享链接、通知、浏览器前进后退）直接打开手账查看窗
+  useEffect(() => {
+    const hit = location.pathname.match(/^\/journals\/(\d+)/);
+    if (hit) setViewJournalId(Number(hit[1]));
+  }, [location.pathname]);
 
   // 搜索"显示更多"事件 -> 全局搜索浮窗（携带搜索词）
   const [searchOpen, setSearchOpen] = useState(false);

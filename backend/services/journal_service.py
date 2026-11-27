@@ -16,7 +16,9 @@ from services.search_service import sync_journal_to_meili
 
 logger = logging.getLogger("tripscape.journal")
 
-MAX_IMAGES = 9
+# 与画布元素上限（MAX_ELEMENTS=40）对齐：用户能拖进画布的照片最多 40 张，
+# 之前设 9 会让"第 10 张照片"保存时报 422，属于前后端口径不一致。
+MAX_IMAGES = 40
 IMAGE_URL_MAX = 512
 CONTENT_MAX = 20000
 

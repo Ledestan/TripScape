@@ -4,8 +4,16 @@
  * 路由入口：登录、地球主页、地标页、分享页与 404 的分发。
  */
 
-import { lazy, Suspense, useEffect } from "react";
-import { BrowserRouter, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
+import { lazy, Suspense, useEffect, useState } from "react";
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { useThemeStore } from "@/stores/theme";
 
 // 地球 + 浮窗类页面（全部功能在浮窗内，无独立网页版）
@@ -64,6 +72,9 @@ export default function App() {
           <Route path="/qa-history" element={<GlobeApp />} />
           <Route path="/admin/*" element={<GlobeApp />} />
           <Route path="/dashboard" element={<GlobeApp />} />
+
+          {/* 未知路径不再是一片空白：回主页（保留地球与浮层入口） */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     </BrowserRouter>
@@ -82,13 +93,24 @@ function LoginRoute() {
 /** /search：地球 + 搜索浮窗（?q= 预填） */
 function SearchRoute() {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
+  // 浮窗必须可关闭：之前 onClose 是空函数，打开后既关不掉也退不出
+  const [open, setOpen] = useState(true);
 
   return (
     <div className="relative h-screen w-full">
       <GlobeApp />
-      <Suspense fallback={null}>
-        <SearchWindow initialQuery={params.get("q") || ""} onClose={() => undefined} />
-      </Suspense>
+      {open && (
+        <Suspense fallback={null}>
+          <SearchWindow
+            initialQuery={params.get("q") || ""}
+            onClose={() => {
+              setOpen(false);
+              navigate("/", { replace: false });
+            }}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

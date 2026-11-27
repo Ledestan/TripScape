@@ -17,7 +17,7 @@
  *     在文章页回复后，详情页的评论树也会一起更新。
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
@@ -78,48 +78,76 @@ export default function ArticleWindow({
 }
 
 /** 文章点赞：target_type=article，target_id=地标 id */
-function ArticleLike({ landmarkId }: { landmarkId: number }) {
+function ArticleLike({
+  landmarkId,
+  initialLiked,
+  initialCount,
+}: {
+  landmarkId: number;
+  initialLiked?: boolean;
+  initialCount?: number;
+}) {
   const token = useAuthStore((s) => s.token);
-  const [liked, setLiked] = useState(false);
-  const [count, setCount] = useState(0);
+  const [liked, setLiked] = useState(!!initialLiked);
+  const [count, setCount] = useState(initialCount ?? 0);
+  const [busy, setBusy] = useState(false);
 
-  useQuery({
-    queryKey: ["likes", "article", landmarkId],
-    queryFn: async () => {
-      if (!token) return null;
-      const response = await api.get("/likes/status", {
-        params: { target_type: "article", ids: String(landmarkId) },
+  useEffect(() => {
+    if (initialLiked !== undefined) {
+      setLiked(!!initialLiked);
+      setCount(initialCount ?? 0);
+      return;
+    }
+    let alive = true;
+    api
+      .get("/likes/stats", { params: { target_type: "article", ids: String(landmarkId) } })
+      .then((response) => {
+        if (!alive) return;
+        setCount(Number(response.data.counts?.[String(landmarkId)] || 0));
+        setLiked((response.data.liked_ids || []).includes(landmarkId));
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [landmarkId, token, initialLiked, initialCount]);
+
+  const toggle = async () => {
+    if (busy) return;
+    if (!token) {
+      toast.error("登录后才能点赞");
+      window.dispatchEvent(new CustomEvent("ts:open-login"));
+      return;
+    }
+    const target = !liked;
+    setBusy(true);
+    setLiked(target);
+    setCount((value) => Math.max(0, value + (target ? 1 : -1)));
+    try {
+      const response = await api.post("/likes/", {
+        target_type: "article",
+        target_id: landmarkId,
+        liked: target,
       });
-      const ids = (response.data.liked_ids || []) as number[];
-      setLiked(ids.includes(landmarkId));
-      return ids;
-    },
-    enabled: !!token,
-  });
+      setLiked(!!response.data.liked);
+      setCount(Number(response.data.count ?? 0));
+    } catch (error) {
+      setLiked(!target);
+      setCount((value) => Math.max(0, value + (target ? -1 : 1)));
+      toast.error(errMessage(error, "操作失败"));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <button
       type="button"
       data-testid="article-like"
       aria-pressed={liked}
-      onClick={async () => {
-        if (!token) {
-          toast.error("登录后才能点赞");
-          window.dispatchEvent(new CustomEvent("ts:open-login"));
-          return;
-        }
-        try {
-          const response = await api.post("/likes/", {
-            target_type: "article",
-            target_id: landmarkId,
-          });
-          setLiked(response.data.liked);
-          setCount(response.data.count);
-        } catch (error) {
-          toast.error(errMessage(error, "操作失败"));
-        }
-      }}
-      className={`flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] transition ${
+      disabled={busy}
+      onClick={toggle}
+      className={`flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] transition disabled:opacity-60 ${
         liked
           ? "border-rose-400/60 bg-rose-400/10 text-rose-500"
           : "border-border bg-card hover:border-rose-400/40 hover:text-rose-400"

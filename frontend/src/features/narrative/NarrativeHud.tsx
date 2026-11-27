@@ -28,7 +28,6 @@ import { useAuthStore } from "@/stores/auth";
 import { useNarrativeStore } from "@/stores/narrative";
 
 import LandmarkNarrativePanel from "./LandmarkNarrativePanel";
-import type { FavoriteItem } from "./types";
 import type { LandmarkStoryData, NarrativeCardData } from "./types";
 
 export default function NarrativeHud() {
@@ -77,21 +76,27 @@ export default function NarrativeHud() {
     retry: 0,
   });
 
-  /** 收藏状态来自个人主页聚合接口（同一份数据也供"我的收藏"用） */
-  const { data: profile } = useQuery({
-    queryKey: ["profile"],
-    queryFn: async () => (await api.get("/auth/profile")).data as { favorites?: FavoriteItem[] },
-    enabled: !!token,
-    retry: 0,
-  });
-  const favorites = profile?.favorites || [];
+  /** 收藏状态直接取卡片响应里的 favorited（服务端按当前用户判断，
+      不再依赖"个人主页前 50 条收藏"，收藏多了也不会误显示未收藏） */
+  const favorited = Boolean((card as { favorited?: boolean } | undefined)?.favorited);
+
+  // 登录/退出后重取卡片：否则匿名态先打开的档案，登录后仍显示"未收藏"
+  useEffect(() => {
+    if (landmarkId !== null) refetchCard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, landmarkId]);
 
   const toggleFavorite = useMutation({
-    mutationFn: async (lmId: number) => api.post(`/landmarks/${lmId}/favorite`),
+    // 显式目标状态：双击/重试不会把收藏状态来回翻转
+    mutationFn: async (lmId: number) =>
+      api.post(`/landmarks/${lmId}/favorite`, null, {
+        params: { favorited: !favorited },
+      }),
     onSuccess: (r) => {
-      const favorited = (r.data as { favorited?: boolean } | undefined)?.favorited;
-      toast.success(favorited === false ? "已取消收藏" : "已收藏");
+      const now = (r.data as { favorited?: boolean } | undefined)?.favorited;
+      toast.success(now === false ? "已取消收藏" : "已收藏");
       qc.invalidateQueries({ queryKey: ["profile"] });
+      qc.invalidateQueries({ queryKey: ["narrative", "card", landmarkId] });
     },
     onError: (e) => toast.error(errMessage(e, "收藏失败")),
   });
@@ -135,7 +140,7 @@ export default function NarrativeHud() {
             onOpenJournalEditor={() => {
               if (requireLogin("查看手账")) openDetail("journals");
             }}
-            favorited={favorites.some((f) => f.id === landmarkId)}
+            favorited={favorited}
             favoriteBusy={toggleFavorite.isPending}
             onToggleFavorite={() => {
               if (landmarkId !== null && requireLogin("收藏")) toggleFavorite.mutate(landmarkId);

@@ -39,15 +39,20 @@ def refresh(request):
     return {"success": True, "footprints": count}
 
 
-@router.post("/{landmark_id}/visibility", summary="隐藏/显示我的某个足迹")
+@router.post(
+    "/{landmark_id}/visibility", summary="隐藏/显示我的某个足迹（可显式指定状态）"
+)
 @login_required
-def toggle_visibility(request, landmark_id: int):
-    """隐藏/显示我的某个足迹（隐藏后不计入公开热度）。"""
+def toggle_visibility(request, landmark_id: int, hidden: bool = None):
+    """隐藏/显示我的某个足迹（隐藏后不计入公开热度）。
+
+    hidden 显式给出时幂等置位；不传时切换（兼容旧前端）。
+    """
     from apps.journals.models import Footprint
 
     fp = Footprint.objects.filter(user=request.auth, landmark_id=landmark_id).first()
     if not fp:
         raise HttpError(404, "足迹不存在")
-    fp.hidden = not fp.hidden
+    fp.hidden = (not fp.hidden) if hidden is None else bool(hidden)
     fp.save(update_fields=["hidden"])
     return {"success": True, "hidden": fp.hidden}

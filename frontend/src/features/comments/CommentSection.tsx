@@ -57,6 +57,8 @@ export default function CommentSection({
   const [replyTo, setReplyTo] = useState<CommentNode | null>(null);
   const [editing, setEditing] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
+  // 正在点赞的评论 id（防连点：两次 toggle 会把赞来回抵消）
+  const [likingId, setLikingId] = useState<number | null>(null);
 
   const path = landmarkId
     ? `/comments/landmark/${landmarkId}`
@@ -171,14 +173,23 @@ export default function CommentSection({
                   node.liked ? "text-rose-500" : ""
                 }`}
                 onClick={async () => {
-                  if (!requireLogin()) return;
+                  if (!requireLogin() || likingId !== null) return;
+                  setLikingId(node.id);
                   try {
-                    await api.post("/likes/", { target_type: "comment", target_id: node.id });
+                    // 显式目标状态：连点/重试不会把赞来回抵消
+                    await api.post("/likes/", {
+                      target_type: "comment",
+                      target_id: node.id,
+                      liked: !node.liked,
+                    });
                     refetch();
                   } catch (error) {
                     toast.error(errMessage(error, "操作失败"));
+                  } finally {
+                    setLikingId(null);
                   }
                 }}
+                disabled={likingId === node.id}
               >
                 <Heart className={`h-3 w-3 ${node.liked ? "fill-rose-500" : ""}`} />
                 {node.like_count ? node.like_count : "赞"}
@@ -208,7 +219,12 @@ export default function CommentSection({
                   <button
                     type="button"
                     className="hover:text-destructive"
-                    onClick={() => deleteComment.mutate(node.id)}
+                    onClick={() => {
+                      // 删除是不可撤销操作：先确认（手账删除已有确认，评论之前没有）
+                      if (confirm("删除这条评论？删除后不可恢复。")) {
+                        deleteComment.mutate(node.id);
+                      }
+                    }}
                   >
                     删除
                   </button>

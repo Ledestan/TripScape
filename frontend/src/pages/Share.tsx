@@ -4,6 +4,7 @@
  * 公开分享页：免登录阅读手账并展示作者信息。
  */
 
+import { lazy, Suspense } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, CalendarDays, Globe2 } from "lucide-react";
@@ -11,6 +12,9 @@ import { api } from "@/api/client";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+
+// 画布渲染带 konva：只在真的有画布时按需加载
+const JournalCanvasView = lazy(() => import("@/features/narrative/JournalCanvasView"));
 
 /** 公开分享页：不登录也能看 */
 export default function SharePage() {
@@ -26,6 +30,7 @@ export default function SharePage() {
         title: string
         content: string
         images: string[]
+        canvas?: { elements?: unknown[] }
         visited_at: string | null
         created_at: string
       }
@@ -34,9 +39,11 @@ export default function SharePage() {
   })
 
   // 加载态只铺深色底：分享页是站外入口，不弹"加载中"文字，避免与片头抢戏
-  if (isLoading)
+  if (isLoading) {
     return <div className="fixed inset-0 bg-[#04070d]" aria-hidden="true" />;
-  if (isError || !data)
+  }
+
+  if (isError || !data) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-gradient-to-br from-[#9bb7d7] to-[#6a8caf] text-white">
         <div className="text-5xl">️</div>
@@ -46,6 +53,12 @@ export default function SharePage() {
         </Button>
       </div>
     )
+  }
+
+  const hasCanvas =
+    !!data.canvas &&
+    Array.isArray(data.canvas.elements) &&
+    data.canvas.elements.length > 0
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-accent/60 via-background to-background">
@@ -88,17 +101,26 @@ export default function SharePage() {
             <Badge variant="secondary">公开手账</Badge>
           </div>
 
-          {data.images?.length > 0 && (
+          {/* 手账主体是画布：有画布就渲染画布，否则退回图片九宫格 */}
+          {hasCanvas ? (
+            <div className="mt-5 overflow-hidden rounded-xl">
+              <Suspense fallback={<div className="h-64 w-full animate-pulse rounded-xl bg-muted" />}>
+                <JournalCanvasView canvas={data.canvas} />
+              </Suspense>
+            </div>
+          ) : data.images?.length > 0 ? (
             <div className="mt-5 grid gap-2 sm:grid-cols-2">
               {data.images.slice(0, 6).map((url, i) => (
                 <img key={i} src={url} alt="" className="h-48 w-full rounded-xl object-cover" />
               ))}
             </div>
-          )}
+          ) : null}
 
-          <div className="mt-5 whitespace-pre-wrap leading-relaxed">
-            {data.content || "（作者没有留下文字）"}
-          </div>
+          {(data.content || !hasCanvas) && (
+            <div className="mt-5 whitespace-pre-wrap leading-relaxed">
+              {data.content || "（作者没有留下文字）"}
+            </div>
+          )}
         </article>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">

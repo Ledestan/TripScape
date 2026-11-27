@@ -139,17 +139,46 @@ def list_landmarks(
 
 @router.get("/{landmark_id}", summary="地标详情（浏览量+1）", auth=OptionalAuth())
 def landmark_detail(request, landmark_id: int):
-    """地标详情：百科介绍 + 计数（评论/手账/访客）。"""
+    """地标详情：百科介绍 + 计数（评论/手账/访客/点赞） + 我的收藏态。
+
+    计数在这里一并返回，前端详情窗才不会出现"评论 0 / 手账 0"的假数据
+    （之前前端拿不到 comment_count / journal_count，只能显示 0）。
+    """
+    from apps.comments.models import Comment
+    from apps.journals.models import Footprint, Journal
     from django.db.models import F
+    from services.like_service import like_stats
 
     lm = Landmark.objects.filter(id=landmark_id).first()
     if not lm:
         raise HttpError(404, "地标不存在")
     # 已下架地标只对管理员可见（下架 = 地球/搜索/详情都不再对外展示）
-    if not lm.is_active and not is_any_admin(getattr(request, "auth", None)):
+    viewer = getattr(request, "auth", None)
+    if not lm.is_active and not is_any_admin(viewer):
         raise HttpError(404, "地标不存在")
     Landmark.objects.filter(id=lm.id).update(view_count=F("view_count") + 1)
-    return {"success": True, "data": lm.as_dict(with_intro=True)}
+
+    data = lm.as_dict(with_intro=True)
+    data["comment_count"] = Comment.objects.filter(
+        landmark=lm, is_hidden=False, deleted_at__isnull=True
+    ).count()
+    data["journal_count"] = Journal.objects.filter(
+        landmark=lm, is_public=True, status="approved", deleted_at__isnull=True
+    ).count()
+    data["visitor_count"] = (
+        Footprint.objects.filter(landmark=lm, hidden=False)
+        .values("user_id")
+        .distinct()
+        .count()
+    )
+    counts, liked = like_stats("article", [lm.id], viewer=viewer)
+    data["like_count"] = counts.get(lm.id, 0)
+    data["liked"] = lm.id in liked
+    data["favorited"] = bool(
+        getattr(viewer, "is_authenticated", False)
+        and UserFavorite.objects.filter(user=viewer, landmark=lm).exists()
+    )
+    return {"success": True, "data": data}
 
 
 @router.post("/", summary="新增地标（管理员）")
@@ -222,18 +251,35 @@ def delete_landmark(request, landmark_id: int):
     return {"success": True}
 
 
-@router.post("/{landmark_id}/favorite", summary="收藏 / 取消收藏")
+@router.post("/{landmark_id}/favorite", summary="收藏 / 取消收藏（可显式指定目标状态）")
 @login_required
-def toggle_favorite(request, landmark_id: int):
-    """收藏/取消收藏地标。"""
+def toggle_favorite(request, landmark_id: int, favorited: bool = None):
+    """收藏/取消收藏地标。
+
+    favorited 显式给出时为幂等置位（双击/重试不会把收藏状态来回翻转）；
+    不传时保持旧的切换语义。
+    """
+    from django.db import IntegrityError, transaction
+
     lm = Landmark.objects.filter(id=landmark_id).first()
     if not lm:
         raise HttpError(404, "地标不存在")
-    fav, created = UserFavorite.objects.get_or_create(user=request.auth, landmark=lm)
-    if not created:
-        fav.delete()
-        return {"success": True, "favorited": False}
-    return {"success": True, "favorited": True}
+
+    wanted = favorited
+    if wanted is None:
+        wanted = not UserFavorite.objects.filter(
+            user=request.auth, landmark=lm
+        ).exists()
+
+    if wanted:
+        try:
+            with transaction.atomic():
+                UserFavorite.objects.get_or_create(user=request.auth, landmark=lm)
+        except IntegrityError:
+            pass
+    else:
+        UserFavorite.objects.filter(user=request.auth, landmark=lm).delete()
+    return {"success": True, "favorited": bool(wanted)}
 
 
 @router.post("/{landmark_id}/image", summary="上传地标百科图片（管理员）")

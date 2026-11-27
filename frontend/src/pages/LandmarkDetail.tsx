@@ -4,7 +4,7 @@
  * 地标详情窗：介绍、时间轴、评论与手账页签。
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MapPin, Eye, Star, Send, Flag, NotebookPen, MessageSquare } from "lucide-react";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -110,7 +110,7 @@ export default function LandmarkDetailWindow({
 
   const qc = useQueryClient();
 
-  const { data: lm } = useQuery({
+  const { data: lm, refetch: refetchLandmark } = useQuery({
 
     queryKey: ["landmark", landmarkId],
 
@@ -119,6 +119,13 @@ export default function LandmarkDetailWindow({
     enabled: !!landmarkId,
 
   });
+
+  // 登录/退出后要重取：favorited / 点赞态是"按当前用户"算的，
+  // 浮窗在匿名态先打开时，不重取就会一直显示成未收藏。
+  useEffect(() => {
+    if (landmarkId) refetchLandmark();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, landmarkId]);
 
   const { data: comments } = useQuery({
 
@@ -140,25 +147,27 @@ export default function LandmarkDetailWindow({
 
   });
 
-  // 收藏状态（从个人主页数据判定是否已收藏）
+  // 收藏状态：直接用详情接口返回的 favorited（之前靠个人主页前 50 条收藏推断，
+  // 收藏多了会误显示成"未收藏"；这里也不再额外请求 /auth/profile）
+  const [favorited, setFavorited] = useState(false);
 
-  const { data: profile } = useQuery({
-
-    queryKey: ["profile"],
-
-    queryFn: async () => (await api.get("/auth/profile")).data as { favorites: { id: number }[] },
-
-    enabled: !!token,
-
-  });
-
-  const favorited = profile?.favorites?.some((f) => f.id === landmarkId) ?? false;
+  useEffect(() => {
+    if (lm && typeof lm.favorited === "boolean") setFavorited(lm.favorited);
+  }, [lm?.favorited, lm?.id]);
 
   const fav = useMutation({
 
-    mutationFn: async () => api.post(`/landmarks/${landmarkId}/favorite`),
+    // 显式目标状态：双击/重试不会把收藏状态来回翻转
+
+    mutationFn: async () =>
+
+      api.post(`/landmarks/${landmarkId}/favorite`, null, {
+        params: { favorited: !favorited },
+      }),
 
     onSuccess: (r) => {
+
+      setFavorited(!!r.data.favorited);
 
       toast.success(r.data.favorited ? "已收藏" : "已取消收藏");
 
